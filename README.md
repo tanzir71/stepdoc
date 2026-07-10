@@ -9,16 +9,20 @@ StepDoc captures browser workflows with a Chrome extension and turns them into e
 3. Copy `apps/web/.env.example` to `apps/web/.env.local`, fill in the project URL and server-only service role key. Never put that key in a `NEXT_PUBLIC_` variable.
 4. Run `pnpm dev`, then open `http://localhost:3000`.
 5. Run `pnpm --filter @stepdoc/extension build`. In `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `apps/extension/dist`.
-6. Open the extension settings and leave the app URL at `http://localhost:3000` (or enter your internal deployment URL).
+6. Open the extension settings and leave the app URL at `http://localhost:3000` or enter your internal deployment URL.
 
 ## Usage
 
-Click **Start capture**, complete a browser workflow, then click **Stop & open**. Inputs are recorded only as actions—typed values are never collected. Password, email, and sensitive autocomplete fields are pixelated before the screenshot persists. Edit text and order, add manual steps and image layers, render, share by UUID, or export Markdown/HTML. Use the viewer's print dialog for PDF.
+Click **Start capture**, complete a browser workflow, then click **Stop & open**. Inputs are recorded only as actions; typed values are never collected. Password, email, and sensitive autocomplete fields are pixelated before the screenshot persists.
+
+In the editor, adjust guide text, reorder or delete steps, add section headers/manual steps, upload images, move/resize/remove click markers, and draw non-destructive blur/crop/annotation layers. Saves regenerate flattened viewer images server-side while keeping originals untouched.
+
+Viewer actions include Markdown ZIP, standalone HTML, PDF export, Copy Markdown, Copy rich text, public UUID sharing, and iframe embed snippets.
 
 ## Commands
 
-- `pnpm dev` — web development server
-- `pnpm build` — build all workspaces
-- `pnpm verify` — lint, strict typecheck, unit tests, and production builds
+- `pnpm dev` - web development server
+- `pnpm build` - build all workspaces
+- `pnpm verify` - lint, strict typecheck, unit tests, Playwright e2e, and production builds
 
 See `apps/extension/MANUAL_TEST.md` for capture verification.

@@ -1,1 +1,40 @@
-import'./style.css';const $=(id:string)=>document.getElementById(id)!;async function refresh(){const s=await chrome.runtime.sendMessage({type:'GET_STATE'});$('status').textContent=s.recording?`Recording · ${(s.steps??[]).length} steps`:'Ready to capture'}$('start').onclick=async()=>{const[t]=await chrome.tabs.query({active:true,currentWindow:true});await chrome.runtime.sendMessage({type:'START',url:t?.url});refresh()};$('stop').onclick=async()=>{$('status').textContent='Saving…';const r=await chrome.runtime.sendMessage({type:'STOP'});$('status').textContent=r.ok?'Guide opened':'Saved locally; retry after app starts'};$('cancel').onclick=async()=>{await chrome.runtime.sendMessage({type:'CANCEL'});refresh()};refresh()
+import './style.css'
+
+const $ = (id: string) => document.getElementById(id)!
+
+async function refresh() {
+  const state = await chrome.runtime.sendMessage({ type: 'GET_STATE' })
+  $('status').textContent = state.recording
+    ? `Recording - ${(state.steps ?? []).length} steps`
+    : state.pendingSession
+      ? 'Saved upload waiting'
+      : 'Ready to capture'
+  ;($('retry') as HTMLButtonElement).disabled = !state.pendingSession
+}
+
+$('start').onclick = async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+  await chrome.runtime.sendMessage({ type: 'START', url: tab?.url })
+  void refresh()
+}
+
+$('stop').onclick = async () => {
+  $('status').textContent = 'Saving...'
+  const result = await chrome.runtime.sendMessage({ type: 'STOP' })
+  $('status').textContent = result.ok ? 'Guide opened' : 'Saved locally; retry after app starts'
+  void refresh()
+}
+
+$('retry').onclick = async () => {
+  $('status').textContent = 'Retrying upload...'
+  const result = await chrome.runtime.sendMessage({ type: 'RETRY' })
+  $('status').textContent = result.ok ? 'Guide opened' : 'Still saved locally'
+  void refresh()
+}
+
+$('cancel').onclick = async () => {
+  await chrome.runtime.sendMessage({ type: 'CANCEL' })
+  void refresh()
+}
+
+void refresh()

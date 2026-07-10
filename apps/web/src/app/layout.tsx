@@ -1,1 +1,27 @@
-import'./globals.css';import Link from'next/link';export const metadata={title:'StepDoc',description:'Private workflow documentation',robots:{index:false,follow:false}};export default function Layout({children}:{children:React.ReactNode}){return <html lang="en"><body><header className="topbar"><div className="wrap nav"><Link className="brand" href="/">◫ StepDoc</Link><button className="btn" id="theme" onClick={undefined}>Light / dark</button></div></header>{children}<script dangerouslySetInnerHTML={{__html:`document.getElementById('theme').onclick=()=>{document.documentElement.classList.toggle('dark');localStorage.theme=document.documentElement.classList.contains('dark')?'dark':'light'};if(localStorage.theme==='dark'||(!localStorage.theme&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')`}}/></body></html>}
+import './globals.css'
+import Link from 'next/link'
+import { ThemeToggle } from '@/components/theme-toggle'
+
+export const metadata = {
+  title: 'StepDoc',
+  description: 'Private workflow documentation',
+  robots: { index: false, follow: false },
+}
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <header className="topbar">
+          <div className="wrap nav">
+            <Link className="brand" href="/">
+              StepDoc
+            </Link>
+            <ThemeToggle />
+          </div>
+        </header>
+        {children}
+      </body>
+    </html>
+  )
+}

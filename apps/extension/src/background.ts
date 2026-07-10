@@ -1,1 +1,112 @@
-import{makeStep}from'./capture';import{composite}from'./image';import type{ElementMeta}from'@stepdoc/shared';type Pending={meta:ElementMeta;sensitive:{x:number;y:number;width:number;height:number}[]};let queue:Pending[]=[];let processing=false;let lastFrame='';let lastCapture=0;async function updateBadge(){const v=await chrome.storage.local.get(['recording','steps']);await chrome.action.setBadgeText({text:v.recording?String((v.steps??[]).length):''});await chrome.action.setBadgeBackgroundColor({color:'#ef4444'})}async function processQueue(){if(processing)return;processing=true;while(queue.length){const p=queue.shift()!;const now=Date.now();if(now-lastCapture<550&&lastFrame)await new Promise(r=>setTimeout(r,550-(now-lastCapture)));try{lastFrame=await chrome.tabs.captureVisibleTab({format:'png'});lastCapture=Date.now()}catch{if(!lastFrame)continue}const shot=await composite(lastFrame,p.sensitive,p.meta.click,p.meta.devicePixelRatio);const v=await chrome.storage.local.get('steps');const steps=[...(v.steps??[]),{...makeStep(p.meta),position:(v.steps??[]).length,screenshot:shot}];await chrome.storage.local.set({steps});await updateBadge()}processing=false}chrome.runtime.onMessage.addListener((m,_s,respond)=>{void(async()=>{if(m.type==='START'){await chrome.storage.local.set({recording:true,steps:[],startedUrl:m.url});await broadcast(true)}if(m.type==='CANCEL'){queue=[];await chrome.storage.local.set({recording:false,steps:[]});await broadcast(false)}if(m.type==='CAPTURE'){queue.push({meta:m.meta,sensitive:m.sensitive});void processQueue()}if(m.type==='STOP'){await processQueue();while(processing)await new Promise(r=>setTimeout(r,50));await chrome.storage.local.set({recording:false});await broadcast(false);respond(await upload())}if(m.type==='GET_STATE')respond(await chrome.storage.local.get(['recording','steps']));return true})();return true});chrome.tabs.onUpdated.addListener((_id,info,tab)=>{if(info.status==='complete')chrome.storage.local.get('recording').then(v=>{if(v.recording&&tab.url?.startsWith('http'))queue.push({meta:{event:'navigation',tag:'body',url:tab.url,pageTitle:tab.title},sensitive:[]}),processQueue()})});async function broadcast(recording:boolean){await updateBadge();const tabs=await chrome.tabs.query({});for(const t of tabs)if(t.id)chrome.tabs.sendMessage(t.id,{type:'STATE',recording}).catch(()=>{})}async function upload(){const v=await chrome.storage.local.get(['steps','startedUrl','appUrl']);const body={title:'Captured guide',description:'',sourceUrl:v.startedUrl,steps:v.steps??[]};const app=v.appUrl??'http://localhost:3000';try{const res=await fetch(`${app}/api/sessions`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});if(!res.ok)throw Error(await res.text());const data=await res.json();await chrome.storage.local.set({steps:[]});await chrome.tabs.create({url:`${app}/guides/${data.id}/edit`});return{ok:true}}catch(error){const url=URL.createObjectURL(new Blob([JSON.stringify(body,null,2)],{type:'application/json'}));await chrome.downloads.download({url,filename:'stepdoc-session.json'});return{ok:false,error:error instanceof Error?error.message:'Upload failed'}}}
+import { makeStep } from './capture'
+import { composite } from './image'
+import { CaptureQueue } from './queue'
+import type { ElementMeta } from '@stepdoc/shared'
+
+type Pending = { meta: ElementMeta; sensitive: { x: number; y: number; width: number; height: number }[] }
+type SessionBody = { title: string; description: string; sourceUrl?: string; steps: unknown[] }
+
+let lastCapture = 0
+const queue = new CaptureQueue<Pending>(
+  async () => {
+    const wait = 550 - (Date.now() - lastCapture)
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+    const frame = await chrome.tabs.captureVisibleTab({ format: 'png' })
+    lastCapture = Date.now()
+    return frame
+  },
+  async ({ event, frame }) => {
+    const shot = await composite(frame, event.sensitive, undefined, event.meta.devicePixelRatio)
+    const value = await chrome.storage.local.get('steps')
+    const steps = [
+      ...(value.steps ?? []),
+      { ...makeStep(event.meta), position: (value.steps ?? []).length, screenshot: shot },
+    ]
+    await chrome.storage.local.set({ steps })
+    await updateBadge()
+  },
+)
+
+async function updateBadge() {
+  const value = await chrome.storage.local.get(['recording', 'steps'])
+  await chrome.action.setBadgeText({ text: value.recording ? String((value.steps ?? []).length) : '' })
+  await chrome.action.setBadgeBackgroundColor({ color: '#ef4444' })
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, respond) => {
+  void (async () => {
+    if (message.type === 'START') {
+      queue.clear()
+      await chrome.storage.local.set({ recording: true, steps: [], startedUrl: message.url })
+      await broadcast(true)
+    }
+    if (message.type === 'CANCEL') {
+      queue.clear()
+      await chrome.storage.local.set({ recording: false, steps: [] })
+      await broadcast(false)
+    }
+    if (message.type === 'CAPTURE') void queue.enqueue({ meta: message.meta, sensitive: message.sensitive })
+    if (message.type === 'STOP') {
+      await queue.drain()
+      await chrome.storage.local.set({ recording: false })
+      await broadcast(false)
+      respond(await upload())
+    }
+    if (message.type === 'RETRY') respond(await retry())
+    if (message.type === 'GET_STATE') respond(await chrome.storage.local.get(['recording', 'steps', 'pendingSession']))
+    return true
+  })()
+  return true
+})
+
+chrome.tabs.onUpdated.addListener((_id, info, tab) => {
+  if (info.status === 'complete') {
+    chrome.storage.local.get('recording').then((value) => {
+      if (value.recording && tab.url?.startsWith('http')) {
+        void queue.enqueue({
+          meta: { event: 'navigation', tag: 'body', url: tab.url, pageTitle: tab.title },
+          sensitive: [],
+        })
+      }
+    })
+  }
+})
+
+async function broadcast(recording: boolean) {
+  await updateBadge()
+  const tabs = await chrome.tabs.query({})
+  for (const tab of tabs) if (tab.id) chrome.tabs.sendMessage(tab.id, { type: 'STATE', recording }).catch(() => {})
+}
+
+async function retry() {
+  const value = await chrome.storage.local.get('pendingSession')
+  return value.pendingSession ? upload(value.pendingSession) : { ok: false, error: 'No saved upload' }
+}
+
+async function upload(saved?: SessionBody) {
+  const value = await chrome.storage.local.get(['steps', 'startedUrl', 'appUrl'])
+  const body = saved ?? {
+    title: 'Captured guide',
+    description: '',
+    sourceUrl: value.startedUrl,
+    steps: value.steps ?? [],
+  }
+  const app = value.appUrl ?? 'http://localhost:3000'
+  try {
+    const response = await fetch(`${app}/api/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) throw Error(await response.text())
+    const data = await response.json()
+    await chrome.storage.local.remove(['steps', 'pendingSession'])
+    await chrome.tabs.create({ url: `${app}/guides/${data.id}/edit` })
+    return { ok: true }
+  } catch (error) {
+    await chrome.storage.local.set({ pendingSession: body })
+    const url = URL.createObjectURL(new Blob([JSON.stringify(body, null, 2)], { type: 'application/json' }))
+    await chrome.downloads.download({ url, filename: 'stepdoc-session.json' })
+    return { ok: false, error: error instanceof Error ? error.message : 'Upload failed' }
+  }
+}

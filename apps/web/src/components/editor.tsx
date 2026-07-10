@@ -1,3 +1,285 @@
-'use client';import{useCallback,useEffect,useRef,useState}from'react';import{DndContext,closestCenter,type DragEndEvent}from'@dnd-kit/core';import{arrayMove,SortableContext,useSortable,verticalListSortingStrategy}from'@dnd-kit/sortable';import{CSS}from'@dnd-kit/utilities';import type{Guide,Step}from'@/lib/types';
-export function Editor({initial}:{initial:Guide}){const[guide,setGuide]=useState(initial),[state,setState]=useState<'saved'|'saving'|'error'>('saved'),[toast,setToast]=useState('');const first=useRef(true);useEffect(()=>{if(first.current){first.current=false;return}setState('saving');const t=setTimeout(async()=>{try{const res=await fetch(`/api/guides/${guide.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({title:guide.title,description:guide.description,isPublic:guide.is_public,steps:guide.steps.map((s,i)=>({id:s.id,position:i,type:s.type,text:s.text,pageUrl:s.page_url,screenshotPath:s.screenshot_path,renderedPath:s.rendered_path,click:s.click,elementMeta:s.element_meta,edits:s.edits}))})});if(!res.ok)throw Error();setState('saved')}catch{setState('error')}},700);return()=>clearTimeout(t)},[guide]);const update=useCallback((id:string,p:Partial<Step>)=>setGuide(g=>({...g,steps:g.steps.map(s=>s.id===id?{...s,...p}:s)})),[]);function drag(e:DragEndEvent){if(!e.over||e.active.id===e.over.id)return;setGuide(g=>{const old=g.steps.findIndex(s=>s.id===e.active.id),to=g.steps.findIndex(s=>s.id===e.over!.id);return{...g,steps:arrayMove(g.steps,old,to)}})}function add(type:Step['type']){setGuide(g=>({...g,steps:[...g.steps,{id:crypto.randomUUID(),guide_id:g.id,position:g.steps.length,type,text:type==='section'?'New section':'Describe this step',page_url:null,screenshot_path:null,rendered_path:null,click:null,element_meta:null,edits:{blur:[],crop:null,annotations:[]},created_at:new Date().toISOString()}]}))}useEffect(()=>{const key=(e:KeyboardEvent)=>{if((e.target as HTMLElement).matches('input,textarea'))return;if(e.key==='e')document.querySelector<HTMLTextAreaElement>('.stepedit textarea')?.focus()};addEventListener('keydown',key);return()=>removeEventListener('keydown',key)},[]);const share=`${location.origin}/p/${guide.public_id}`;return <main className="wrap editor"><aside className="sidebar"><h3>Guide tools</h3><p className={state==='error'?'danger':'saved'}>{state==='saving'?'Saving…':state==='saved'?'✓ Saved':'Save failed — retrying'}</p><div style={{display:'grid',gap:8}}><button className="btn" onClick={()=>add('manual')}>+ Manual step</button><button className="btn" onClick={()=>add('section')}>+ Section header</button><button className="btn primary" onClick={async()=>{await fetch(`/api/guides/${guide.id}/render`,{method:'POST'});setToast('Images rendered')}}>Render image edits</button><a className="btn" href={`/guides/${guide.id}`}>View guide</a><button className="btn" onClick={()=>setGuide(g=>({...g,is_public:!g.is_public}))}>{guide.is_public?'Revoke public link':'Enable public link'}</button>{guide.is_public&&<><input readOnly value={share}/><button className="btn" onClick={()=>navigator.clipboard.writeText(`<iframe src="${share}" width="100%" height="700"></iframe>`)}>Copy embed</button></>}</div></aside><section><input className="titleinput" value={guide.title} onChange={e=>setGuide({...guide,title:e.target.value})}/><textarea rows={3} value={guide.description} placeholder="Add a description…" onChange={e=>setGuide({...guide,description:e.target.value})}/><DndContext collisionDetection={closestCenter} onDragEnd={drag}><SortableContext items={guide.steps.map(s=>s.id)} strategy={verticalListSortingStrategy}>{guide.steps.map((s,i)=><SortableStep key={s.id} step={s} number={i+1} update={update} remove={()=>confirm('Delete this step?')&&setGuide(g=>({...g,steps:g.steps.filter(x=>x.id!==s.id)}))}/>)}</SortableContext></DndContext></section>{toast&&<div className="toast" onClick={()=>setToast('')}>{toast}</div>}</main>}
-function SortableStep({step,number,update,remove}:{step:Step;number:number;update:(id:string,p:Partial<Step>)=>void;remove:()=>void}){const{attributes,listeners,setNodeRef,transform,transition}=useSortable({id:step.id});const[tool,setTool]=useState<'blur'|'crop'|'rectangle'|'arrow'|'text'>('blur');const addEdit=()=>{const edits=structuredClone(step.edits);if(tool==='blur')edits.blur.push({x:40,y:40,width:180,height:80});if(tool==='crop')edits.crop={x:0,y:0,width:800,height:500};if(tool==='rectangle')edits.annotations.push({type:'rectangle',x:40,y:40,width:180,height:80,color:'#ef4444'});if(tool==='arrow')edits.annotations.push({type:'arrow',x:40,y:40,toX:220,toY:120,color:'#ef4444'});if(tool==='text')edits.annotations.push({type:'text',x:40,y:40,text:'Note',color:'#ef4444'});update(step.id,{edits})};return <div ref={setNodeRef} className={`card stepedit ${step.element_meta&&'lowConfidence'in step.element_meta?'low':''}`} style={{transform:CSS.Transform.toString(transform),transition}}><div className="row between"><span className="drag" {...attributes}{...listeners}>⠿ Step {number} · {step.type}</span><button className="btn danger" onClick={remove}>Delete</button></div><textarea rows={2} value={step.text} onChange={e=>update(step.id,{text:e.target.value})}/>{step.imageUrl&&<div style={{position:'relative'}}><img className="shot" src={step.imageUrl} alt=""/><div className="row"><select value={tool} onChange={e=>setTool(e.target.value as typeof tool)}><option value="blur">Blur region</option><option value="crop">Crop</option><option value="rectangle">Rectangle</option><option value="arrow">Arrow</option><option value="text">Text</option></select><button className="btn" onClick={addEdit}>Add layer</button><button className="btn" onClick={()=>update(step.id,{edits:{blur:[],crop:null,annotations:[]}})}>Clear layers</button>{step.click&&<><button className="btn" onClick={()=>update(step.id,{click:{...step.click!,x:step.click!.x-10}})}>← marker</button><button className="btn" onClick={()=>update(step.id,{click:null})}>Remove marker</button></>}</div></div>}</div>}
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import type { Guide, Step } from '@/lib/types'
+import { ImageEditor } from './image-editor'
+
+export function Editor({ initial }: { initial: Guide }) {
+  const [guide, setGuide] = useState(initial)
+  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved')
+  const [toast, setToast] = useState('')
+  const [active, setActive] = useState(0)
+  const first = useRef(true)
+
+  const payload = useCallback(
+    (value: Guide) => ({
+      title: value.title,
+      description: value.description,
+      isPublic: value.is_public,
+      steps: value.steps.map((step, i) => ({
+        id: step.id,
+        position: i,
+        type: step.type,
+        text: step.text,
+        pageUrl: step.page_url,
+        screenshotPath: step.screenshot_path,
+        renderedPath: step.rendered_path,
+        click: step.click,
+        elementMeta: step.element_meta,
+        edits: step.edits,
+      })),
+    }),
+    [],
+  )
+
+  const saveNow = useCallback(async () => {
+    setSaveState('saving')
+    try {
+      const response = await fetch(`/api/guides/${guide.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload(guide)),
+      })
+      if (!response.ok) throw Error(await response.text())
+      setSaveState('saved')
+      return true
+    } catch {
+      setSaveState('error')
+      setToast('Could not save changes')
+      return false
+    }
+  }, [guide, payload])
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    setSaveState('saving')
+    const timer = setTimeout(() => void saveNow(), 700)
+    return () => clearTimeout(timer)
+  }, [guide, saveNow])
+
+  const update = useCallback((id: string, patch: Partial<Step>) => {
+    setGuide((value) => ({ ...value, steps: value.steps.map((step) => (step.id === id ? { ...step, ...patch } : step)) }))
+  }, [])
+
+  const remove = useCallback((id: string) => {
+    if (confirm('Delete this step?')) setGuide((value) => ({ ...value, steps: value.steps.filter((step) => step.id !== id) }))
+  }, [])
+
+  function drag(event: DragEndEvent) {
+    if (!event.over || event.active.id === event.over.id) return
+    setGuide((value) => {
+      const from = value.steps.findIndex((step) => step.id === event.active.id)
+      const to = value.steps.findIndex((step) => step.id === event.over!.id)
+      return { ...value, steps: arrayMove(value.steps, from, to) }
+    })
+  }
+
+  function add(type: Step['type']) {
+    const step: Step = {
+      id: crypto.randomUUID(),
+      guide_id: guide.id,
+      position: guide.steps.length,
+      type,
+      text: type === 'section' ? 'New section' : 'Describe this step',
+      page_url: null,
+      screenshot_path: null,
+      rendered_path: null,
+      click: null,
+      element_meta: null,
+      edits: { blur: [], crop: null, annotations: [] },
+      created_at: new Date().toISOString(),
+    }
+    setGuide((value) => ({ ...value, steps: [...value.steps, step] }))
+    setActive(guide.steps.length)
+  }
+
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement).matches('input,textarea,select')) return
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setActive((i) => Math.min(guide.steps.length - 1, i + 1))
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setActive((i) => Math.max(0, i - 1))
+      }
+      if (event.key.toLowerCase() === 'e') {
+        event.preventDefault()
+        document.querySelector<HTMLTextAreaElement>(`[data-step-index="${active}"] textarea`)?.focus()
+      }
+      if (event.key === 'Delete' && guide.steps[active]) remove(guide.steps[active].id)
+    }
+    addEventListener('keydown', key)
+    return () => removeEventListener('keydown', key)
+  }, [active, guide.steps, remove])
+
+  const share = `${typeof window === 'undefined' ? '' : window.location.origin}/p/${guide.public_id}`
+
+  return (
+    <main className="wrap editor">
+      <aside className="sidebar">
+        <h3>Guide tools</h3>
+        <p className={saveState === 'error' ? 'error-text' : 'saved'} aria-live="polite">
+          {saveState === 'saving' ? 'Saving...' : saveState === 'saved' ? 'Saved' : 'Save failed'}
+        </p>
+        <div className="tool-stack">
+          <button className="btn" onClick={() => add('manual')}>
+            + Manual step
+          </button>
+          <button className="btn" onClick={() => add('section')}>
+            + Section header
+          </button>
+          <button
+            className="btn primary"
+            onClick={async () => {
+              if (await saveNow()) {
+                const response = await fetch(`/api/guides/${guide.id}/render`, { method: 'POST' })
+                setToast(response.ok ? 'Images rendered' : 'Image rendering failed')
+              }
+            }}
+          >
+            Render image edits
+          </button>
+          <a className="btn" href={`/guides/${guide.id}`}>
+            View guide
+          </a>
+          <button className="btn" onClick={() => setGuide((value) => ({ ...value, is_public: !value.is_public }))}>
+            {guide.is_public ? 'Revoke public link' : 'Enable public link'}
+          </button>
+          {guide.is_public && (
+            <>
+              <input readOnly aria-label="Public link" value={share} />
+              <button
+                className="btn"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(`<iframe src="${share}" width="100%" height="700"></iframe>`)
+                  setToast('Embed copied')
+                }}
+              >
+                Copy embed
+              </button>
+            </>
+          )}
+        </div>
+        <p className="muted shortcuts">Arrow keys select - E edit - Delete remove</p>
+      </aside>
+      <section>
+        <input className="titleinput" aria-label="Guide title" value={guide.title} onChange={(event) => setGuide({ ...guide, title: event.target.value })} />
+        <textarea
+          aria-label="Guide description"
+          rows={3}
+          value={guide.description}
+          placeholder="Add a description..."
+          onChange={(event) => setGuide({ ...guide, description: event.target.value })}
+        />
+        <DndContext collisionDetection={closestCenter} onDragEnd={drag}>
+          <SortableContext items={guide.steps.map((step) => step.id)} strategy={verticalListSortingStrategy}>
+            {guide.steps.map((step, i) => (
+              <SortableStep
+                key={step.id}
+                guideId={guide.id}
+                step={step}
+                number={i + 1}
+                active={active === i}
+                onActivate={() => setActive(i)}
+                update={update}
+                remove={() => remove(step.id)}
+                ensureSaved={saveNow}
+                toast={setToast}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      </section>
+      {toast && (
+        <div className="toast" role="status" onClick={() => setToast('')}>
+          {toast}
+        </div>
+      )}
+    </main>
+  )
+}
+
+function SortableStep({
+  guideId,
+  step,
+  number,
+  active,
+  onActivate,
+  update,
+  remove,
+  ensureSaved,
+  toast,
+}: {
+  guideId: string
+  step: Step
+  number: number
+  active: boolean
+  onActivate: () => void
+  update: (id: string, patch: Partial<Step>) => void
+  remove: () => void
+  ensureSaved: () => Promise<boolean>
+  toast: (message: string) => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: step.id })
+  const file = useRef<HTMLInputElement>(null)
+  const imageChange = useCallback((edits: Step['edits'], click: Step['click']) => update(step.id, { edits, click }), [step.id, update])
+
+  async function upload(image: File) {
+    if (!(await ensureSaved())) return
+    const form = new FormData()
+    form.set('image', image)
+    const response = await fetch(`/api/guides/${guideId}/steps/${step.id}/image`, { method: 'POST', body: form })
+    if (!response.ok) {
+      toast('Image upload failed')
+      return
+    }
+    const data = await response.json()
+    update(step.id, { screenshot_path: data.path, rendered_path: null, imageUrl: data.imageUrl })
+    toast('Image uploaded')
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-step-index={number - 1}
+      onClick={onActivate}
+      className={`card stepedit ${active ? 'active' : ''} ${step.element_meta?.lowConfidence ? 'low' : ''}`}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      <div className="row between">
+        <span className="drag" {...attributes} {...listeners}>
+          Step {number} - {step.type}
+        </span>
+        <div className="row">
+          {step.element_meta?.lowConfidence && <span className="review-badge">Review text</span>}
+          <button className="btn" onClick={() => file.current?.click()}>
+            Upload image
+          </button>
+          <input
+            ref={file}
+            hidden
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => {
+              const selected = event.target.files?.[0]
+              if (selected) void upload(selected)
+            }}
+          />
+          <button className="btn danger" onClick={remove}>
+            Delete
+          </button>
+        </div>
+      </div>
+      <textarea rows={2} aria-label={`Step ${number} text`} value={step.text} onChange={(event) => update(step.id, { text: event.target.value })} />
+      {step.imageUrl && <ImageEditor src={step.imageUrl} edits={step.edits} click={step.click} onChange={imageChange} />}
+    </div>
+  )
+}

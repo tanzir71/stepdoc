@@ -1,0 +1,1 @@
+import type{Guide}from'./types';const root=globalThis as typeof globalThis&{__stepdocGuides?:Map<string,Guide>};export const testGuides=root.__stepdocGuides??=new Map<string,Guide>();export const isTestStore=()=>process.env.STEPDOC_TEST_MODE==='1';export function clone<T>(value:T):T{return structuredClone(value)}

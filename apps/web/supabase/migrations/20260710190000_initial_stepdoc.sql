@@ -4,5 +4,4 @@ create table public.steps(id uuid primary key default gen_random_uuid(),guide_id
 create index steps_guide_position_idx on public.steps(guide_id,position);
 alter table public.guides enable row level security;alter table public.steps enable row level security;
 revoke all on public.guides,public.steps from anon,authenticated;
-insert into storage.buckets(id,name,public) values('screenshots','screenshots',true) on conflict(id) do update set public=true;
-create policy "public screenshot reads" on storage.objects for select to anon,authenticated using(bucket_id='screenshots');
+insert into storage.buckets(id,name,public) values('screenshots','screenshots',false) on conflict(id) do update set public=false;

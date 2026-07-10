@@ -7,7 +7,7 @@ export const elementMetaSchema = z.object({
   alt: z.string().optional(), title: z.string().optional(), name: z.string().optional(), inputType: z.string().optional(), optionLabel: z.string().optional(),
   selector: z.string().optional(), rect: z.object({x:z.number(),y:z.number(),width:z.number(),height:z.number()}).optional(),
   click: z.object({x:z.number(),y:z.number()}).optional(), devicePixelRatio: z.number().optional(),
-  viewport: z.object({width:z.number(),height:z.number()}).optional(), url: z.string(), pageTitle: z.string().optional()
+  viewport: z.object({width:z.number(),height:z.number()}).optional(), url: z.string(), pageTitle: z.string().optional(), lowConfidence:z.boolean().optional()
 })
 export type ElementMeta = z.infer<typeof elementMetaSchema>
 export const editsSchema = z.object({

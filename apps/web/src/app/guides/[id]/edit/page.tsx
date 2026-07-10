@@ -1,0 +1,1 @@
+import{notFound}from'next/navigation';import{getGuide}from'@/lib/db';import{Editor}from'@/components/editor';export const dynamic='force-dynamic';export default async function Page({params}:{params:Promise<{id:string}>}){const{id}=await params;const g=await getGuide(id);if(!g)notFound();return <Editor initial={g}/>}

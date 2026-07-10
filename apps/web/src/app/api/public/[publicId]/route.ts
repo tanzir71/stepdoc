@@ -1,0 +1,1 @@
+import{getGuide}from'@/lib/db';export async function GET(_:Request,{params}:{params:Promise<{publicId:string}>}){const{publicId}=await params;const guide=await getGuide(publicId,true);return guide?Response.json(guide):Response.json({error:'NOT_FOUND'},{status:404})}

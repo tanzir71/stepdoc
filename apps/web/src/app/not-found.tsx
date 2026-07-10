@@ -1,0 +1,1 @@
+import Link from'next/link';export default function NotFound(){return <main className="wrap empty"><h1>Guide not found</h1><p className="muted">It may be private, revoked, or deleted.</p><Link className="btn" href="/">Back to guides</Link></main>}

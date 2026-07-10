@@ -1,0 +1,1 @@
+'use client';export default function Error({reset}:{reset:()=>void}){return <main className="wrap empty"><h1>Something went wrong</h1><p className="muted">StepDoc could not load this page.</p><button className="btn primary" onClick={reset}>Try again</button></main>}

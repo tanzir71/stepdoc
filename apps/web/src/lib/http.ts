@@ -1,0 +1,1 @@
+import{NextResponse}from'next/server';import{ZodError}from'zod';export function apiError(error:unknown){if(error instanceof ZodError)return NextResponse.json({error:'VALIDATION_ERROR',details:error.flatten()},{status:400});console.error(error);return NextResponse.json({error:'INTERNAL_ERROR',message:error instanceof Error?error.message:'Unexpected error'},{status:500})}

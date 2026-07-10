@@ -1,0 +1,1 @@
+import'./style.css';const input=document.getElementById('url')as HTMLInputElement;chrome.storage.local.get('appUrl').then(v=>input.value=v.appUrl??'http://localhost:3000');document.getElementById('save')!.onclick=()=>chrome.storage.local.set({appUrl:input.value.replace(/\/$/,'')}).then(()=>document.getElementById('status')!.textContent='Saved')

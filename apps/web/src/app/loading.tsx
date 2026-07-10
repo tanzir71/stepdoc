@@ -1,0 +1,1 @@
+export default function Loading(){return <main className="wrap"><div className="hero skeleton" style={{height:100}}/><div className="grid">{[1,2,3].map(x=><div className="card skeleton" style={{height:250}} key={x}/>)}</div></main>}

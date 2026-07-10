@@ -1,0 +1,1 @@
+'use client';import{useRouter}from'next/navigation';export function DeleteButton({id}:{id:string}){const r=useRouter();return <button className="btn danger" onClick={async e=>{e.preventDefault();if(!confirm('Delete this guide permanently?'))return;const res=await fetch(`/api/guides/${id}`,{method:'DELETE'});if(res.ok)r.refresh();else alert('Delete failed')}}>Delete</button>}

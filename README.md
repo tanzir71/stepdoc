@@ -1,5 +1,7 @@
 # StepDoc
 
+[Website](https://stepdoc-guides.vercel.app/) · [Generated HTML guide](https://stepdoc-guides.vercel.app/demo)
+
 StepDoc captures browser workflows with a Chrome extension and turns them into editable, exportable guides. Data and screenshots remain in your Supabase project. This is deliberately a single-user internal tool: **do not expose the main web app publicly**. Only `/p/{publicId}` is intended for read-only sharing.
 
 ## Setup

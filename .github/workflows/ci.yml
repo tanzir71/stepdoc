@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22 # README: Node.js 20.9+
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Same as `pnpm verify`, except @stepdoc/web runs only vitest:
+      # its `test` script also runs Playwright, which needs browsers.
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm -r --filter '!@stepdoc/web' test
+      - run: pnpm --filter @stepdoc/web exec vitest run
+      - run: pnpm build

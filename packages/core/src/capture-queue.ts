@@ -3,8 +3,9 @@ export class CaptureQueue<T> {
   private items: T[] = []
   private draining: Promise<void> | null = null
   private lastFrame = ''
+  private epoch = 0
   constructor(
-    private readonly capture: () => Promise<string>,
+    private readonly capture: (event: T) => Promise<string>,
     private readonly persist: (result: CaptureFrame<T>) => Promise<void>,
   ) {}
   enqueue(event: T) {
@@ -13,6 +14,8 @@ export class CaptureQueue<T> {
   }
   clear() {
     this.items = []
+    this.lastFrame = ''
+    this.epoch++
   }
   drain(): Promise<void> {
     if (this.draining) return this.draining
@@ -25,11 +28,12 @@ export class CaptureQueue<T> {
   private async run() {
     while (this.items.length) {
       const event = this.items.shift()!
+      const epoch = this.epoch
       let frame: string,
         reused = false
       try {
-        frame = await this.capture()
-        this.lastFrame = frame
+        frame = await this.capture(event)
+        if (epoch === this.epoch) this.lastFrame = frame
       } catch (error) {
         if (!this.lastFrame) throw error
         frame = this.lastFrame

@@ -2,8 +2,8 @@
 
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
 The existing capture controls are retained during the M11 migration; the E01–E06
-designs, v2 event metadata, review/local capture saving, pairing and Guide Me are
-the next units. The local library and editor already run the actual shared SPA,
+designs, review/local capture saving, pairing and Guide Me are the next units.
+The recorder now also retains guide@1 event metadata. The local library and editor run the actual shared SPA,
 with native `IndexedDbAdapter` storage, at the private extension `app.html` page.
 The **Open library** link opens it in a full tab.
 
@@ -35,6 +35,9 @@ it still posts to `/api/sessions` and opens `/guides/:id/edit`. Its retry payloa
 stays in extension storage. The recovery JSON download uses a data URL because
 MV3 service workers have no `URL.createObjectURL` API. V2 paired/local capture
 destinations will replace the controls after their complete recording/review flow.
+The v1 projection preserves static input types, uses a password hint for secret
+references on ordinary controls, and retains the authoritative guide@1 caption;
+the existing v1 migration can therefore keep those fields classified as secrets.
 
 WXT entrypoints call explicit initializers, so build-time Node imports do not
 touch browser globals. The pure capture queue lives at
@@ -46,3 +49,31 @@ WXT's `import.meta.url` rewrite and keeping every resource in the bundle.
 
 The original [v1 manual checklist](MANUAL_TEST.md) is historical only and is
 superseded by automated local verification in `CODEX_HANDOFF_V2.md §0`.
+
+Capture uses `@stepdoc/core/capture`: a bounded inert DOM mirror provides
+`dom-accessibility-api` with labels/roles while omitting every control value and
+editable descendant. Uniqueness is measured in the actual document/shadow root.
+Steps use secret/variable references, select labels or key names; page URLs omit
+credentials, queries and fragments. Same-origin frame and open-shadow paths,
+source-pixel click coordinates and scoped dialog/heading/SPA expectations are
+retained in `capturedSteps`. The current server upload stays in the v1 format.
+
+Only the selected recording tab can enqueue trusted actions. Fresh mandatory
+field/frame masks (including opaque custom hosts) are collected before and after each native screenshot, and
+only client-composited pixels enter storage or the queue's reusable-frame cache.
+Activation epochs and post-capture tab/document checks discard ambiguous frames
+even if tab selection changes away and back before the API returns.
+Clearing a capture invalidates that cache, including in-flight work. Session
+guards and a serialized writer protect restart/cancel and late expectations.
+Document identity plus stripped URL deduplicates overlapping SPA notifications
+while retaining a real reload at the same URL.
+Metadata or mask limits stop capture and block upload, with a data-free live
+status and badge. Tests exercise actual committed inputs, native keyboard
+selection/Enter, shadow/frame clicks, SPA state, stored references, field pixels
+and failure gating. A separate native core test installs throwing value-getter
+proxies in the collector's execution world.
+
+Cross-origin parent-frame identity resolution remains open; unavailable frame
+metadata fails closed. Frame pixels are conservatively masked as a whole. Smart
+Blur's visible-text Range mapping and Alt+B element masks remain the next privacy
+unit, followed by the designed recording/review surfaces.

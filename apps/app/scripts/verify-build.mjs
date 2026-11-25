@@ -41,7 +41,14 @@ try {
   const page = await browser.newPage()
   const failures = []
   page.on('pageerror', () => failures.push('Browser runtime error'))
-  page.on('requestfailed', () => failures.push('Resource request failed'))
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url())
+    const resource =
+      url.origin === new URL(base).origin ? url.pathname : url.protocol
+    failures.push(
+      `Resource request failed: ${resource} (${request.failure()?.errorText ?? 'unknown'})`,
+    )
+  })
   page.on('response', (response) => {
     if (response.status() >= 400) failures.push(`HTTP ${response.status()}`)
   })

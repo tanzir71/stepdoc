@@ -111,9 +111,22 @@ const server = createServer(async (req, res) => {
     return
   }
   res.writeHead(200, { 'content-type': 'text/html' })
+  if (req.url === '/frame') {
+    res.end(
+      '<!doctype html><html lang="en"><head><title>Frame fixture</title></head><body><button id="frame-action">Frame action</button></body></html>',
+    )
+    return
+  }
   res.end(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Local capture fixture</title></head><body>
     <main><h1>Capture fixture</h1><label>Password <input type="password" autocomplete="current-password" style="width:200px;height:40px"></label>
-    <button id="fixture-save">Save fixture</button></main></body></html>`)
+    <button id="fixture-save">Save fixture</button>
+    <button id="dialog-action" onclick="document.getElementById('confirmation').hidden=false">Open confirmation</button><div id="confirmation" role="dialog" aria-label="Confirm change" hidden></div>
+    <label>Project title<input id="project-field" type="text" style="width:240px;height:40px;background:repeating-linear-gradient(90deg,black 0px,black 1px,white 1px,white 2px)"></label>
+    <label>Invoice email<input id="email-field" type="email"></label><label>Card number<input id="card-field" autocomplete="cc-number"></label>
+    <label>Notes<textarea id="notes-field"></textarea></label><label>Plan<select id="plan-field"><option>Personal plan</option><option>Team plan</option></select></label>
+    <div id="capture-host"></div><iframe id="capture-frame" src="/frame" title="Capture frame"></iframe>
+    <button id="spa-action" onclick="history.pushState(null,'','/next?private=PRIVATE_QUERY#PRIVATE_FRAGMENT')">Next screen</button>
+    </main><script>document.getElementById('capture-host').attachShadow({mode:'open'}).innerHTML='<button id="shadow-action">Shadow action</button>';</script></body></html>`)
 })
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
 let context
@@ -285,7 +298,9 @@ try {
     app.getByRole('dialog', { name: 'Export & publish' }),
   ).toBeVisible()
   await app.locator('[data-sd="export-close"]').click()
-  assert.match(new URL(app.url()).searchParams.get('route'), /\/edit\?/)
+  await expect
+    .poll(() => new URL(app.url()).searchParams.get('route'))
+    .toMatch(/\/edit\?/)
   // Test the compiled export worker, including local font/raster reads, under MV3 CSP.
   await app.locator('[data-sd="export-open"]').click()
   for (const name of ['PDF', 'Markdown', 'guide.json'])
@@ -347,6 +362,350 @@ try {
     ),
     undefined,
   )
+  // Capture real trusted input/selection/shadow/frame/SPA events. The content
+  // script runs in its isolated world; the separate native core check installs
+  // throwing value-getter proxies in the library's own execution world.
+  // Cancel while the second capture is throttled, then immediately restart.
+  // The old drain/error response must not own or stop the new session.
+  await fixture.bringToFront()
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  await fixture.getByRole('button', { name: 'Save fixture' }).click()
+  await expect
+    .poll(async () =>
+      worker.evaluate(
+        async () =>
+          (await chrome.storage.local.get('capturedSteps')).capturedSteps
+            ?.length ?? 0,
+      ),
+    )
+    .toBe(1)
+  const oldId = await worker.evaluate(
+    async () =>
+      (await chrome.storage.local.get('capturedSteps')).capturedSteps[0].id,
+  )
+  await fixture.getByRole('button', { name: 'Save fixture' }).click()
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' }))
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  await fixture.getByRole('button', { name: 'Save fixture' }).click()
+  await expect
+    .poll(async () =>
+      worker.evaluate(async () => {
+        const state = await chrome.storage.local.get([
+          'capturedSteps',
+          'captureError',
+          'recording',
+        ])
+        return state.captureError
+          ? 'failed'
+          : state.recording && state.capturedSteps?.length === 1
+            ? 'ready'
+            : 'waiting'
+      }),
+    )
+    .toBe('ready')
+  assert.notEqual(
+    await worker.evaluate(
+      async () =>
+        (await chrome.storage.local.get('capturedSteps')).capturedSteps[0].id,
+    ),
+    oldId,
+  )
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' }))
+  await fixture.goto(`${base}/contract?private=PRIVATE_QUERY#PRIVATE_FRAGMENT`)
+  await fixture.bringToFront()
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
+  await fixture.getByRole('button', { name: 'Open confirmation' }).click()
+  await fixture
+    .getByRole('textbox', { name: 'Project title' })
+    .fill('PRIVATE_TYPED_PROJECT')
+  await fixture
+    .getByRole('textbox', { name: 'Invoice email' })
+    .fill('PRIVATE_TYPED_EMAIL')
+  await fixture.locator('#card-field').fill('PRIVATE_TYPED_CARD')
+  await fixture
+    .getByRole('textbox', { name: 'Notes' })
+    .fill('PRIVATE_TYPED_NOTES')
+  await fixture.getByRole('combobox', { name: 'Plan' }).focus()
+  await fixture.getByRole('combobox', { name: 'Plan' }).press('ArrowDown')
+  await fixture.getByRole('combobox', { name: 'Plan' }).press('Enter')
+  await expect(fixture.locator('#plan-field option:checked')).toHaveText(
+    'Team plan',
+  )
+  await fixture.getByRole('button', { name: 'Shadow action' }).click()
+  await fixture
+    .frameLocator('#capture-frame')
+    .getByRole('button', { name: 'Frame action' })
+    .click()
+  await fixture.getByRole('button', { name: 'Next screen' }).click()
+  await expect
+    .poll(
+      async () =>
+        worker.evaluate(async () => {
+          const state = await chrome.storage.local.get([
+            'capturedSteps',
+            'captureError',
+          ])
+          return state.captureError
+            ? 'failed'
+            : state.capturedSteps?.some(
+                  (step) =>
+                    step.action === 'navigate' && step.url.endsWith('/next'),
+                )
+              ? 'ready'
+              : 'waiting'
+        }),
+      { timeout: 25_000 },
+    )
+    .toBe('ready')
+  const contract = await worker.evaluate(() =>
+    chrome.storage.local.get([
+      'steps',
+      'capturedSteps',
+      'startedUrl',
+      'captureError',
+    ]),
+  )
+  assert.equal(contract.captureError, null)
+  assert.equal(contract.startedUrl, `${base}/contract`)
+  for (const [name, kind] of [
+    ['Project title', 'variable'],
+    ['Invoice email', 'secret'],
+    ['Card number', 'secret'],
+    ['Notes', 'variable'],
+  ]) {
+    assert(
+      contract.capturedSteps.some(
+        (step) =>
+          step.action === 'fill' &&
+          step.target.name === name &&
+          step.value.kind === kind,
+      ),
+      `Committed ${name} uses a reference`,
+    )
+  }
+  assert(
+    contract.capturedSteps.some(
+      (step) => step.action === 'select' && step.value.literal === 'Team plan',
+    ),
+  )
+  assert(
+    contract.capturedSteps.some(
+      (step) => step.action === 'press' && step.key === 'Enter',
+    ),
+  )
+  assert(
+    contract.capturedSteps.some(
+      (step) =>
+        step.target?.name === 'Shadow action' &&
+        step.target.shadowPath[0] === '#capture-host',
+    ),
+  )
+  assert(
+    contract.capturedSteps.some(
+      (step) =>
+        step.target?.name === 'Frame action' &&
+        step.target.frame[0] === '#capture-frame',
+    ),
+  )
+  assert(
+    contract.capturedSteps.some(
+      (step) =>
+        step.target?.name === 'Open confirmation' &&
+        step.expect?.visible?.name === 'Confirm change',
+    ),
+  )
+  assert(
+    contract.capturedSteps.some(
+      (step) => step.expect?.urlMatches === `${base}/next`,
+    ),
+  )
+  assert.equal(
+    contract.capturedSteps.filter(
+      (step) => step.action === 'navigate' && step.url === `${base}/next`,
+    ).length,
+    1,
+  )
+  assert(
+    contract.capturedSteps.every((step, index) => step.index === index + 1),
+  )
+  for (const secret of [
+    'PRIVATE_TYPED_PROJECT',
+    'PRIVATE_TYPED_EMAIL',
+    'PRIVATE_TYPED_CARD',
+    'PRIVATE_TYPED_NOTES',
+    'PRIVATE_QUERY',
+    'PRIVATE_FRAGMENT',
+  ])
+    assert(
+      !JSON.stringify(contract).includes(secret),
+      'Captured storage contains a typed/query value',
+    )
+  // The source fixture has one-pixel black/white stripes. Mandatory client
+  // field masks remove them before even the queue's reusable image is stored.
+  const transitions = await fixture.evaluate(async (dataUrl) => {
+    const image = await createImageBitmap(await (await fetch(dataUrl)).blob())
+    const canvas = new OffscreenCanvas(image.width, image.height),
+      ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0)
+    image.close()
+    const rect = document
+      .querySelector('#project-field')
+      .getBoundingClientRect()
+    const pixels = ctx.getImageData(
+      Math.ceil(rect.x) + 12,
+      Math.ceil(rect.y) + 5,
+      80,
+      1,
+    ).data
+    const red = Array.from(
+      { length: pixels.length / 4 },
+      (_, index) => pixels[index * 4],
+    )
+    return red
+      .slice(1)
+      .filter((value, index) => Math.abs(value - red[index]) > 60).length
+  }, contract.steps.at(-1).screenshot)
+  assert(
+    transitions < 15,
+    'Raw one-pixel field stripes reached stored capture image',
+  )
+  await fixture.reload()
+  await expect
+    .poll(async () =>
+      worker.evaluate(
+        async (url) =>
+          (
+            await chrome.storage.local.get('capturedSteps')
+          ).capturedSteps.filter(
+            (step) => step.action === 'navigate' && step.url === url,
+          ).length,
+        `${base}/next`,
+      ),
+    )
+    .toBe(2)
+  const reloadedSteps = await worker.evaluate(
+    async () => (await chrome.storage.local.get('capturedSteps')).capturedSteps,
+  )
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })),
+    { ok: true },
+  )
+  assert(!JSON.stringify(uploaded).includes('PRIVATE_TYPED_'))
+  assert(
+    uploaded.steps.some(
+      (step) =>
+        step.elementMeta?.label === 'Invoice email' &&
+        step.elementMeta.inputType === 'email',
+    ),
+  )
+  assert(
+    uploaded.steps.some(
+      (step) =>
+        step.elementMeta?.label === 'Card number' &&
+        step.elementMeta.inputType === 'password',
+    ),
+  )
+  assert.deepEqual(
+    uploaded.steps.map((step) => step.text),
+    reloadedSteps.map((step) => step.title),
+  )
+  // A metadata-limit failure must stop and block upload, preserving only prior
+  // already-redacted steps and exposing a data-free status to the capture UI.
+  await fixture.goto(`${base}/failure`)
+  await fixture.bringToFront()
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  await fixture
+    .locator('#fixture-save')
+    .evaluate((button) =>
+      button.setAttribute('aria-label', 'PRIVATE'.repeat(100)),
+    )
+  await fixture.locator('#fixture-save').click()
+  await expect
+    .poll(async () =>
+      worker.evaluate(
+        async () =>
+          (await chrome.storage.local.get('captureError')).captureError,
+      ),
+    )
+    .toMatch(/metadata or privacy masks/)
+  await expect(panel.getByRole('status')).toHaveText(
+    /metadata or privacy masks/,
+  )
+  const previousUpload = JSON.stringify(uploaded)
+  assert.equal(
+    (await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })))
+      .ok,
+    false,
+  )
+  assert.equal(JSON.stringify(uploaded), previousUpload)
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' }))
+  await fixture.goto(`${base}/fixture`)
+  // Switch away and back while the real screenshot API is in flight. An active
+  // tab check alone after capture cannot detect this; activation epochs must.
+  const other = await context.newPage()
+  await other.goto(`${base}/other-tab`)
+  const otherId = await worker.evaluate(
+    async (prefix) =>
+      (await chrome.tabs.query({})).find((tab) => tab.url?.startsWith(prefix))
+        .id,
+    `${base}/other-tab`,
+  )
+  await fixture.bringToFront()
+  const fixtureId = await worker.evaluate(
+    async () =>
+      (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id,
+  )
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  await worker.evaluate(
+    ({ otherId, fixtureId }) => {
+      const original = chrome.tabs.captureVisibleTab.bind(chrome.tabs)
+      globalThis.sdTestCaptureOriginal = chrome.tabs.captureVisibleTab
+      globalThis.sdTestCaptureSwitched = false
+      chrome.tabs.captureVisibleTab = async (...args) => {
+        await chrome.tabs.update(otherId, { active: true })
+        const raw = await original(...args)
+        await chrome.tabs.update(fixtureId, { active: true })
+        globalThis.sdTestCaptureSwitched = true
+        return raw
+      }
+    },
+    { otherId, fixtureId },
+  )
+  await fixture.getByRole('button', { name: 'Save fixture' }).click()
+  await expect
+    .poll(() => worker.evaluate(() => globalThis.sdTestCaptureSwitched))
+    .toBe(true)
+  await expect
+    .poll(async () =>
+      worker.evaluate(
+        async () =>
+          (await chrome.storage.local.get('captureError')).captureError,
+      ),
+    )
+    .toMatch(/selected tab changed/)
+  assert.deepEqual(
+    await worker.evaluate(
+      async () => (await chrome.storage.local.get('steps')).steps,
+    ),
+    [],
+  )
+  const beforeBlockedUpload = JSON.stringify(uploaded)
+  assert.equal(
+    (await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })))
+      .ok,
+    false,
+  )
+  assert.equal(JSON.stringify(uploaded), beforeBlockedUpload)
+  await worker.evaluate(() => {
+    chrome.tabs.captureVisibleTab = globalThis.sdTestCaptureOriginal
+    delete globalThis.sdTestCaptureOriginal
+    delete globalThis.sdTestCaptureSwitched
+  })
+  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' }))
+  await other.close()
   // A failed upload must remain retryable in the service worker; blob URL APIs
   // are unavailable there. The recovery download contains already-redacted data.
   rejectUpload = true
@@ -402,7 +761,7 @@ try {
   )
   assert.deepEqual(failures, [], 'Extension runtime failed')
   console.log(
-    'Built-extension verification passed: three manifests/assets, native local library/editor/history/image/export workers, two-theme axe, injected capture, legacy upload/recovery/retry/cancel.',
+    'Built-extension verification passed: three manifests/assets, native local library/editor/history/image/export workers, two-theme axe, trusted fill/select/key/frame/shadow/SPA metadata, reference-only storage, field pixels, fail-closed capture, legacy upload/recovery/retry/cancel.',
   )
 } finally {
   await context?.close()

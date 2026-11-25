@@ -5,11 +5,13 @@ const $ = (id: string) => document.getElementById(id)!
 
 async function refresh() {
   const state = await browser.runtime.sendMessage({ type: 'GET_STATE' })
-  $('status').textContent = state.recording
-    ? `Recording - ${(state.steps ?? []).length} steps`
-    : state.pendingSession
-      ? 'Saved upload waiting'
-      : 'Ready to capture'
+  $('status').textContent =
+    state.captureError ??
+    (state.recording
+      ? `Recording - ${(state.steps ?? []).length} steps`
+      : state.pendingSession
+        ? 'Saved upload waiting'
+        : 'Ready to capture')
   ;($('retry') as HTMLButtonElement).disabled = !state.pendingSession
 }
 
@@ -41,3 +43,13 @@ $('cancel').onclick = async () => {
 }
 
 void refresh()
+
+browser.storage.onChanged.addListener((changes, area) => {
+  if (
+    area === 'local' &&
+    ['recording', 'steps', 'captureError', 'pendingSession'].some(
+      (key) => key in changes,
+    )
+  )
+    void refresh()
+})

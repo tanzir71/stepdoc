@@ -11,6 +11,7 @@
     "./locators": "./src/locators.ts",
     "./selector": "./src/selector.ts",
     "./capture-queue": "./src/capture-queue.ts",
+    "./capture": "./src/capture/index.ts",
     "./redaction": "./src/redaction/index.ts",
     "./canvas": "./src/canvas/index.ts",
     "./export": "./src/export/index.ts",
@@ -21,11 +22,12 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && pnpm test:browser",
-    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs"
+    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs && node tests/capture-browser.verify.mjs"
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",
     "docx": "9.16.0",
+    "dom-accessibility-api": "0.7.1",
     "fflate": "0.8.3",
     "ibantools": "4.5.4",
     "libphonenumber-js": "1.13.17",

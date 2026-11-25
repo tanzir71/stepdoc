@@ -2,6 +2,36 @@ import { describe, expect, it, vi } from 'vitest'
 import { CaptureQueue } from './capture-queue'
 
 describe('CaptureQueue', () => {
+  it('passes event context to capture and never reuses a frame across clear', async () => {
+    const capture = vi
+      .fn()
+      .mockResolvedValueOnce('redacted-frame')
+      .mockRejectedValueOnce(new Error('No screenshot'))
+    const queue = new CaptureQueue<number>(capture, async () => {})
+    await queue.enqueue(1)
+    expect(capture).toHaveBeenCalledWith(1)
+    queue.clear()
+    await expect(queue.enqueue(2)).rejects.toThrow('No screenshot')
+  })
+  it('does not repopulate the cache from an in-flight capture after clear', async () => {
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const capture = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        await gate
+        return 'old-redacted'
+      })
+      .mockRejectedValueOnce(new Error('No new screenshot'))
+    const queue = new CaptureQueue<number>(capture, async () => {})
+    const running = queue.enqueue(1)
+    queue.clear()
+    release()
+    await running
+    await expect(queue.enqueue(2)).rejects.toThrow('No new screenshot')
+  })
   it('preserves a rapid five-event burst', async () => {
     const saved: number[] = []
     const queue = new CaptureQueue<number>(

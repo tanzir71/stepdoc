@@ -1,5 +1,27 @@
 # @stepdoc/core
 
+`@stepdoc/core/capture` is the explicit browser-DOM entrypoint; it is not loaded
+by the pure/worker barrel. It captures existing guide@1 fields without a wire
+schema change or migration. Its bounded inert mirror omits value attributes,
+control values and editable subtrees, while retaining sanitized labels, explicit
+and implicit roles, and actual scoped locator counts. No custom elements are
+constructed and no active URLs are copied. Native Chromium and jsdom tests
+cover the differing detached-label behavior; throwing property/proxy getters
+prove that original input/select/textarea values and editable text are not read.
+
+`captureStep` returns variable/secret references for fill/upload, permitted select
+labels and key names, frame/shadow chains and credential/query/fragment-free
+URLs. Target rectangles are CSS pixels in their document; `viewportPoint` maps
+same-origin nested-frame points to the top viewport, and click markers use source
+image pixels at DPR. `observePage` compares visible dialogs/headings within the
+action scope and top-level URLs, matching the replay runner's assertion scopes.
+`fieldMasks` returns mandatory CSS-pixel field/frame/opaque-host masks without reading values;
+unavailable cross-origin metadata fails closed. The extension currently masks
+whole frames until more precise frame privacy collection is implemented.
+
+The native DOM verifier is included in `test:browser`, alongside the existing
+worker/replay checks. Structured metadata errors and resource-limit messages omit page data.
+
 Pure guide logic shared by the extension, SPA, exporters and replay tools.
 
 - `describeStep(metadata)` keeps the v1 capture wording. `describeGuideStep(step)`

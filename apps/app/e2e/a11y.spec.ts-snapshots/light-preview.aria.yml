@@ -1,0 +1,67 @@
+- link "Skip to content":
+    - /url: '#main'
+- complementary "Workspace navigation":
+    - link "StepDoc library":
+        - /url: /
+    - button "Collapse navigation" [expanded]
+    - button "Browser storage details":
+        - strong: This browser
+    - button "Search guides Ctrl K"
+    - navigation "Workspace":
+        - link /Library \d+/:
+            - /url: /
+        - link "Collections 6":
+            - /url: /?collections=1
+        - link "Drafts 9":
+            - /url: /?status=draft
+        - link "Published":
+            - /url: /?status=published
+        - link "Archived":
+            - /url: /?status=archived
+    - paragraph: Collections
+    - navigation "Collections":
+        - link /Finance ops \d+/:
+            - /url: /?collection=finance-ops
+        - link "Support macros 9":
+            - /url: /?collection=support-macros
+        - link "Engineering 7":
+            - /url: /?collection=engineering
+    - complementary "Agent exports":
+        - strong: Agent exports
+        - paragraph: Guide data exports, ready for your local tools.
+    - strong: You
+    - button "General settings"
+- banner:
+    - link "← Library":
+        - /url: /
+    - button "Download guide.json"
+- main:
+    - article:
+        - text: Stored on this device
+        - heading "Upgrade a workspace to the Team plan" [level=1]
+        - paragraph: A local test guide
+        - paragraph: 9 steps · Version 2 · stepdoc/guide@1
+        - list:
+            - listitem:
+                - heading "Open the plan dialog" [level=2]
+                - figure "Fictional Ledgerly workspace":
+                    - img "Fictional Ledgerly workspace"
+            - listitem:
+                - heading "Continue to instruction 2" [level=2]
+            - listitem:
+                - heading "Continue to instruction 3" [level=2]
+            - listitem:
+                - heading "Continue to instruction 4" [level=2]
+            - listitem:
+                - heading "Continue to instruction 5" [level=2]
+            - listitem:
+                - heading "Continue to instruction 6" [level=2]
+            - listitem:
+                - heading "Continue to instruction 7" [level=2]
+            - listitem:
+                - heading "Continue to instruction 8" [level=2]
+            - listitem:
+                - heading "Continue to instruction 9" [level=2]
+- status
+- contentinfo:
+    - button "Activity"

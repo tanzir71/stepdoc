@@ -1,0 +1,58 @@
+- link "Skip to content":
+  - /url: "#main"
+- complementary "Workspace navigation":
+  - link "StepDoc library":
+    - /url: /
+  - button "Collapse navigation" [expanded]
+  - button "Browser storage details":
+    - strong: This browser
+  - button "Search guides Ctrl K"
+  - navigation "Workspace":
+    - link /Library \d+/:
+      - /url: /
+    - link "Collections 6":
+      - /url: /?collections=1
+    - link "Drafts 9":
+      - /url: /?status=draft
+    - link "Published":
+      - /url: /?status=published
+    - link "Archived":
+      - /url: /?status=archived
+  - paragraph: Collections
+  - navigation "Collections":
+    - link /Finance ops \d+/:
+      - /url: /?collection=finance-ops
+    - link "Support macros 9":
+      - /url: /?collection=support-macros
+    - link "Engineering 7":
+      - /url: /?collection=engineering
+  - complementary "Agent exports":
+    - strong: Agent exports
+    - paragraph: Guide data exports, ready for your local tools.
+  - strong: You
+  - button "General settings"
+- banner:
+  - heading "Settings" [level=1]
+  - paragraph: General · preferences for this browser
+- main:
+  - region "Appearance":
+    - heading "Appearance" [level=2]
+    - paragraph: Choose a theme for StepDoc.
+    - tablist "Theme":
+      - tab "Light"
+      - tab "Dark" [selected]
+      - tab "System"
+    - tabpanel "Dark":
+      - paragraph: Dark theme selected.
+  - region "Storage":
+    - heading "Storage" [level=2]
+    - paragraph: Guides and images are stored on this device. Export important guides before clearing browser data.
+    - button "Storage details"
+- dialog "Stored in this browser":
+  - heading "Stored in this browser" [level=2]
+  - paragraph: /Your library contains \d+ guides on this device\. There is no cloud account connected\./
+  - paragraph: Export guides you want to keep before clearing browser data or moving to another device.
+  - button "Close"
+- status
+- contentinfo:
+  - button "Activity"

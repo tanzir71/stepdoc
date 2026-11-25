@@ -1,0 +1,174 @@
+/* Generated from docs/v2/design-tokens.json by scripts/tokens.mjs. */
+:root{
+--sd-bg-canvas:#f3f3f0;
+--sd-bg-surface:#ffffff;
+--sd-bg-raised:#f7f7f4;
+--sd-bg-sunken:#f0f0ec;
+--sd-bg-hover:#eaeae5;
+--sd-bg-selected:#e4e4de;
+--sd-bg-overlay:#14141466;
+--sd-border-subtle:#e7e6e1;
+--sd-border-strong:#d4d3cd;
+--sd-text-primary:#141416;
+--sd-text-secondary:#56565e;
+--sd-text-tertiary:#73737b;
+--sd-text-on-accent:#170a04;
+--sd-accent-solid:#f2551f;
+--sd-accent-hover:#da4914;
+--sd-accent-soft:#f2551f1a;
+--sd-accent-text:#9a3412;
+--sd-agent-solid:#3d5bd9;
+--sd-agent-soft:#3d5bd915;
+--sd-success-solid:#15803d;
+--sd-success-soft:#15803d17;
+--sd-warning-solid:#b45309;
+--sd-warning-soft:#b4530917;
+--sd-danger-solid:#dc2626;
+--sd-danger-soft:#dc262614;
+--sd-code-bg:#16161a;
+--sd-code-text:#d4d4d8;
+--sd-code-key:#ff9e7d;
+--sd-code-string:#a6ddb0;
+--sd-code-muted:#7a7a82;
+--sd-text-on-overlay:#ffffff;
+--sd-success-text:#166534;
+--sd-warning-text:#92400e;
+--sd-danger-text:#b91c1c;
+--sd-bg-image-label:#141414e6;
+--sd-space-1:4px;
+--sd-space-2:8px;
+--sd-space-3:12px;
+--sd-space-4:16px;
+--sd-space-5:20px;
+--sd-space-6:24px;
+--sd-space-7:28px;
+--sd-space-8:32px;
+--sd-space-10:40px;
+--sd-space-12:48px;
+--sd-space-16:64px;
+--sd-space-24:96px;
+--sd-space-1-5:6px;
+--sd-space-2-5:10px;
+--sd-space-3-5:14px;
+--sd-radius-sm:6px;
+--sd-radius-md:8px;
+--sd-radius-lg:12px;
+--sd-radius-xl:16px;
+--sd-radius-full:999px;
+--sd-shadow-float:0 8px 24px rgba(0,0,0,0.10);
+--sd-shadow-dialog:0 24px 64px rgba(0,0,0,0.10);
+--sd-font-sans:Geist, ui-sans-serif, system-ui, sans-serif;
+--sd-font-mono:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+--sd-size-library-thumb:152px;
+--sd-size-library-header:104px;
+--sd-size-library-filters:56px;
+--sd-size-library-filter:280px;
+--sd-size-library-card-min:220px;
+--sd-size-dialog:440px;
+--sd-size-guide-width:960px;
+--sd-size-sidebar-compact:72px;
+--sd-size-step-thumb-width:64px;
+--sd-size-step-thumb-height:40px;
+--sd-size-brand-mark:24px;
+--sd-size-checkbox:16px;
+--sd-size-toggle-width:32px;
+--sd-size-toggle-height:18px;
+--sd-size-avatar:24px;
+--sd-size-click-marker:36px;
+--sd-size-step-pin:24px;
+--sd-size-control-m:36px;
+--sd-size-control-s:28px;
+--sd-size-icon-button:32px;
+--sd-size-nav-row:32px;
+--sd-size-table-row:52px;
+--sd-size-sidebar:248px;
+--sd-size-settings-nav:240px;
+--sd-size-editor-steps:320px;
+--sd-size-editor-inspector:340px;
+--sd-size-extension-panel:400px;
+--sd-size-library-primary:135px;
+--sd-type-brand:600 16px/24px var(--sd-font-sans);
+--sd-tracking-brand:-0.5px;
+--sd-type-avatar:500 10px/16px var(--sd-font-sans);
+--sd-tracking-avatar:0px;
+--sd-type-display-xl:600 68px/72px var(--sd-font-sans);
+--sd-tracking-display-xl:-3.2px;
+--sd-type-display-l:600 48px/52px var(--sd-font-sans);
+--sd-tracking-display-l:-2.2px;
+--sd-type-heading-l:600 30px/36px var(--sd-font-sans);
+--sd-tracking-heading-l:-1px;
+--sd-type-heading-m:600 20px/28px var(--sd-font-sans);
+--sd-tracking-heading-m:-0.4px;
+--sd-type-heading-s:600 16px/24px var(--sd-font-sans);
+--sd-tracking-heading-s:-0.2px;
+--sd-type-body-l:400 17px/28px var(--sd-font-sans);
+--sd-tracking-body-l:-0.1px;
+--sd-type-body-m:400 14px/22px var(--sd-font-sans);
+--sd-tracking-body-m:0px;
+--sd-type-body-s:400 13px/20px var(--sd-font-sans);
+--sd-tracking-body-s:0px;
+--sd-type-label-m:500 14px/20px var(--sd-font-sans);
+--sd-tracking-label-m:-0.1px;
+--sd-type-label-s:500 12px/16px var(--sd-font-sans);
+--sd-tracking-label-s:0px;
+--sd-type-mono-m:400 13px/20px var(--sd-font-mono);
+--sd-tracking-mono-m:0px;
+--sd-type-mono-s:400 12px/18px var(--sd-font-mono);
+--sd-tracking-mono-s:0px;
+--sd-type-mono-eyebrow:500 11px/16px var(--sd-font-mono);
+--sd-tracking-mono-eyebrow:0.6px;
+color-scheme:light;
+}
+[data-theme="dark"]{
+--sd-bg-canvas:#09090a;
+--sd-bg-surface:#111113;
+--sd-bg-raised:#18181b;
+--sd-bg-sunken:#0d0d0f;
+--sd-bg-hover:#1e1e22;
+--sd-bg-selected:#26262b;
+--sd-bg-overlay:#000000cc;
+--sd-border-subtle:#1f1f23;
+--sd-border-strong:#2e2e34;
+--sd-text-primary:#ededef;
+--sd-text-secondary:#a1a1aa;
+--sd-text-tertiary:#6c6c75;
+--sd-text-on-accent:#170a04;
+--sd-accent-solid:#ff6a3d;
+--sd-accent-hover:#ff825a;
+--sd-accent-soft:#ff6a3d24;
+--sd-accent-text:#ff8d69;
+--sd-agent-solid:#8ea8ff;
+--sd-agent-soft:#8ea8ff22;
+--sd-success-solid:#3dd68c;
+--sd-success-soft:#3dd68c1f;
+--sd-warning-solid:#f5b544;
+--sd-warning-soft:#f5b5441f;
+--sd-danger-solid:#ff6161;
+--sd-danger-soft:#ff61611f;
+--sd-code-bg:#0c0c0e;
+--sd-code-text:#d4d4d8;
+--sd-code-key:#ff9e7d;
+--sd-code-string:#a6ddb0;
+--sd-code-muted:#6c6c75;
+--sd-text-on-overlay:#ffffff;
+--sd-success-text:#3dd68c;
+--sd-warning-text:#f5b544;
+--sd-danger-text:#ff6161;
+--sd-bg-image-label:#141414e6;
+color-scheme:dark;
+}
+.sd-type-brand{font:var(--sd-type-brand);letter-spacing:var(--sd-tracking-brand);}
+.sd-type-avatar{font:var(--sd-type-avatar);letter-spacing:var(--sd-tracking-avatar);}
+.sd-type-display-xl{font:var(--sd-type-display-xl);letter-spacing:var(--sd-tracking-display-xl);}
+.sd-type-display-l{font:var(--sd-type-display-l);letter-spacing:var(--sd-tracking-display-l);}
+.sd-type-heading-l{font:var(--sd-type-heading-l);letter-spacing:var(--sd-tracking-heading-l);}
+.sd-type-heading-m{font:var(--sd-type-heading-m);letter-spacing:var(--sd-tracking-heading-m);}
+.sd-type-heading-s{font:var(--sd-type-heading-s);letter-spacing:var(--sd-tracking-heading-s);}
+.sd-type-body-l{font:var(--sd-type-body-l);letter-spacing:var(--sd-tracking-body-l);}
+.sd-type-body-m{font:var(--sd-type-body-m);letter-spacing:var(--sd-tracking-body-m);}
+.sd-type-body-s{font:var(--sd-type-body-s);letter-spacing:var(--sd-tracking-body-s);}
+.sd-type-label-m{font:var(--sd-type-label-m);letter-spacing:var(--sd-tracking-label-m);}
+.sd-type-label-s{font:var(--sd-type-label-s);letter-spacing:var(--sd-tracking-label-s);}
+.sd-type-mono-m{font:var(--sd-type-mono-m);letter-spacing:var(--sd-tracking-mono-m);}
+.sd-type-mono-s{font:var(--sd-type-mono-s);letter-spacing:var(--sd-tracking-mono-s);}
+.sd-type-mono-eyebrow{font:var(--sd-type-mono-eyebrow);letter-spacing:var(--sd-tracking-mono-eyebrow);text-transform:uppercase;}

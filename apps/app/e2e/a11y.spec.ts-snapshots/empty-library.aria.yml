@@ -1,0 +1,56 @@
+- link "Skip to content":
+    - /url: '#main'
+- complementary "Workspace navigation":
+    - link "StepDoc library":
+        - /url: /
+    - button "Collapse navigation" [expanded]
+    - button "Browser storage details":
+        - strong: This browser
+    - button "Search guides Ctrl K"
+    - navigation "Workspace":
+        - link "Library 0":
+            - /url: /
+        - link "Collections 0":
+            - /url: /?collections=1
+        - link "Drafts 0":
+            - /url: /?status=draft
+        - link "Published":
+            - /url: /?status=published
+        - link "Archived":
+            - /url: /?status=archived
+    - paragraph: Collections
+    - navigation "Collections": No collections yet
+    - complementary "Agent exports":
+        - strong: Agent exports
+        - paragraph: Guide data exports, ready for your local tools.
+    - strong: You
+    - button "General settings"
+- banner:
+    - heading "Library" [level=1]
+    - paragraph: 0 guides · 0 collections · stored in this browser
+    - text: Filter guides
+    - searchbox "Filter guides"
+    - button "Import"
+    - button "Import guide JSON"
+    - button "New guide"
+- main:
+    - tablist "Guide status":
+        - tab "All 0" [selected]
+        - tab "Drafts 0"
+        - tab "Published 0"
+        - tab "Needs review 0"
+        - tab "Replay passed 0"
+    - combobox "Sort guides":
+        - option "Last edited" [selected]
+        - option "Title A–Z"
+    - group "Library layout":
+        - button "Grid view" [pressed]
+        - button "List view"
+    - tabpanel "All 0":
+        - region "Your library is ready":
+            - heading "Your library is ready" [level=2]
+            - paragraph: Create a guide or import a guide.json file. Your guides stay on this device.
+            - button "Create a guide"
+- status
+- contentinfo:
+    - button "Activity"

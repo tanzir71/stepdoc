@@ -273,6 +273,14 @@ test.beforeEach(async ({ page }) => {
     const guide = structuredClone(replayGuide)
     guide.title = '</script><img src=x onerror="window.injected=true">'
     await page.setContent(exportHtml(guide))
+    assert.equal(
+      await page.evaluate(() =>
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--sd-space-1-5')
+          .trim(),
+      ),
+      '6px',
+    )
     assert.equal(await page.locator('h1').textContent(), guide.title)
     assert.equal(await page.evaluate(() => window.injected), undefined)
     assert.equal(

@@ -21,7 +21,7 @@ export interface HtmlExportOptions extends ExportOptions {
 const styles = `:root{${Object.values(tokens.color)
   .map((token) => `${token.css}:${token.light}`)
   .join(';')};${Object.entries(tokens.space)
-  .map(([name, size]) => `--sd-space-${name}:${size}px`)
+  .map(([name, size]) => `--sd-space-${name.replace(/[/.]/g, '-')}:${size}px`)
   .join(';')};${Object.entries(tokens.type)
   .map(
     ([name, style]) =>

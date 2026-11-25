@@ -92,7 +92,7 @@
       "css": "--sd-accent-soft"
     },
     "accent/text": {
-      "light": "#c2410c",
+      "light": "#9a3412",
       "dark": "#ff8d69",
       "css": "--sd-accent-text"
     },
@@ -160,6 +160,31 @@
       "light": "#7a7a82",
       "dark": "#6c6c75",
       "css": "--sd-code-muted"
+    },
+    "text/on-overlay": {
+      "light": "#ffffff",
+      "dark": "#ffffff",
+      "css": "--sd-text-on-overlay"
+    },
+    "success/text": {
+      "light": "#166534",
+      "dark": "#3dd68c",
+      "css": "--sd-success-text"
+    },
+    "warning/text": {
+      "light": "#92400e",
+      "dark": "#f5b544",
+      "css": "--sd-warning-text"
+    },
+    "danger/text": {
+      "light": "#b91c1c",
+      "dark": "#ff6161",
+      "css": "--sd-danger-text"
+    },
+    "bg/image-label": {
+      "light": "#141414e6",
+      "dark": "#141414e6",
+      "css": "--sd-bg-image-label"
     }
   },
   "space": {
@@ -169,11 +194,15 @@
     "4": 16,
     "5": 20,
     "6": 24,
+    "7": 28,
     "8": 32,
     "10": 40,
     "12": 48,
     "16": 64,
-    "24": 96
+    "24": 96,
+    "1.5": 6,
+    "2.5": 10,
+    "3.5": 14
   },
   "radius": {
     "sm": 6,
@@ -188,6 +217,20 @@
     "files": "Self-host Geist and Geist Mono woff2 (SIL OFL) under /assets/fonts; no third-party font requests."
   },
   "type": {
+    "brand": {
+      "family": "sans",
+      "weight": 600,
+      "size": 16,
+      "line": 24,
+      "tracking": -0.5
+    },
+    "avatar": {
+      "family": "sans",
+      "weight": 500,
+      "size": 10,
+      "line": 16,
+      "tracking": 0
+    },
     "display-xl": {
       "family": "sans",
       "weight": 600,
@@ -207,7 +250,7 @@
       "weight": 600,
       "size": 30,
       "line": 36,
-      "tracking": -1.0
+      "tracking": -1
     },
     "heading-m": {
       "family": "sans",
@@ -286,6 +329,23 @@
     "dialog": "0 24px 64px rgba(0,0,0,0.10)"
   },
   "size": {
+    "library-thumb": 152,
+    "library-header": 104,
+    "library-filters": 56,
+    "library-filter": 280,
+    "library-card-min": 220,
+    "dialog": 440,
+    "guide-width": 960,
+    "sidebar-compact": 72,
+    "step-thumb-width": 64,
+    "step-thumb-height": 40,
+    "brand-mark": 24,
+    "checkbox": 16,
+    "toggle-width": 32,
+    "toggle-height": 18,
+    "avatar": 24,
+    "click-marker": 36,
+    "step-pin": 24,
     "control-m": 36,
     "control-s": 28,
     "icon-button": 32,
@@ -296,6 +356,7 @@
     "editor-steps": 320,
     "editor-inspector": 340,
     "extension-panel": 400,
-    "popup": "360x560"
+    "popup": "360x560",
+    "library-primary": 135
   }
 }

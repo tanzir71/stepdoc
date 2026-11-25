@@ -107,6 +107,16 @@ describe('guide validation and storage errors', () => {
 })
 
 describe('library queries and summaries', () => {
+  it('searches authored step text without indexing variable or target payloads', async () => {
+    const input = guide('step-search')
+    input.steps[0]!.description = 'Open the plan dialog'
+    expect(
+      (await guidePage([input], { q: 'PLAN DIALOG' }, 50)).items,
+    ).toHaveLength(1)
+    expect(
+      (await guidePage([input], { q: 'billing_email' }, 50)).items,
+    ).toHaveLength(0)
+  })
   const items = [
     guide('guide-aaa'),
     guide('guide-bbb'),

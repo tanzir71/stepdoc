@@ -1,0 +1,83 @@
+- link "Skip to content":
+    - /url: '#main'
+- complementary "Workspace navigation":
+    - link "StepDoc library":
+        - /url: /
+    - button "Collapse navigation" [expanded]
+    - button "Browser storage details":
+        - strong: This browser
+    - button "Search guides Ctrl K"
+    - navigation "Workspace":
+        - link /Library \d+/:
+            - /url: /
+        - link "Collections 6":
+            - /url: /?collections=1
+        - link "Drafts 9":
+            - /url: /?status=draft
+        - link "Published":
+            - /url: /?status=published
+        - link "Archived":
+            - /url: /?status=archived
+    - paragraph: Collections
+    - navigation "Collections":
+        - link /Finance ops \d+/:
+            - /url: /?collection=finance-ops
+        - link "Support macros 9":
+            - /url: /?collection=support-macros
+        - link "Engineering 7":
+            - /url: /?collection=engineering
+    - complementary "Agent exports":
+        - strong: Agent exports
+        - paragraph: Guide data exports, ready for your local tools.
+    - strong: You
+    - button "General settings"
+- banner:
+    - heading "Collections" [level=1]
+    - paragraph: /\d+ guides · 6 collections · stored in this browser/
+    - text: Filter guides
+    - searchbox "Filter guides"
+    - button "Import"
+    - button "Import guide JSON"
+    - button "New guide"
+- main:
+    - tablist "Guide status":
+        - tab /All \d+/ [selected]
+        - tab "Drafts 9"
+        - tab /Published \d+/
+        - tab "Needs review 3"
+        - tab /Replay passed \d+/
+    - combobox "Sort guides":
+        - option "Last edited" [selected]
+        - option "Title A–Z"
+    - group "Library layout":
+        - button "Grid view" [pressed]
+        - button "List view"
+    - tabpanel /All \d+/:
+        - list:
+            - listitem:
+                - link /Finance ops \d+ guides/:
+                    - /url: /?collection=finance-ops
+                    - heading "Finance ops" [level=2]
+            - listitem:
+                - link "Admin 6 guides":
+                    - /url: /?collection=admin
+                    - heading "Admin" [level=2]
+            - listitem:
+                - link "Engineering 7 guides":
+                    - /url: /?collection=engineering
+                    - heading "Engineering" [level=2]
+            - listitem:
+                - link "Support macros 9 guides":
+                    - /url: /?collection=support-macros
+                    - heading "Support macros" [level=2]
+            - listitem:
+                - link "Month end 6 guides":
+                    - /url: /?collection=month-end
+                    - heading "Month end" [level=2]
+            - listitem:
+                - link "People 6 guides":
+                    - /url: /?collection=people
+                    - heading "People" [level=2]
+- status
+- contentinfo:
+    - button "Activity"

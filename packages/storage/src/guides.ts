@@ -186,6 +186,7 @@ export async function guidePage(
           guide.app?.name,
           guide.app?.origin,
           ...guide.tags,
+          ...guide.steps.flatMap((step) => [step.title, step.description]),
         ].some((value) => value?.toLowerCase().includes(q))
       )
         return false

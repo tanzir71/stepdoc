@@ -1,0 +1,34 @@
+- banner:
+  - text: stepdoc
+  - heading "Component verification" [level=1]
+- navigation "Component examples":
+  - link "Library":
+    - /url: "#main"
+- main:
+  - region "Buttons":
+    - button "primary m"
+    - button "primary s"
+    - button "secondary m"
+    - button "secondary s"
+    - button "ghost m"
+    - button "ghost s"
+    - button "danger m"
+    - button "danger s"
+    - button "More actions"
+  - region "Badges": neutral accent success warning danger agent No dot
+  - region "Inputs":
+    - text: Example field
+    - textbox "Example field"
+    - switch "Example toggle" [checked]
+    - checkbox "Example checkbox" [checked]
+    - text: Ctrl K
+  - region "Segments":
+    - tablist "Example segments":
+      - tab "First"
+      - tab "Second" [selected]
+    - tabpanel "Second": second
+  - region "Steps":
+    - button "1 Open settings Click · button"
+    - button "2 Open settings Click · button"
+    - button "3 Open settings Click · button Review"
+- contentinfo: Local component fixture

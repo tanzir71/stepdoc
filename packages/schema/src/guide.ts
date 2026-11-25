@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import addFormats from 'ajv-formats'
-import jsonSchema from '../../../docs/v2/guide.schema.json'
+import jsonSchema from '../../../docs/v2/guide.schema.json' with { type: 'json' }
 
 export const GUIDE_SCHEMA_ID = 'stepdoc/guide@1' as const
 export const GUIDE_SCHEMA_URL =

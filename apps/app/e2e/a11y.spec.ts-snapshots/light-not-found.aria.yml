@@ -1,0 +1,43 @@
+- link "Skip to content":
+  - /url: "#main"
+- complementary "Workspace navigation":
+  - link "StepDoc library":
+    - /url: /
+  - button "Collapse navigation" [expanded]
+  - button "Browser storage details":
+    - strong: This browser
+  - button "Search guides Ctrl K"
+  - navigation "Workspace":
+    - link /Library \d+/:
+      - /url: /
+    - link "Collections 6":
+      - /url: /?collections=1
+    - link "Drafts 9":
+      - /url: /?status=draft
+    - link "Published":
+      - /url: /?status=published
+    - link "Archived":
+      - /url: /?status=archived
+  - paragraph: Collections
+  - navigation "Collections":
+    - link /Finance ops \d+/:
+      - /url: /?collection=finance-ops
+    - link "Support macros 9":
+      - /url: /?collection=support-macros
+    - link "Engineering 7":
+      - /url: /?collection=engineering
+  - complementary "Agent exports":
+    - strong: Agent exports
+    - paragraph: Guide data exports, ready for your local tools.
+  - strong: You
+  - button "General settings"
+- banner:
+  - heading "Page not found" [level=1]
+- main:
+  - region "This page is unavailable":
+    - heading "This page is unavailable" [level=2]
+    - paragraph: Use the library to find a saved guide.
+    - button "Open library"
+- status
+- contentinfo:
+  - button "Activity"

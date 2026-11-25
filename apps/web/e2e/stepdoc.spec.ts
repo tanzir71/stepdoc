@@ -99,11 +99,15 @@ test('manual image upload opens canvas tools and edits survive autosave', async 
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Upload image' }).click()
   const file = await chooser
+  // This is the first request to the image route; dev compilation can outlast
+  // the locator timeout. Check the completed upload before expecting its UI.
+  const uploaded = page.waitForResponse(response => response.url().includes(`/api/guides/${id}/steps/`) && response.url().endsWith('/image') && response.request().method() === 'POST')
   await file.setFiles({
     name: 'shot.png',
     mimeType: 'image/png',
     buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
   })
+  expect((await uploaded).status()).toBe(200)
   await expect(page.getByRole('img', { name: 'Screenshot image editor' })).toBeVisible()
   await page.getByLabel('Image tool').selectOption('blur')
   const canvas = page.getByRole('img', { name: 'Screenshot image editor' })

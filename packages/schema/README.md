@@ -17,5 +17,9 @@ exports. Defaults, accepted payloads and unknown-key stripping remain unchanged;
 this move needs no guide-data migration. The extension and Next v1 app import this
 module until their replacements reach parity. New product code uses guide@1.
 
+The source JSON Schema import uses the standard `type: 'json'` attribute so native
+ESM tooling and the browser bundler can consume the same module. This changes no
+guide fields, defaults or schema version and needs no data migration.
+
 Run `pnpm --filter @stepdoc/schema test` for Ajv/Zod privacy and migration checks.
 The original shared text/selector regressions now run in `@stepdoc/core`.

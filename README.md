@@ -2,7 +2,11 @@
 
 [Source](https://github.com/tanzir71/stepdoc) · [MIT licence](LICENSE)
 
-The `main` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md), with direct commits and no PRs per the owner's instruction. See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence. The setup and product documentation below describe the shipped v1 app until the v2 targets are ready.
+The `main` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md), with direct commits and no PRs per the owner's instruction. See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence.
+
+The v2 browser library runs with `pnpm install` followed by `pnpm dev` at <http://127.0.0.1:3200>. It supports local guide creation, guide@1 JSON import/download, search, collections and theme settings using IndexedDB/OPFS, with no account or credentials. The v2 editor, capture integration and portable image bundles are still in progress. See [apps/app/README.md](apps/app/README.md).
+
+The setup and product documentation below describe the shipped v1 app, available with `pnpm dev:legacy`, until the v2 targets reach parity.
 
 [Website](https://stepdoc-guides.vercel.app/) · [Generated HTML guide](https://stepdoc-guides.vercel.app/demo)
 
@@ -73,7 +77,7 @@ pnpm install
 ### 3. Run the web app
 
 ```bash
-pnpm dev
+pnpm dev:legacy
 ```
 
 Open <http://localhost:3000>.
@@ -96,7 +100,9 @@ Viewer actions: Markdown ZIP, standalone HTML, PDF export, Copy Markdown, Copy r
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Web development server |
+| `pnpm dev` | v2 browser SPA at 127.0.0.1:3200 |
+| `pnpm dev:legacy` | v1 Next development server at localhost:3000 |
+| `pnpm test:a11y` | v2 route accessibility snapshots and axe |
 | `pnpm build` | Build all workspaces |
 | `pnpm verify` | Lint, strict typecheck, unit tests, Playwright e2e, production builds |
 

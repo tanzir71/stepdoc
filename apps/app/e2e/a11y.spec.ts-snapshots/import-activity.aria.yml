@@ -1,0 +1,69 @@
+- link "Skip to content":
+  - /url: "#main"
+- complementary "Workspace navigation":
+  - link "StepDoc library":
+    - /url: /
+  - button "Collapse navigation" [expanded]
+  - button "Browser storage details":
+    - strong: This browser
+  - button "Search guides Ctrl K"
+  - navigation "Workspace":
+    - link "Library 1":
+      - /url: /
+    - link "Collections 0":
+      - /url: /?collections=1
+    - link "Drafts 1":
+      - /url: /?status=draft
+    - link "Published":
+      - /url: /?status=published
+    - link "Archived":
+      - /url: /?status=archived
+  - paragraph: Collections
+  - navigation "Collections": No collections yet
+  - complementary "Agent exports":
+    - strong: Agent exports
+    - paragraph: Guide data exports, ready for your local tools.
+  - strong: You
+  - button "General settings"
+- banner:
+  - heading "Library" [level=1]
+  - paragraph: 1 guides · 0 collections · stored in this browser
+  - text: Filter guides
+  - searchbox "Filter guides"
+  - button "Import"
+  - button "Import guide JSON"
+  - button "New guide"
+- main:
+  - tablist "Guide status":
+    - tab "All 1" [selected]
+    - tab "Drafts 1"
+    - tab "Published 0"
+    - tab "Needs review 0"
+    - tab "Replay passed 0"
+  - combobox "Sort guides":
+    - option "Last edited" [selected]
+    - option "Title A–Z"
+  - group "Library layout":
+    - button "Grid view" [pressed]
+    - button "List view"
+  - tabpanel "All 1":
+    - status: 1 of 1 guides shown
+    - list "Guides":
+      - listitem:
+        - article:
+          - link "No screenshot 1 step Imported guide Manual guide · edited just now Draft":
+            - /url: /g/imported-guide
+            - heading "Imported guide" [level=2]
+            - paragraph:
+              - text: Manual guide ·
+              - time: edited just now
+- status
+- contentinfo:
+  - button "Activity (1)"
+- dialog "Activity log":
+  - heading "Activity log" [level=2]
+  - button "Close"
+  - list "Recent activity":
+    - listitem:
+      - time: /\d+:\d+ PM/
+      - text: Guide imported on this device.

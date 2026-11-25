@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | In progress | 2026-11-25 | Browser storage complete; token UI and SPA next | — |
+| M10 | In progress | 2026-11-26 | Browser storage, token UI and local library complete; editor/export next | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
@@ -31,11 +31,16 @@
 
 - [ ] `apps/app` (Vite + React + TS + `packages/ui` from tokens). Routes W02, W03, W05, W11, W12 working on IndexedDbAdapter (IndexedDB + OPFS).
   - [x] `@stepdoc/storage`: adapter contract, transactional IndexedDB guides/history and OPFS blobs with a browser-verified IndexedDB fallback.
-  - [ ] Token-driven `packages/ui`, self-hosted fonts and static SPA shell.
-  - [ ] Library, editor, export and state routes on the local adapter.
+  - [x] Token-driven `packages/ui`, self-hosted fonts and static SPA shell.
+  - [x] Library/search/status/layout/collection routes, manual creation, JSON import/download, private saved-guide preview, General settings and local loading/empty/error/offline states on the native adapter.
+  - [ ] W03 editor and W05 export routes on the local adapter.
 - [ ] Visual parity with Figma for W02/W03/W05 at 1440×900, light + dark: compare automated Playwright screenshots against the linked frames and commit screenshots under `docs/v2/screens/`.
+  - [x] W02/W12 local-library screenshots compared and recorded, with reference geometry checks and documented browser-mode copy/accessibility adaptations.
+  - [ ] W03/W05 light/dark screenshots and complete milestone parity audit.
 - [ ] Client-side PDF (print CSS), DOCX, `.stepdoc` import/export round-trip test.
 - [ ] a11y gate: aria snapshots + axe for these routes.
+  - [x] Library/grid/list/collections/preview/General settings and current states/dialogs: 24 route/state snapshots and axe; native component controls checked in both themes.
+  - [ ] Editor/export route snapshots and axe.
 
 ## M11 — Extension v2
 
@@ -121,6 +126,11 @@
 
 - 2026-11-25 — M10 browser storage: added `@stepdoc/storage`, a typed guide/library/history/blob adapter contract and the real `IndexedDbAdapter`. Guide writes validate/snapshot data and atomically commit the document and immutable history with strict durability, optimistic version checks and adapter-owned update metadata. Library filtering covers search/status/review/replay/collections with deterministic timestamp/ID cursors tied to hashed filters. Soft deletion is idempotent and reserves IDs while retaining history and blobs. OPFS is the preferred raster backend, with actual IndexedDB Blob fallback when the API is absent; inputs are restricted to PNG/WebP signatures and 64 MB, keys are immutable, unknown upload metadata is ignored and reads verify size/SHA-256. File writes finish before metadata, re-check guide/step existence and clean up on ordinary failure; quota, corruption, closed/blocked/unavailable storage and conflicts produce sanitized errors. Added 36 unit tests and 159 actual Chromium assertions across both native backends, page reload, a module worker, two competing tabs, transaction/file/metadata failure injection, corruption, retry, schema upgrade and deletion. No endpoint or guide@1 wire change. The OPFS crash-orphan/maintenance limitation is documented and tracked above. Next unit: token-driven UI, fonts and the static SPA shell.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (496 unit tests, including all previous 460; 159 native browser-storage checks; existing redaction/canvas worker and 21-step/six-failure replay checks; all 8 app Playwright tests; strict typechecks and all workspace production builds). Lint has zero errors and the same two existing image warnings. `git diff --check` passed. M10 remains open for UI/routes, visual parity, client document/bundle exports and accessibility; no milestone tag. Work is committed and pushed directly to `main`; no PR or deployment.
+
+- 2026-11-26 — M10 token UI and local library: added native React components in `@stepdoc/ui`, generated/checked CSS tokens, original Figma SVGs with provenance/intrinsic-size checks and self-hosted variable Geist/Geist Mono under SIL OFL. Built `apps/app` as a static Vite SPA using the real browser adapter: search includes authored step instructions, status/review/replay and collection filters derive from stored data, sort/layout/show-all states live in URLs, duplicate JSON imports offer a separate copy, and manual creation opens a saved-guide preview with validated JSON download. Added General theme preferences (Light default, Dark, explicit System), keyboard tabs/search, route focus, native dialogs, live notifications/session activity log and loading/empty/error/offline states. Images resolve only through local blob keys; imported remote image URLs are never fetched. Root `pnpm dev` now starts the SPA; `pnpm dev:legacy` retains v1. No endpoint or guide-data change; the schema's native ESM JSON import attribute needs no migration. Next unit: W03 local guide editor, then W05/client document and portable bundle exports.
+- Visual/accessibility evidence: compared actual 1440×900 light/dark library screenshots against Figma W02/W12 and committed them under `docs/v2/screens/`. Geometry matches the 248px sidebar, 104px header, 56px filter area, (280,160) grid, four 270px cards and 152px thumbnails. Browser-mode copy/navigation describes local creation/storage/exports instead of fictional team identity, hosting, passkeys or connected MCP clients. Deeper semantic light-theme status/accent text and image labels fix measured AA failures; collection ellipsis preserves full accessible text. These adaptations and fixture provenance are documented; full W03/W05 parity remains open.
+- Integration fixes: shared-token changes intentionally update the HTML export's two style snapshots. Its spacing serializer now makes valid custom-property names for fractional keys, checked through computed CSS in real Chromium. The final full run also exposed a pre-existing legacy image-upload test race: the POST was still pending when its five-second canvas assertion expired. The test now awaits/asserts the successful upload before checking the canvas; autosave, persisted blur/rendered path, Undo and Redo assertions remain.
+- Verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and `pnpm test:a11y` passed. Evidence: 501 unit tests; 159 native storage checks; redaction and 41-check canvas workers; generated 21-step Chromium replay plus six expected failures; all 8 legacy and 14 SPA Playwright tests; 24 route/state aria snapshots plus two component snapshots and axe in both themes; strict typechecks and all production builds. The actual static SPA bundle independently passes creation → native persistence → deep-link reload → library with local fonts/assets and no runtime/non-local request failures; test fixtures are excluded. Lint has zero errors and the same two existing image warnings. M10 remains in progress; no milestone tag, PR, live service or deployment. Committed and pushed directly to `main`.
 
 ## Defaults in use
 

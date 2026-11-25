@@ -29,7 +29,7 @@ version. Snapshots keep the source schema identifier and guide data unchanged.
 Duplicate step IDs/indices, duplicate declarations, mismatched/undeclared variable
 references and invalid guide@1 data are rejected before writes.
 
-Library queries support title/description/tag/app search, status/review/replay
+Library queries support title/description/tag/app and authored step-text search, status/review/replay
 filters, collections, stable timestamp/ID ordering and keyset pagination. Page
 size defaults to 50 (configurable from 1–200); a cursor is tied to a hash of its
 filters and contains no search text or guide content. Blob bytes are never loaded

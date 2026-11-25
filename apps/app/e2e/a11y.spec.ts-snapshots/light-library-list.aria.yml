@@ -1,0 +1,133 @@
+- link "Skip to content":
+    - /url: '#main'
+- complementary "Workspace navigation":
+    - link "StepDoc library":
+        - /url: /
+    - button "Collapse navigation" [expanded]
+    - button "Browser storage details":
+        - strong: This browser
+    - button "Search guides Ctrl K"
+    - navigation "Workspace":
+        - link /Library \d+/:
+            - /url: /
+        - link "Collections 6":
+            - /url: /?collections=1
+        - link "Drafts 9":
+            - /url: /?status=draft
+        - link "Published":
+            - /url: /?status=published
+        - link "Archived":
+            - /url: /?status=archived
+    - paragraph: Collections
+    - navigation "Collections":
+        - link /Finance ops \d+/:
+            - /url: /?collection=finance-ops
+        - link "Support macros 9":
+            - /url: /?collection=support-macros
+        - link "Engineering 7":
+            - /url: /?collection=engineering
+    - complementary "Agent exports":
+        - strong: Agent exports
+        - paragraph: Guide data exports, ready for your local tools.
+    - strong: You
+    - button "General settings"
+- banner:
+    - heading "Library" [level=1]
+    - paragraph: /\d+ guides · 6 collections · stored in this browser/
+    - text: Filter guides
+    - searchbox "Filter guides"
+    - button "Import"
+    - button "Import guide JSON"
+    - button "New guide"
+- main:
+    - tablist "Guide status":
+        - tab /All \d+/ [selected]
+        - tab "Drafts 9"
+        - tab /Published \d+/
+        - tab "Needs review 3"
+        - tab /Replay passed \d+/
+    - combobox "Sort guides":
+        - option "Last edited" [selected]
+        - option "Title A–Z"
+    - group "Library layout":
+        - button "Grid view"
+        - button "List view" [pressed]
+    - tabpanel /All \d+/:
+        - status: /8 of \d+ guides shown/
+        - list "Guides":
+            - listitem:
+                - article:
+                    - link /Screenshot for Upgrade a workspace to the Team plan 9 steps Upgrade a workspace to the Team plan app\.ledgerly\.io · edited \d+[hmsp]+ ago Draft 1 to review Finance ops/:
+                        - /url: /g/fixture-guide-00
+                        - img "Screenshot for Upgrade a workspace to the Team plan"
+                        - heading "Upgrade a workspace to the Team plan" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: /edited \d+[hmsp]+ ago/
+            - listitem:
+                - article:
+                    - link "Screenshot for Export last month's invoices as CSV 7 steps Export last month's invoices as CSV app.ledgerly.io · edited yesterday Published Replay passed Finance ops":
+                        - /url: /g/fixture-guide-01
+                        - img "Screenshot for Export last month's invoices as CSV"
+                        - heading "Export last month's invoices as CSV" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited yesterday
+            - listitem:
+                - article:
+                    - link "Screenshot for Invite a teammate with billing access 6 steps Invite a teammate with billing access app.ledgerly.io · edited 3d ago Published Replay passed Admin":
+                        - /url: /g/fixture-guide-02
+                        - img "Screenshot for Invite a teammate with billing access"
+                        - heading "Invite a teammate with billing access" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 3d ago
+            - listitem:
+                - article:
+                    - link /Screenshot for Add a customer and send the first invoice \d+ steps Add a customer and send the first invoice app\.ledgerly\.io · edited 4d ago Published Finance ops/:
+                        - /url: /g/fixture-guide-03
+                        - img "Screenshot for Add a customer and send the first invoice"
+                        - heading "Add a customer and send the first invoice" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 4d ago
+            - listitem:
+                - article:
+                    - link "Screenshot for Rotate the Ledgerly API key 8 steps Rotate the Ledgerly API key app.ledgerly.io · edited 5d ago Draft Engineering":
+                        - /url: /g/fixture-guide-04
+                        - img "Screenshot for Rotate the Ledgerly API key"
+                        - heading "Rotate the Ledgerly API key" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 5d ago
+            - listitem:
+                - article:
+                    - link "Screenshot for Change the invoice email recipient 5 steps Change the invoice email recipient app.ledgerly.io · edited 1w ago Published Replay passed Support macros":
+                        - /url: /g/fixture-guide-05
+                        - img "Screenshot for Change the invoice email recipient"
+                        - heading "Change the invoice email recipient" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 1w ago
+            - listitem:
+                - article:
+                    - link /Screenshot for Refund a duplicate payment \d+ steps Refund a duplicate payment app\.ledgerly\.io · edited 1w ago Published Replay failed Support macros/:
+                        - /url: /g/fixture-guide-06
+                        - img "Screenshot for Refund a duplicate payment"
+                        - heading "Refund a duplicate payment" [level=2]
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 1w ago
+            - listitem:
+                - article:
+                    - 'link /Screenshot for Close the month: reconcile payouts \d+ steps Close the month: reconcile payouts app\.ledgerly\.io · edited 2w ago Published Month end/':
+                        - /url: /g/fixture-guide-07
+                        - 'img "Screenshot for Close the month: reconcile payouts"'
+                        - 'heading "Close the month: reconcile payouts" [level=2]'
+                        - paragraph:
+                            - text: app.ledgerly.io ·
+                            - time: edited 2w ago
+        - button /Show all \d+ guides/
+- status
+- contentinfo:
+    - button "Activity"

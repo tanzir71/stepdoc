@@ -110,8 +110,10 @@ steps[2] = {
         width: 156,
         height: 60,
         color: 'accent',
+        toX: 896,
+        toY: 267,
+        text: 'Owners only',
       },
-      { type: 'text', x: 896, y: 294, text: 'Owners only', color: 'accent' },
     ],
   },
   redactions: [

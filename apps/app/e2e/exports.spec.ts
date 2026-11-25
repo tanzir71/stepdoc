@@ -66,7 +66,19 @@ test('W05 downloads all seven file formats from native images and preserves an e
     Object.keys(files).filter((name) => name.startsWith('img/')),
   ).toHaveLength(9)
   const bundle = await importBundle(files['editor-guide.stepdoc']!)
-  expect(bundle.guide.steps[2]!.edits?.annotations).toHaveLength(2)
+  expect(bundle.guide.steps[2]!.edits?.annotations).toEqual([
+    {
+      type: 'rectangle',
+      x: 1080,
+      y: 188,
+      width: 156,
+      height: 60,
+      text: 'Owners only',
+      toX: 896,
+      toY: 267,
+      color: 'accent',
+    },
+  ])
   expect(bundle.assets['editor-step-3']?.original).toBeDefined()
   const word = unzipSync(files['guide.docx']!)
   expect(new TextDecoder().decode(word['word/document.xml'])).toContain(
@@ -312,17 +324,19 @@ test('a native image write failure removes only the new bundle import', async ({
   const bytes = await exportBundle(parsed.guide, parsed.assets)
   await page.goto('/')
   await expect(hook(page, 'library-guide-open')).toHaveCount(1)
-  await page.evaluate(async () => {
-    const path = '/src/repository.ts'
-    const repo: typeof import('../src/repository') = await import(
-      /* @vite-ignore */ path
-    )
-    const adapter = await repo.getStorage()
-    const original = adapter.putBlob.bind(adapter)
-    let writes = 0
-    adapter.putBlob = async (...args) => {
-      if (++writes === 2) throw new Error('synthetic_write_failure')
-      return original(...args)
+  await page.evaluate(() => {
+    // Inject at the real backend, independent of Vite module/adapter instances.
+    const native = FileSystemWritableFileStream.prototype.write
+    Reflect.set(window, 'sdTestBlobWrites', 0)
+    FileSystemWritableFileStream.prototype.write = async function (
+      this: FileSystemWritableFileStream,
+      data: FileSystemWriteChunkType,
+    ) {
+      const writes = Number(Reflect.get(window, 'sdTestBlobWrites')) + 1
+      Reflect.set(window, 'sdTestBlobWrites', writes)
+      if (writes === 2)
+        throw new DOMException('Synthetic write failure', 'QuotaExceededError')
+      return native.call(this, data)
     }
   })
   await hook(page, 'library-import-file').setInputFiles({
@@ -333,6 +347,9 @@ test('a native image write failure removes only the new bundle import', async ({
   await expect(hook(page, 'activity-live')).toContainText(
     'The guide could not be imported. Existing guides were kept.',
   )
+  expect(
+    await page.evaluate(() => Reflect.get(window, 'sdTestBlobWrites')),
+  ).toBe(2)
   await expect(hook(page, 'library-import')).toBeEnabled()
   await expect(hook(page, 'library-guide-open')).toHaveCount(1)
   await expect(storedGuide(page, 'failed-import-guide')).rejects.toThrow()

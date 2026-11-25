@@ -170,6 +170,9 @@ for (const theme of ['light', 'dark'] as const) {
     await audit(page, `${theme}-editor-target`)
     await hook(page, 'canvas-layer-select').first().click()
     await audit(page, `${theme}-editor-layers`)
+    await hook(page, 'canvas-layer-select').nth(1).click()
+    await audit(page, `${theme}-editor-caption`)
+    await hook(page, 'canvas-layer-select').first().click()
     for (const panel of ['step', 'redact', 'history']) {
       await hook(page, `inspector-${panel}`).click()
       if (panel === 'history')

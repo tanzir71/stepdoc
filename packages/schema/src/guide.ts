@@ -118,6 +118,7 @@ export const annotationSchema = z.strictObject({
   y: z.number(),
   width: z.number().optional(),
   height: z.number().optional(),
+  // Arrow endpoint, or the optional caption anchor for a labeled rectangle.
   toX: z.number().optional(),
   toY: z.number().optional(),
   text: z.string().optional(),

@@ -871,6 +871,42 @@
           "name": "W05 export dialog icon"
         }
       ]
+    },
+    {
+      "file": "25fac.svg",
+      "slots": [
+        {
+          "node": "25:4985",
+          "name": "W12 sort chevron; shared mask silhouette"
+        }
+      ]
+    },
+    {
+      "file": "57a55.svg",
+      "slots": [
+        {
+          "node": "25:4987",
+          "name": "W12 grid icon; shared mask silhouette"
+        }
+      ]
+    },
+    {
+      "file": "2d1a1.svg",
+      "slots": [
+        {
+          "node": "25:4988",
+          "name": "W12 list icon; shared mask silhouette"
+        }
+      ]
+    },
+    {
+      "file": "3074b.svg",
+      "slots": [
+        {
+          "node": "I25:5014;12:500",
+          "name": "W12 published badge dot; shared mask silhouette"
+        }
+      ]
     }
   ]
 }

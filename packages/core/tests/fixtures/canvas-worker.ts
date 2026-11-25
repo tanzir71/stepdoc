@@ -71,7 +71,7 @@ export async function verifyCanvas(
   eq(rendered(1, 1), [20, 20, 22, 255], 'rendered crop is redacted')
   eq(original(25, 20), [255, 255, 255, 255], 'original has no annotations')
   check(
-    rendered(17, 12)[0] === 242 && rendered(17, 12)[1] === 85,
+    rendered(22, 12)[0] === 242 && rendered(22, 12)[1] === 85,
     'annotation is translated with crop',
   )
   eq(original(35, 25), [255, 255, 255, 255], 'original has no click marker')
@@ -169,6 +169,64 @@ export async function verifyCanvas(
   for (let y = 45; y < 60; y++)
     for (let x = 20; x < 58; x++) if (dark(x, y)[1]! < 230) ink = true
   check(ink, 'text annotation rendered in worker')
+
+  for (const theme of ['light', 'dark'] as const) {
+    const label = await core.prepareCapture(input, {
+      theme,
+      format: 'image/png',
+      edits: {
+        annotations: [
+          {
+            type: 'rectangle',
+            x: 10,
+            y: 18,
+            width: 25,
+            height: 32,
+            toX: 40,
+            toY: 20,
+            text: 'Tag',
+          },
+        ],
+      },
+    })
+    const labelPixels = await pixels(label.rendered)
+    eq(
+      labelPixels(42, 32),
+      theme === 'light' ? [242, 85, 31, 255] : [255, 106, 61, 255],
+      'label uses themed accent fill',
+    )
+    eq(labelPixels(40, 20), [255, 255, 255, 255], 'label has rounded corners')
+    eq(
+      labelPixels(80, 32),
+      [255, 255, 255, 255],
+      'label text cannot escape its bounds',
+    )
+    let textInk = false
+    for (let y = 24; y < 40; y++)
+      for (let x = 48; x < 70; x++)
+        if (labelPixels(x, y)[0]! < 100) textInk = true
+    check(textInk, 'label contains dark on-accent text')
+    eq(
+      (await pixels(label.original))(42, 32),
+      [255, 255, 255, 255],
+      'editing source retains no label pixels',
+    )
+  }
+  const cleared = await pixels(
+    await core.flattenImage(input, {
+      format: 'image/png',
+      edits: {
+        annotations: [
+          { type: 'rectangle', x: 20, y: 20, width: 60, height: 24, text: '' },
+        ],
+      },
+    }),
+  )
+  eq(
+    cleared(40, 32),
+    [255, 255, 255, 255],
+    'clearing label text restores the unfilled rectangle',
+  )
 
   for (const mime of ['image/webp', 'image/jpeg'] as const) {
     const source = await canvas.convertToBlob({ type: mime, quality: 1 })

@@ -2,11 +2,21 @@
 
 `W02-library-light.png` and `W02-library-dark.png` are actual Chromium screenshots of the SPA at 1440×900, compared by the coding agent with Figma W02 (`16:944`) and W12 (`25:4924`). The test checks the reference's sidebar (248px), header (104px), filter area (56px), grid origin (280,160), four 270px cards and 152px thumbnails. Local Geist/Geist Mono and original Figma SVG assets are used. The saved guides, badge counts, collection totals and screenshot blobs come from 48 real adapter records in an isolated test browser.
 
-Browser mode intentionally says “This browser”, “Local storage” and “New guide”, provides Drafts/Published/Archived navigation and describes current JSON agent exports. It has no team identity, shared inbox, connected MCP clients or passkey account to claim. The native Show all and Activity controls are functional additions. Collection names fit with ellipsis while their complete text remains in the accessibility tree. Status text/overlay labels use the AA adjustments documented in `packages/ui/README.md`. The complete milestone parity audit remains open.
+Browser mode intentionally says “This browser”, “Local storage” and “New guide”, provides Drafts/Published/Archived navigation and describes current JSON agent exports. It has no team identity, shared inbox, connected MCP clients or passkey account to claim. The native Show all and Activity controls are functional additions. Collection names fit with ellipsis while their complete text remains in the accessibility tree. Status text/overlay labels use the AA adjustments documented in `packages/ui/README.md`.
 
 `W03-editor-light.png` and `W03-editor-dark.png` show the local editor at the same 1440×900 viewport, compared with the full W03 context (`16:2340`). Geometry checks cover the 56px topbar, 320px steps pane, 340px inspector and 680×425 screenshot. The toolbar, original SVG icons, fonts, token surfaces, selected StepRow, locator list and layers follow that reference. The image is the fictional Ledgerly screenshot input, processed by the real worker and stored through the native adapter; it is not a rendered application frame. Step thumbnails use the actual rendered blob for each step. Section eyebrows appear for actual `section` steps; this nine-action fixture does not invent section records.
 
-Current browser-mode controls read “Read guide”, “Copy link” and “Export & publish”. They perform local navigation/link copying and open the functional W05 export dialog; extension replay and real publishing remain later milestones. Clean up describes local text rules; Open live page opens a sanitized URL without claiming extension highlighting. Query stripping is a locked browser policy. Only floating layers receive shadows. The plain text “Owners only” annotation uses the existing guide@1 canvas text primitive, rather than the reference's orange pill; matching that annotation treatment remains in the final parity audit.
+Current browser-mode controls read “Read guide”, “Copy link” and “Export & publish”. They perform local navigation/link copying and open the functional W05 export dialog; extension replay and real publishing remain later milestones. Clean up describes local text rules; Open live page opens a sanitized URL without claiming extension highlighting. Query stripping is a locked browser policy. Only floating layers receive shadows.
+
+The final audit completes the “Owners only” treatment: one rectangle layer owns
+the outlined target and rounded caption, using existing guide@1 `text` and
+`toX`/`toY` fields. The real compositor produces the token-rounded outline and
+an approximately 86×24px caption at (846,272) in the 680×425 screenshot. A native
+pixel-bounds assertion checks its image coordinates/size, and the full variable
+Geist weight range is loaded in the image worker. Numeric Label x/y fields and
+Alt+arrow nudging keep the caption operable without dragging. Optional add/replace
+controls below the layer list provide the required agent path. No new guide field
+or migration is needed; ordinary text stays a separate, plain-text tool.
 
 `W05-export-light.png` and `W05-export-dark.png` show the actual dialog over W03,
 compared with full Figma W05 context (`22:2562`). At 1440×900 the dialog is
@@ -23,8 +33,30 @@ menu. Hosting cards select real downloadable documents/replay/skill/HTML files a
 explain that downloads do not publish. The footer counts file downloads and offers
 native PDF printing separately, rather than claiming a live publish action. Format
 selection is URL state; feedback and cancellation use real workers and the activity
-log. All images flatten/redact locally. W05 evidence is complete; the overall M10
-visual gate stays open for the annotation-pill treatment and final audit.
+log. All images flatten/redact locally.
+
+## Final M10 comparison
+
+The six committed captures were inspected against the linked Figma frames on
+26 Nov 2026. W02/W12 source context was expanded into both sidebars, headers,
+filters and every visible guide card; W03 and W05 used their full source context.
+The dark editor/export apply the W12 palette and shared tokens to the same layout.
+
+| Screen | Measured match | Native evidence |
+| --- | --- | --- |
+| W02 / W12 | Sidebar/header/filter/grid/card geometry; original vectors, fonts and themed surfaces | Both 1440×900 captures, local data/thumbnail reads, every visible SVG callsite and dimension |
+| W03 | Pane/image/toolbar geometry, grouped outline/caption, step/layer components and target inspector | Both captures, caption pixel bounds, numeric edit/clear persistence, whole-layer keyboard movement and caption selection |
+| W05 | Dialog/card/column/header/footer geometry, original vectors, format and target controls | Both captures, URL format state, native downloads/clipboard/printing and recoverable error states |
+
+All 76 source SVG references across those contexts are retained locally within
+the 95-asset inventory. Four W12 color variants are proven by native PNG comparison
+to have exactly the same intrinsic silhouettes as the shared recolorable masks.
+Component checks verify nonempty files/root dimensions; screen checks attach a
+per-theme JSON record of source files, callsites and effective geometry. Original
+SVGs remain unmodified. Native guide imagery, section records and capability copy
+stay data-driven as described above. Browser-mode copy and interactions reflect
+those native capabilities. The M10 comparison has no remaining visual item;
+the complete app/publisher/extension scope continues in later milestones.
 
 Recreate evidence using PowerShell:
 

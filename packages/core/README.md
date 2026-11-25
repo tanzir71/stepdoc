@@ -41,6 +41,11 @@ Pure guide logic shared by the extension, SPA, exporters and replay tools.
   The caller's review/policy layer selects which mask rectangles to supply.
   Pixelation defaults to 14-pixel cells; opaque masks use `redactionMode: 'solid'`.
   Crop/rectangle/arrow/text/pin/click geometry uses original image coordinates.
+  A rectangle's optional `text` draws a rounded caption beside its token-rounded
+  outline. `toX`/`toY` place the caption; omitted anchors place it below the target.
+  `rectangleLabelLayout` shares sizing/anchor defaults with numeric editor fields.
+  Caption fonts are capped at 128px, text stays clipped to its label, and removing
+  the caption leaves the outline. Existing plain `text` annotations remain plain.
   Accent, mask and pin colors come from the design tokens (light default/dark);
   annotation colors can override the accent. Text uses the token font stack or
   `fontFamily`; the caller loads self-hosted fonts into its worker FontFaceSet.

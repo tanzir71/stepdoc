@@ -56,15 +56,13 @@ test('component controls preserve semantics, asset dimensions and keyboard state
     await expect(page.locator('body')).toMatchAriaSnapshot({
       name: `${theme}-components.aria.yml`,
     })
-    const icons = await page
-      .locator('[data-asset]')
-      .evaluateAll((nodes) =>
-        nodes.map((node) => ({
-          box: node.getBoundingClientRect().toJSON(),
-          mask: getComputedStyle(node).maskImage,
-          size: getComputedStyle(node).maskSize,
-        })),
-      )
+    const icons = await page.locator('[data-asset]').evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        box: node.getBoundingClientRect().toJSON(),
+        mask: getComputedStyle(node).maskImage,
+        size: getComputedStyle(node).maskSize,
+      })),
+    )
     for (const icon of icons) {
       expect(icon.box.width).toBeGreaterThan(0)
       expect(icon.box.height).toBeGreaterThan(0)
@@ -93,5 +91,39 @@ test('component controls preserve semantics, asset dimensions and keyboard state
     const source = await readFile(file, 'utf8')
     expect(source).toMatch(new RegExp(`width="${asset.width}"`))
     expect(source).toMatch(new RegExp(`height="${asset.height}"`))
+  }
+  // Dark Figma exports differ in fill color. Prove that the shared, recolored
+  // mask is an exact silhouette match at its unchanged intrinsic dimensions.
+  const variants = [
+    ['3e6da.svg', '25fac.svg', 14],
+    ['3c0c1.svg', '57a55.svg', 16],
+    ['7f093.svg', '2d1a1.svg', 16],
+    ['a08f2.svg', '3074b.svg', 6],
+  ] as const
+  await page.evaluate(async (variants) => {
+    const panel = document.createElement('div')
+    panel.style.cssText =
+      'display:flex;align-items:flex-start;gap:16px;padding:16px;background:white'
+    for (const [canonical, variant, size] of variants)
+      for (const file of [canonical, variant]) {
+        const icon = document.createElement('span')
+        icon.dataset.variant = file
+        const existing = document.querySelector<HTMLElement>('[data-asset]')!
+        const mask = getComputedStyle(existing).maskImage
+        const base = mask
+          .slice(mask.indexOf('"') + 1, mask.lastIndexOf('"'))
+          .replace(/[^/]+$/, '')
+        const asset = base + file
+        const response = await fetch(asset)
+        if (!response.ok) throw new Error('Reference asset unavailable')
+        icon.style.cssText = `display:block;flex:none;width:${size}px;height:${size}px;background:black;mask-image:url("${asset}");mask-size:auto;mask-repeat:no-repeat;mask-position:center`
+        panel.append(icon)
+      }
+    document.body.append(panel)
+  }, variants)
+  for (const [canonical, variant] of variants) {
+    const a = await page.locator(`[data-variant="${canonical}"]`).screenshot()
+    const b = await page.locator(`[data-variant="${variant}"]`).screenshot()
+    expect(a.equals(b), `${canonical} matches ${variant}`).toBe(true)
   }
 })

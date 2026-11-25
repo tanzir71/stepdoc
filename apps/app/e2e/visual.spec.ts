@@ -1,8 +1,62 @@
-import { test, expect } from '@playwright/test'
-import { mkdir } from 'node:fs/promises'
+import { test, expect, type Page, type TestInfo } from '@playwright/test'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { prepare, hook } from './helpers'
 import { prepareEditor } from './editor-helpers'
+
+async function auditAssets(page: Page, info: TestInfo, name: string) {
+  const roots: Array<{ file: string; width: number; height: number }> =
+    JSON.parse(
+      await readFile(
+        new URL('../../../packages/ui/assets/dimensions.json', import.meta.url),
+        'utf8',
+      ),
+    )
+  const assets = await page.locator('[data-asset], img').evaluateAll((nodes) =>
+    nodes.flatMap((node) => {
+      const box = node.getBoundingClientRect()
+      if (!box.width || !box.height) return []
+      const img = node instanceof HTMLImageElement ? node : null
+      const source = img ? img.src : getComputedStyle(node).maskImage
+      const file = source.match(/([a-z0-9]+\.svg)(?:[?"\s)]|$)/i)?.[1]
+      if (!file) return [] // Guide screenshots are dynamic native blobs.
+      return [
+        {
+          file,
+          slot: node.closest('[data-sd]')?.getAttribute('data-sd'),
+          box: box.toJSON(),
+          layoutWidth: img
+            ? img.width
+            : parseFloat(getComputedStyle(node).width),
+          layoutHeight: img
+            ? img.height
+            : parseFloat(getComputedStyle(node).height),
+          loaded: !img || (img.complete && img.naturalWidth > 0),
+          maskSize: img ? null : getComputedStyle(node).maskSize,
+        },
+      ]
+    }),
+  )
+  expect(assets.length).toBeGreaterThan(10)
+  for (const asset of assets) {
+    const root = roots.find((root) => root.file === asset.file)
+    expect(root, asset.file).toBeDefined()
+    expect(asset.loaded, asset.file).toBe(true)
+    expect(asset.layoutWidth, asset.file).toBe(root!.width)
+    expect(asset.layoutHeight, asset.file).toBe(root!.height)
+    if (asset.maskSize !== null) {
+      expect(asset.maskSize).toBe('auto')
+      expect(asset.box.width, asset.file).toBeCloseTo(root!.width, 2)
+      expect(asset.box.height, asset.file).toBeCloseTo(root!.height, 2)
+    }
+  }
+  const path = info.outputPath(`${name}-assets.json`)
+  await writeFile(path, JSON.stringify(assets, null, 2))
+  await info.attach(`${name}-assets`, {
+    path,
+    contentType: 'application/json',
+  })
+}
 
 test('W02/W12 library geometry follows the reference at 1440 by 900', async ({
   page,
@@ -40,6 +94,7 @@ test('W02/W12 library geometry follows the reference at 1440 by 900', async ({
     await page.reload()
     await expect(page.locator('.guide-card-thumb img')).toHaveCount(8)
     await page.evaluate(() => document.fonts.ready)
+    await auditAssets(page, info, `W02-${theme}`)
     const target = process.env.STEPDOC_UPDATE_SCREENS
       ? fileURLToPath(
           new URL(
@@ -78,6 +133,38 @@ test('W03 editor uses the reference three-pane canvas geometry in both themes', 
   expect(box.inspector).toEqual({ x: 1100, y: 56, width: 340, height: 844 })
   expect(box.image.width).toBe(680)
   expect(box.image.height).toBe(425)
+  const caption = await page
+    .locator('.editor-image>img')
+    .evaluate(async (element) => {
+      const image = element as HTMLImageElement
+      await image.decode()
+      const canvas = new OffscreenCanvas(
+          image.naturalWidth,
+          image.naturalHeight,
+        ),
+        ctx = canvas.getContext('2d')!
+      ctx.drawImage(image, 0, 0)
+      const { data } = ctx.getImageData(800, 250, 270, 80)
+      const xs: number[] = [],
+        ys: number[] = []
+      for (let y = 0; y < 80; y++)
+        for (let x = 0; x < 270; x++) {
+          const at = (y * 270 + x) * 4
+          if (data[at] === 242 && data[at + 1] === 85 && data[at + 2] === 31) {
+            xs.push(x)
+            ys.push(y)
+          }
+        }
+      canvas.width = canvas.height = 1
+      return {
+        x: Math.min(...xs) + 800,
+        y: Math.min(...ys) + 250,
+        width: Math.max(...xs) - Math.min(...xs) + 1,
+        height: Math.max(...ys) - Math.min(...ys) + 1,
+      }
+    })
+  expect(caption).toMatchObject({ x: 896, y: 267, height: 45 })
+  expect(Math.abs(caption.width - 162)).toBeLessThanOrEqual(2)
   for (const theme of ['light', 'dark']) {
     await page.evaluate(
       (theme) =>
@@ -90,6 +177,7 @@ test('W03 editor uses the reference three-pane canvas geometry in both themes', 
     await page.reload()
     await expect(page.locator('.editor-image>img')).toBeVisible()
     await page.evaluate(() => document.fonts.ready)
+    await auditAssets(page, info, `W03-${theme}`)
     const target = process.env.STEPDOC_UPDATE_SCREENS
       ? fileURLToPath(
           new URL(
@@ -134,6 +222,7 @@ test('W05 export dialog follows the reference geometry in both themes', async ({
     ).toBeVisible()
     await expect(page.locator('.editor-image>img')).toBeVisible()
     await page.evaluate(() => document.fonts.ready)
+    await auditAssets(page, info, `W05-${theme}`)
     await page.screenshot({
       path: process.env.STEPDOC_UPDATE_SCREENS
         ? fileURLToPath(

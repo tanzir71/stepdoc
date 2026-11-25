@@ -21,6 +21,7 @@ export const CANVAS_LIMITS = Object.freeze({
   maxBytes: 64 * 1024 * 1024,
   maxLayers: 1000,
   maxTextLength: 5000,
+  maxLabelFontSize: 128,
 })
 
 export function assertImageDimensions(width: number, height: number): void {

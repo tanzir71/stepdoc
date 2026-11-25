@@ -126,8 +126,8 @@
         "type": { "enum": ["rectangle", "arrow", "text", "pin"] },
         "x": { "type": "number" }, "y": { "type": "number" },
         "width": { "type": "number" }, "height": { "type": "number" },
-        "toX": { "type": "number" }, "toY": { "type": "number" },
-        "text": { "type": "string" },
+        "toX": { "type": "number", "description": "Arrow endpoint x, or optional rectangle-caption anchor x in image pixels." }, "toY": { "type": "number", "description": "Arrow endpoint y, or optional rectangle-caption anchor y in image pixels." },
+        "text": { "type": "string", "description": "Plain text, pin content, or a rectangle's optional caption. Rectangle captions default below the outlined target." },
         "color": { "type": "string", "default": "accent" }
       }
     },

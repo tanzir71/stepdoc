@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | In progress | 2026-11-26 | Native SPA, editor and client exports; final visual audit pending | — |
+| M10 | In progress | 2026-11-26 | Native SPA, editor and exports audited; milestone checkpoint next | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
@@ -35,16 +35,17 @@
   - [x] Library/search/status/layout/collection routes, manual creation, JSON import/download, private saved-guide preview, General settings and local loading/empty/error/offline states on the native adapter.
   - [x] W03 local editor: metadata/steps/targets, client image tools and numeric layers, automatic versioned saves, undo/redo, concurrent-tab recovery, Preview/Agent views, redaction review and saved-version downloads.
   - [x] W05 export routes on the local adapter.
-- [ ] Visual parity with Figma for W02/W03/W05 at 1440×900, light + dark: compare automated Playwright screenshots against the linked frames and commit screenshots under `docs/v2/screens/`.
+- [x] Visual parity with Figma for W02/W03/W05 at 1440×900, light + dark: compare automated Playwright screenshots against the linked frames and commit screenshots under `docs/v2/screens/`.
   - [x] W02/W12 local-library screenshots compared and recorded, with reference geometry checks and documented browser-mode copy/accessibility adaptations.
   - [x] W03 light/dark screenshots compared and recorded with pane/image geometry checks and documented browser-mode adaptations.
   - [x] W05 light/dark screenshots compared and recorded, with measured dialog geometry and documented local capabilities.
-  - [ ] Complete milestone parity audit, including W03's annotation-label treatment.
+  - [x] Complete milestone parity audit, including W03's annotation-label treatment; six native captures, caption pixel bounds and per-screen vector callsite/geometry checks.
 - [x] Client-side PDF (print CSS), DOCX, `.stepdoc` import/export round-trip test.
 - [x] a11y gate: aria snapshots + axe for these routes.
   - [x] Library/grid/list/collections/preview/General settings and current states/dialogs: 24 route/state snapshots and axe; native component controls checked in both themes.
   - [x] Editor modes, inspector panels, numeric layers, add/metadata/locator/variable/cleanup/delete/leave/conflict dialogs: 22 additional aria snapshots and axe.
   - [x] Export route, clipboard menu, empty selection and recoverable error: eight additional aria snapshots and axe in both themes (54 route/state snapshots total).
+  - [x] Grouped rectangle caption controls: two additional aria snapshots and axe in both themes (56 route/state snapshots total).
 
 ## M11 — Extension v2
 
@@ -99,7 +100,7 @@
 - Keep v1 operational until each replacement reaches parity; remove server image processing when client flattening replaces those paths.
 - M11: connect core text-detector spans to visible-text DOM Range rectangles, omit editable/form values, and abort capture/upload on detector errors or limits.
 - M15 storage maintenance: collect unreachable OPFS files left by terminated writes/failed cleanup, protecting files retained by history and active writes; add trash restore/purge. Replace local full-guide library filtering with an indexed summary/search projection if large-library measurements warrant it.
-- M10 final visual audit: finish W03's pill-shaped label using explicit annotation data; any new guide fields require a migration. M18 performance audit: measure large-guide thumbnail decoding and session undo memory before adding deferral/coalescing; saved native version history remains unlimited. Editor/Word route chunks now keep the initial SPA JavaScript below Vite's advisory threshold.
+- M18 performance audit: measure large-guide thumbnail decoding and session undo memory before adding deferral/coalescing; saved native version history remains unlimited. Editor/Word route chunks now keep the initial SPA JavaScript below Vite's advisory threshold.
 
 ## Deviations
 
@@ -147,6 +148,11 @@
 - Visual/document evidence: compared full W05 Figma context with actual 1440×900 light/dark screenshots; verified its 920×576 dialog at (260,96), 380px target column and original SVG dimensions. Refreshed W02/W03 evidence for the shared AA agent-text token and Export action. Added eight export aria snapshots/axe states (54 route/state snapshots total); semantic comparison against the prior snapshots confirms existing screens only changed import/export labels, with saved-version JSON controls retained. Rendered native PDF and actual downloaded DOCX, inspected all nine pages of each, and corrected Word paragraph chaining after an initial render exposed separated step headings/images. The bundled Windows runtime lacked an office converter, so DOCX QA used a signature/SHA-verified official LibreOffice administrative image under ignored test results, headlessly with an isolated temporary profile; no office tooling is in app/server paths. Next unit: the final M10 visual audit, including W03's annotation pill. M10 remains open; no milestone tag.
 
 - Verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and standalone `pnpm test:a11y` passed. Evidence: 536 unit tests, 159 native storage checks, redaction and 41-check canvas workers, generated 21-step Chromium replay plus six expected failures, all eight legacy and 35 SPA browser tests, 54 route/state aria snapshots plus two component snapshots and axe, strict typechecks and all production builds. The actual static bundle independently verifies native editing/image processing, compiled-worker DOCX export, portable bundle export/re-import as a separate copy, local fonts/assets and no runtime/external-request failures or packaged fixtures. Lazy editor and Word chunks reduce initial JavaScript from 508.75 to 444.23 kB, resolving Vite's prior advisory. The first full gate exposed a navigation test's paused virtual clock across a full reload; it now resumes for lazy-route loading and freezes again before the next unsaved-edit assertion, retaining every save/discard/back check. The corrected test and full rerun pass. Lint has zero errors and the same two existing image warnings. Work is committed/pushed directly to `main`; no PR, live service, deployment or owner testing.
+
+- 2026-11-26 — M10 final visual audit: completed the rectangle/caption layer in the real client compositor using existing guide@1 `text` and `toX`/`toY` fields. Rounded outlines stay inside their numeric bounds; captions derive token spacing/type/radius, default below the target, cap font size and clip text. Numeric Label x/y and optional caption text support editing/clearing without dragging; pointer and Alt-arrow movement keep the group together. The image worker now declares Geist's full variable-weight range, correcting the caption typography. Schema descriptions and version notes document the existing fields; no validation/default/identifier change or data migration.
+- Comparison evidence: inspected full W03/W05 Figma context and expanded W02/W12 into both sidebars, headers, filters and all eight visible cards per theme. Compared all six refreshed 1440×900 native captures and recorded explicit browser-mode/data adaptations in `docs/v2/screens/README.md`. All 76 referenced SVGs are retained within the 95-file inventory; native PNG equality proves four dark color variants share the exact existing mask silhouettes. Per-screen checks assert original/effective dimensions and attach local vector callsite reports. The caption has a native pixel-bounds regression at the reference location/size. Two new core checks and a real browser flow cover invalid caption coordinates, bounded font size, numeric editing, grouped movement, caption selection, persistence and clearing only its pixels. The canvas worker now passes 57 pixel/resource checks. Two caption aria states bring the route/state total to 56 plus the existing two component snapshots; the independent accessibility gate passes. All M10 acceptance items are implemented; the final full gate and milestone checkpoint follow. Next milestone: M11 WXT extension foundations and capture contract; no owner test, live service or deployment.
+
+- Final verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and independent `pnpm test:a11y` passed: 538 unit tests; 159 native storage checks; redaction and 57-check canvas workers; 21-step generated replay plus six expected failures; eight legacy and 36 SPA browser tests; 56 route/state aria snapshots plus two component snapshots and axe; strict typechecks and every production build. The real static bundle still passes native editing/image upload, compiled-worker DOCX/bundle export and separate-copy bundle import, with local fonts/assets, no runtime/non-local requests and no packaged fixtures. Initial JavaScript remains 444.23 kB. The first full gate exposed a fault-injection test patching an adapter instance that could be bypassed; it now fails the second native OPFS stream write and asserts that the injection fired before verifying cleanup. The targeted test and full rerun pass. Lint has zero errors and the same two existing image warnings. All M10 acceptance criteria are proven; the milestone checkpoint/tag follows. M11 is the next work unit. No PR, deployment, live backend or owner testing.
 
 ## Defaults in use
 

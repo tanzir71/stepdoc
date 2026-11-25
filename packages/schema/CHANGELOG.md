@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M10 completes the renderer for the existing optional `rectangle.text`: a nonempty
+value adds a rounded caption to the outlined target. Existing optional `toX`/`toY`
+place that caption, defaulting to below the rectangle; arrow endpoints retain
+their meaning. Numeric geometry stays in image pixels. No fields, defaults,
+validation constraints or identifiers change, so no persisted-data migration is
+needed. Rectangles use token-rounded outlines; plain text annotations stay plain.
+
 M9 consolidation adds the isolated `@stepdoc/schema/legacy-v1` entry point for the
 unchanged v1 API/capture schemas moved from `packages/shared`. Root guide@1 exports,
 wire formats, defaults and migration output are unchanged; no version bump or

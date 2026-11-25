@@ -1,4 +1,4 @@
-# Browser SPA (M10 in progress)
+# Browser SPA
 
 Run `pnpm dev` from the repository root, then open http://127.0.0.1:3200. No environment file or service is needed. `pnpm dev:legacy` still runs the v1 Next app separately.
 
@@ -27,6 +27,12 @@ Browser mode's sharing card copies a **local** link and shows Private. GitHub/Cl
 The editor saves after 600 ms or Ctrl/Cmd+S through one serialized, optimistic writer. It preserves edits arriving during a save, invalidates outdated replay results, and writes immutable native history. Concurrent tabs can merge independent changes, keep a separate guide with copied blobs, reload explicitly or download working-copy JSON. Storage failures retain the working copy and offer Retry. Link and browser-back navigation ask before leaving unsaved work. Undo/Redo applies to the current session; saved-version restore belongs to M15.
 
 All steps remain in the DOM with search, drag reordering and Alt+Up/Down. Screenshot tools work through an OffscreenCanvas module worker with the local Geist font. Selected redactions burn into the full-size source before either source or flattened image is stored; removing a saved blur cannot recover pixels. Every layer has keyboard selection and numeric geometry fields. Uploaded images are processed locally, and replacing an image can recover from a missing source. A selected step's locator order and generated line share the core replay generator; clipboard export includes the executable fallback helpers. Fill/upload actions reference variables or secrets without value fields. Page URLs always strip credentials, query and fragment. Local title cleanup uses deterministic rules; provider AI, extension highlighting/Guide Me, publishing and history restore remain later milestones.
+
+Rectangles can have an optional caption. Its **Label x/y** fields place the caption
+in source-image pixels, with a default below the outlined target. Clear its text
+to keep only the outline. Pointer dragging and Alt+arrow layer nudges move the
+rectangle and caption together. The image worker loads Geist's full variable-weight
+range; the same client compositor generates editor, export and portable-bundle pixels.
 
 The initial library page shows eight records, with an ordinary **Show all** button. No guides are virtualized. Collection shortcuts show the three largest collections; the Collections route lists all. Ctrl/Cmd+K focuses search, arrow/Home/End keys select status/theme tabs, Escape closes native dialogs, and route changes move focus to main. Notifications also appear in the live region and session activity log. A loaded page continues using its native store while offline; this unit does not supply a service worker or promise offline page reloads.
 

@@ -7,6 +7,7 @@ import {
   clipPixelRect,
   flattenImage,
   prepareCapture,
+  rectangleLabelLayout,
   type FlattenOptions,
 } from '../src/canvas'
 
@@ -83,6 +84,21 @@ describe('fail-closed image processing options', () => {
     { click: { radius: 1 } },
     { edits: { annotations: [{ type: 'arrow', x: 1, y: 1 }] } },
     { edits: { annotations: [{ type: 'rectangle', x: 1, y: 1 }] } },
+    {
+      edits: {
+        annotations: [
+          {
+            type: 'rectangle',
+            x: 1,
+            y: 1,
+            width: 10,
+            height: 10,
+            text: 'Label',
+            toX: NaN,
+          },
+        ],
+      },
+    },
     { edits: { annotations: [{ type: 'text', x: 1, y: 1 }] } },
     {
       edits: {
@@ -119,5 +135,16 @@ describe('fail-closed image processing options', () => {
       )
       expect(error).not.toHaveProperty('cause')
     }
+  })
+})
+
+describe('rectangle captions', () => {
+  it('defaults below the target and caps glyph size for oversized authored geometry', () => {
+    const label = rectangleLabelLayout({ x: 20, y: 30, height: 64 })
+    expect(label.x).toBe(20)
+    expect(label.y).toBeGreaterThan(94)
+    const large = rectangleLabelLayout({ x: 0, y: 0, height: Number.MAX_VALUE })
+    expect(large.fontSize).toBeLessThanOrEqual(CANVAS_LIMITS.maxLabelFontSize)
+    expect(Number.isFinite(large.y + large.height)).toBe(true)
   })
 })

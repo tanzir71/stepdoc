@@ -4,6 +4,7 @@ import {
   type Step,
   type Locator,
 } from '@stepdoc/schema'
+import { rectangleLabelLayout, CANVAS_LIMITS } from '@stepdoc/core/canvas'
 
 export type EditorMode = 'edit' | 'preview' | 'agent'
 export type InspectorPanel = 'step' | 'target' | 'redact' | 'history'
@@ -239,7 +240,19 @@ export function layerAtPoint(
     index--
   ) {
     const a = step.edits!.annotations![index]!
+    const label =
+      a.type === 'rectangle' && a.text?.trim() ? rectangleLabelLayout(a) : null
     if (
+      (label &&
+        hit({
+          x: label.x,
+          y: label.y,
+          width: Math.min(
+            CANVAS_LIMITS.maxEdge,
+            a.text!.length * label.fontSize * 0.65 + label.padding * 2,
+          ),
+          height: label.height,
+        })) ||
       (a.type === 'rectangle' &&
         hit({ x: a.x, y: a.y, width: a.width ?? 0, height: a.height ?? 0 })) ||
       (a.type === 'text' &&
@@ -283,6 +296,9 @@ export function translateLayer(step: Step, id: string, dx: number, dy: number) {
   if ('type' in item && item.type === 'arrow') {
     item.toX = Math.max(0, item.toX! + x - item.x)
     item.toY = Math.max(0, item.toY! + y - item.y)
+  } else if ('type' in item && item.type === 'rectangle' && item.text?.trim()) {
+    if (item.toX !== undefined) item.toX = Math.max(0, item.toX + x - item.x)
+    if (item.toY !== undefined) item.toY = Math.max(0, item.toY + y - item.y)
   }
   item.x = x
   item.y = y

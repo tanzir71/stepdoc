@@ -67,10 +67,8 @@
         - listbox "Image layers":
           - option /Click marker x \d+ y \d+ r \d+/ [selected]:
             - code: /x \d+ y \d+ r \d+/
-          - option /rectangle x \d+ y \d+ w \d+ h \d+/:
+          - option /rectangle · Owners only x \d+ y \d+ w \d+ h \d+/:
             - code: /x \d+ y \d+ w \d+ h \d+/
-          - option /text · Owners only x \d+ y \d+/:
-            - code: /x \d+ y \d+/
           - option "Blur · email auto · applied":
             - code: auto · applied
           - option "Blur · card auto · applied":

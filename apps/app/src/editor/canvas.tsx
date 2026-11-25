@@ -8,7 +8,7 @@ import {
   StepPin,
 } from '@stepdoc/ui'
 import type { Guide, Step, Rect, Annotation } from '@stepdoc/schema'
-import { clipPixelRect } from '@stepdoc/core/canvas'
+import { clipPixelRect, rectangleLabelLayout } from '@stepdoc/core/canvas'
 import type { EditorController } from './controller'
 import { imageOptions, type ImageProcessor } from './images'
 import { getStorage } from '../repository'
@@ -255,6 +255,13 @@ export function CanvasPanel({
               : s.redactions[layerIndex]?.rect
       if (item) Object.assign(item, { [property]: value })
     })
+  const caption =
+    activeLayer &&
+    'type' in activeLayer &&
+    activeLayer.type === 'rectangle' &&
+    activeLayer.text?.trim()
+      ? rectangleLabelLayout(activeLayer)
+      : null
   return (
     <section className="editor-canvas" aria-label="Selected step">
       <div
@@ -505,15 +512,20 @@ export function CanvasPanel({
               activeLayer
             ) {
               event.preventDefault()
-              const property = ['ArrowLeft', 'ArrowRight'].includes(event.key)
-                ? 'x'
-                : 'y'
-              changeLayer(
-                property,
-                Math.max(
-                  0,
-                  (activeLayer[property] ?? 0) +
-                    (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1),
+              edit((s) =>
+                translateLayer(
+                  s,
+                  selected,
+                  event.key === 'ArrowLeft'
+                    ? -1
+                    : event.key === 'ArrowRight'
+                      ? 1
+                      : 0,
+                  event.key === 'ArrowUp'
+                    ? -1
+                    : event.key === 'ArrowDown'
+                      ? 1
+                      : 0,
                 ),
               )
               return
@@ -607,17 +619,31 @@ export function CanvasPanel({
                       ['text', 'pin'].includes(activeLayer.type)
                     ? []
                     : ['width', 'height']),
+              ...(caption ? ['toX', 'toY'] : []),
             ].map((property) => (
               <label key={property}>
-                {property}
+                {caption && ['toX', 'toY'].includes(property)
+                  ? `Label ${property === 'toX' ? 'x' : 'y'}`
+                  : property}
                 <input
                   type="number"
                   data-sd={`canvas-layer-${property.toLowerCase()}`}
-                  aria-label={`Layer ${property}`}
+                  aria-label={
+                    caption && ['toX', 'toY'].includes(property)
+                      ? `Label ${property === 'toX' ? 'x' : 'y'}`
+                      : `Layer ${property}`
+                  }
                   min={['radius', 'width', 'height'].includes(property) ? 1 : 0}
                   max={32768}
                   step={1}
-                  value={String(Reflect.get(activeLayer, property) ?? 0)}
+                  value={String(
+                    Reflect.get(activeLayer, property) ??
+                      (caption && property === 'toX'
+                        ? caption.x
+                        : caption && property === 'toY'
+                          ? caption.y
+                          : 0),
+                  )}
                   onChange={(event) => {
                     const value = event.currentTarget.valueAsNumber
                     if (
@@ -634,12 +660,16 @@ export function CanvasPanel({
               </label>
             ))}
             {'type' in activeLayer &&
-            ['text', 'pin'].includes(activeLayer.type) ? (
+            ['rectangle', 'text', 'pin'].includes(activeLayer.type) ? (
               <TextField
-                label="Annotation text"
+                label={
+                  activeLayer.type === 'rectangle'
+                    ? 'Rectangle label (optional)'
+                    : 'Annotation text'
+                }
                 hook="canvas-layer-text"
                 value={activeLayer.text ?? ''}
-                required
+                required={activeLayer.type !== 'rectangle'}
                 onChange={(value) => changeLayer('text', value)}
               />
             ) : null}

@@ -17,7 +17,10 @@ self.onmessage = (event: MessageEvent<ImageRequest>) => {
   void (async () => {
     try {
       font ??= (async () => {
-        const face = new FontFace('Geist', `url("${event.data.font}")`)
+        const face = new FontFace('Geist', `url("${event.data.font}")`, {
+          weight: '100 900',
+          style: 'normal',
+        })
         self.fonts.add(await face.load())
       })().catch((error) => {
         font = undefined

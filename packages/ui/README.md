@@ -12,3 +12,9 @@ W05 adds seven original SVGs at their intrinsic dimensions and measured dialog/c
 tokens. Agent badge text uses `agent/text`: the light `agent/solid` text reached
 only 4.01:1 over the combined selected-card and soft-badge surfaces. The deeper
 text token passes AA there while preserving the solid accent and soft fill.
+
+The final M10 audit retains four additional W12 color variants as source reference
+assets. The component browser test proves that their unchanged intrinsic masks
+render byte-identical PNGs to the existing shared chevron, grid, list and dot
+silhouettes. CSS supplies the semantic theme color. Screen-level checks also
+verify every visible icon's local source, callsite and effective dimensions.

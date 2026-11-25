@@ -258,6 +258,79 @@ test('guards link and browser-back navigation until edits are saved or explicitl
   await expect(page).toHaveURL('/')
   expect((await storedGuide(page)).steps[0]!.title).toBe('Save before back')
 })
+test('edits rectangle captions by numbers, nudges the whole layer and clears only the caption pixels', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await prepareEditor(page)
+  await hook(page, 'canvas-layer-select').nth(1).click()
+  await expect(hook(page, 'canvas-layer-text')).toHaveValue('Owners only')
+  await page
+    .getByRole('spinbutton', { name: 'Label x', exact: true })
+    .fill('880')
+  await page
+    .getByRole('spinbutton', { name: 'Label y', exact: true })
+    .fill('270')
+  await hook(page, 'canvas-layer-text').fill('Workspace owner')
+  await page.keyboard.press('Control+s')
+  await saved(page)
+  expect(
+    (await storedGuide(page)).steps[2]!.edits!.annotations![0],
+  ).toMatchObject({ text: 'Workspace owner', toX: 880, toY: 270 })
+  const pixelPair = () =>
+    page.evaluate(async () => {
+      const path = '/src/repository.ts'
+      const repo: typeof import('../src/repository') = await import(
+        /* @vite-ignore */ path
+      )
+      const adapter = await repo.getStorage(),
+        guide = await adapter.getGuide('editor-guide')
+      const image = guide.steps[2]!.screenshot!
+      return Promise.all(
+        [image.original!, image.rendered].map(async (key) => {
+          const bitmap = await createImageBitmap(await adapter.getBlob(key))
+          const canvas = new OffscreenCanvas(bitmap.width, bitmap.height),
+            ctx = canvas.getContext('2d')!
+          ctx.drawImage(bitmap, 0, 0)
+          bitmap.close()
+          const pixel = Array.from(ctx.getImageData(882, 292, 1, 1).data)
+          canvas.width = canvas.height = 1
+          return pixel
+        }),
+      )
+    })
+  const painted = await pixelPair()
+  expect(painted[1]).toEqual([242, 85, 31, 255])
+  expect(painted[0]).not.toEqual(painted[1])
+  await page.reload()
+  await expect(hook(page, 'canvas-layer-text')).toHaveValue('Workspace owner')
+  await hook(page, 'canvas-layer-select').nth(1).focus()
+  await page.keyboard.press('Alt+ArrowRight')
+  await page.keyboard.press('Control+s')
+  await saved(page)
+  expect(
+    (await storedGuide(page)).steps[2]!.edits!.annotations![0],
+  ).toMatchObject({ x: 1081, y: 188, toX: 881, toY: 270 })
+  await hook(page, 'canvas-image').scrollIntoViewIfNeeded()
+  await hook(page, 'canvas-layer-select').first().click()
+  const box = await hook(page, 'canvas-image').boundingBox()
+  await page.mouse.click(
+    box!.x + (890 / 1280) * box!.width,
+    box!.y + (290 / 800) * box!.height,
+  )
+  await expect(hook(page, 'canvas-layer-select').nth(1)).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await hook(page, 'canvas-layer-text').fill('')
+  await page.keyboard.press('Control+s')
+  await saved(page)
+  const cleared = await pixelPair()
+  expect(cleared[1]).toEqual(cleared[0])
+  await page.reload()
+  await expect(hook(page, 'canvas-layer-text')).toHaveValue('')
+})
+
 test('uploads/annotates an image in the client and continues saving offline', async ({
   page,
   context,

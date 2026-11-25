@@ -1,5 +1,6 @@
 import type { Annotation, Rect, StepInput } from '@stepdoc/schema'
 import tokens from '../../../../docs/v2/design-tokens.json'
+import { rectangleLabelLayout } from './labels'
 import {
   assertImageDimensions,
   assertRect,
@@ -84,18 +85,28 @@ function validateOptions(options: FlattenOptions): void {
   for (const annotation of options.edits?.annotations ?? []) {
     if (
       ![annotation.x, annotation.y].every(Number.isFinite) ||
+      (annotation.text !== undefined &&
+        (typeof annotation.text !== 'string' ||
+          annotation.text.length > CANVAS_LIMITS.maxTextLength)) ||
       (annotation.color !== undefined &&
         (typeof annotation.color !== 'string' || annotation.color.length > 128))
     )
       throw new CanvasImageError('invalid_options')
-    if (annotation.type === 'rectangle')
+    if (annotation.type === 'rectangle') {
       assertRect({
         x: annotation.x,
         y: annotation.y,
         width: annotation.width!,
         height: annotation.height!,
       })
-    else if (annotation.type === 'arrow') {
+      if (
+        annotation.text?.trim() &&
+        [annotation.toX, annotation.toY].some(
+          (value) => value !== undefined && !Number.isFinite(value),
+        )
+      )
+        throw new CanvasImageError('invalid_options')
+    } else if (annotation.type === 'arrow') {
       if (
         ![annotation.toX, annotation.toY].every(
           (value) => typeof value === 'number' && Number.isFinite(value),
@@ -104,11 +115,7 @@ function validateOptions(options: FlattenOptions): void {
         throw new CanvasImageError('invalid_options')
     } else if (annotation.type !== 'text' && annotation.type !== 'pin')
       throw new CanvasImageError('invalid_options')
-    if (
-      (annotation.type === 'text' && typeof annotation.text !== 'string') ||
-      (annotation.text !== undefined &&
-        annotation.text.length > CANVAS_LIMITS.maxTextLength)
-    )
+    if (annotation.type === 'text' && typeof annotation.text !== 'string')
       throw new CanvasImageError('invalid_options')
   }
 }
@@ -250,14 +257,50 @@ function drawAnnotation(
     ctx.strokeStyle = ctx.fillStyle = color
     ctx.lineWidth = options.strokeWidth ?? 4
     ctx.lineCap = ctx.lineJoin = 'round'
-    if (annotation.type === 'rectangle')
-      ctx.strokeRect(
-        annotation.x,
-        annotation.y,
-        annotation.width!,
-        annotation.height!,
+    if (annotation.type === 'rectangle') {
+      const { x, y, width = 0, height = 0 } = annotation
+      if (!width || !height) return
+      const label = rectangleLabelLayout(annotation)
+      ctx.lineWidth = Math.min(ctx.lineWidth, width, height)
+      const inset = ctx.lineWidth / 2
+      ctx.beginPath()
+      ctx.roundRect(
+        x + inset,
+        y + inset,
+        width - inset * 2,
+        height - inset * 2,
+        Math.max(
+          0,
+          Math.min(label.outlineRadius, width / 2, height / 2) - inset,
+        ),
       )
-    else if (annotation.type === 'arrow') {
+      ctx.stroke()
+      if (annotation.text?.trim() && width > 0 && height > 0) {
+        ctx.font = `${label.fontWeight} ${label.fontSize}px ${options.fontFamily ?? tokens.font.sans}`
+        const labelWidth = Math.min(
+          CANVAS_LIMITS.maxEdge,
+          ctx.measureText(annotation.text).width + label.padding * 2,
+        )
+        ctx.beginPath()
+        ctx.roundRect(
+          label.x,
+          label.y,
+          labelWidth,
+          label.height,
+          Math.min(label.radius, labelWidth / 2),
+        )
+        ctx.fill()
+        ctx.clip()
+        ctx.fillStyle = tokens.color['text/on-accent'][theme]
+        ctx.textBaseline = 'middle'
+        ctx.fillText(
+          annotation.text,
+          label.x + label.padding,
+          label.y + label.height / 2,
+          Math.max(1, labelWidth - label.padding * 2),
+        )
+      }
+    } else if (annotation.type === 'arrow') {
       const x = annotation.toX!,
         y = annotation.toY!
       const angle = Math.atan2(y - annotation.y, x - annotation.x)

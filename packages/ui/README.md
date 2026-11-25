@@ -7,3 +7,8 @@ Import `@stepdoc/ui/styles.css` once. It includes generated `tokens.css` and loc
 `assets/provenance.json` maps the unmodified Figma SVG downloads to source nodes. `dimensions.json` records intrinsic root dimensions. Monochrome icons use CSS masks at those dimensions and current semantic color. Original SVG paths, root sizes and viewBoxes are preserved. The original 32px light logo is transformed inside the library's 24px slot; the dark mark is intrinsically 24px. The editor uses the reference's 32px slot through `Logo size="m"`. This avoids changing the asset roots. The component browser check verifies dimensions, keyboard/controlled states and both themes with axe. `Toggle` without an `onChange` is explicitly disabled, used for the editor's locked query-stripping policy.
 
 Accessibility adjustments are centralized in the design tokens: deeper light-theme accent/status text, a dark image-label surface and white overlay text. Small metadata uses secondary text because tertiary text on these surfaces fails AA. The local user avatar uses neutral colors, reserving agent colors for agent affordances. No palette literals appear in component code.
+
+W05 adds seven original SVGs at their intrinsic dimensions and measured dialog/card
+tokens. Agent badge text uses `agent/text`: the light `agent/solid` text reached
+only 4.01:1 over the combined selected-card and soft-badge surfaces. The deeper
+text token passes AA there while preserving the solid accent and soft fill.

@@ -204,11 +204,11 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `library-import` | W02 Import |
 | `library-create`, `library-create-empty`, `guide-create-title`, `guide-create-instruction`, `guide-create-submit`, `guide-create-cancel` | Browser manual-guide creation (`/?create=1`) |
 | `library-search`, `library-search-focus`, `library-status-<filter>`, `library-sort`, `library-view-grid`, `library-view-list`, `library-show-all`, `library-clear`, `library-retry`, `library-results` | Local library search, status, layout, pagination and states |
-| `library-guide-open`, `library-collection-open`, `library-import-file`, `library-import-copy`, `library-import-cancel` | Library navigation and JSON import conflict handling |
+| `library-guide-open`, `library-collection-open`, `library-import-file`, `library-import-copy`, `library-import-cancel`, `library-import-stop` | Library navigation, JSON/bundle import conflict handling and cancellation |
 | `nav-home`, `nav-collapse`, `nav-library`, `nav-collections`, `nav-drafts`, `nav-published`, `nav-archived`, `nav-collection` | Browser workspace navigation |
 | `settings-open`, `settings-storage-details`, `theme-light`, `theme-dark`, `theme-system`, `storage-info`, `storage-info-close` | Browser appearance and storage settings |
 | `guide-library`, `guide-download-json`, `not-found-home`, `activity-open`, `activity-close`, `activity-dismiss`, `activity-live` | Private saved-guide preview, navigation and accessible feedback |
-| `guide-edit`, `editor-library`, `editor-collection`, `editor-guide-details`, `editor-guide-details-close`, `editor-guide-title`, `editor-guide-description`, `editor-read-guide`, `editor-copy-link`, `editor-download-json`, `editor-save-status` | Local editor navigation, metadata, save/history indicator and JSON download |
+| `guide-edit`, `editor-library`, `editor-collection`, `editor-guide-details`, `editor-guide-details-close`, `editor-guide-title`, `editor-guide-description`, `editor-read-guide`, `editor-copy-link`, `editor-save-status` | Local editor navigation, metadata and save/history indicator |
 | `editor-mode-edit`, `editor-mode-preview`, `editor-mode-agent`, `inspector-step`, `inspector-target`, `inspector-redact`, `inspector-history` | Editor mode and inspector tabs (URL state) |
 | `editor-step-select`, `editor-search-open`, `editor-search`, `editor-add-step`, `editor-add-step-footer`, `editor-add-image`, `editor-image-file`, `editor-undo`, `editor-redo`, `editor-retry-load`, `editor-retry-save` | Step selection/search, local image input, history commands and recovery |
 | `step-add-type`, `step-add-title`, `step-add-save`, `step-add-cancel`, `step-title`, `step-description`, `inspector-step-title`, `inspector-step-description`, `step-type`, `step-image-alt`, `step-notes`, `step-move-up`, `step-move-down`, `step-delete`, `step-delete-confirm`, `step-delete-cancel`, `step-image-upload`, `step-image-upload-empty` | Native step fields, add/delete dialogs and keyboard reordering |
@@ -218,6 +218,9 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `redaction-add`, `redaction-select`, `redaction-apply`, `history-download`, `cleanup-select`, `cleanup-apply`, `cleanup-cancel` | Local redaction, version download and rule-based title review |
 | `editor-conflict-merge`, `editor-conflict-copy`, `editor-conflict-reload`, `editor-conflict-close`, `editor-conflict-download`, `editor-leave-save`, `editor-leave-discard`, `editor-leave-stay` | Optimistic-write and unsaved-navigation recovery dialogs |
 | `export-open` / `publish-confirm` | W03 topbar / W05 footer |
+| `export-close`, `export-format-<pdf\|html\|markdown\|docx\|bundle\|json\|playwright\|skill>`, `export-download`, `export-print`, `export-cancel-job`, `export-feedback` | W05 local format selection, native downloads/printing, cancellation and accessible feedback |
+| `export-link-private`, `export-copy-link`, `export-copy-menu`, `export-copy-markdown`, `export-copy-rich`, `export-copy-html`, `export-host-documents`, `export-host-replay`, `export-host-skill`, `export-host-html` | Browser-mode local link/clipboard and actual hosting-file selections; no publishing claim |
+| `route-library`, `route-reload` | Editor chunk loading/error recovery |
 | `ai-cleanup` | W03 step list header |
 | `guide-me` | W03 topbar |
 | `setup-continue` | W01 |

@@ -106,6 +106,11 @@
       "dark": "#8ea8ff22",
       "css": "--sd-agent-soft"
     },
+    "agent/text": {
+      "light": "#2f48b5",
+      "dark": "#8ea8ff",
+      "css": "--sd-agent-text"
+    },
     "success/solid": {
       "light": "#15803d",
       "dark": "#3dd68c",
@@ -209,7 +214,8 @@
     "md": 8,
     "lg": 12,
     "xl": 16,
-    "full": 999
+    "full": 999,
+    "export-card": 10
   },
   "font": {
     "sans": "Geist, ui-sans-serif, system-ui, sans-serif",
@@ -361,6 +367,9 @@
     "editor-topbar": 56,
     "editor-image": 680,
     "editor-gutter": 50,
-    "layer-row": 30
+    "layer-row": 30,
+    "export-dialog": 920,
+    "export-target": 380,
+    "export-card": 212
   }
 }

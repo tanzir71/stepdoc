@@ -1,5 +1,7 @@
 import { defineConfig } from 'vitest/config'
 export default defineConfig({
+  optimizeDeps: { include: ['@stepdoc/core > docx'] },
+  worker: { format: 'es' },
   server: { host: '127.0.0.1', port: 3200, strictPort: true },
   build: {
     assetsInlineLimit: 0,

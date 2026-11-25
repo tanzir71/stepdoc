@@ -3,6 +3,8 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  lazy,
+  Suspense,
   type MouseEvent,
 } from 'react'
 import {
@@ -19,7 +21,7 @@ import {
 import { useLibrary } from './hooks'
 import { Library, StatePanel } from './library'
 import { Preview } from './preview'
-import { Editor } from './editor/Editor'
+import { RouteBoundary } from './route-boundary'
 import { CreateDialog } from './dialogs'
 import { humanize, libraryUrl, parseLibrary } from './model'
 import { navigate, useLocation } from './navigation'
@@ -31,12 +33,16 @@ import {
 } from './preferences'
 import { resetStorage } from './repository'
 
+const Editor = lazy(() =>
+  import('./editor/Editor').then((module) => ({ default: module.Editor })),
+)
+
 export function App() {
   const url = useLocation()
   const [pathname, rawSearch = ''] = url.split('?')
   const search = `?${rawSearch}`
   const route = parseLibrary(search)
-  const editor = /^\/g\/([a-z0-9][a-z0-9-]{2,80})\/edit\/?$/.exec(
+  const editor = /^\/g\/([a-z0-9][a-z0-9-]{2,80})\/(edit|export)\/?$/.exec(
     pathname ?? '',
   )
   const [preferences, setPreferences] = useState<Preferences>(readPreferences)
@@ -135,12 +141,33 @@ export function App() {
   if (editor?.[1])
     return (
       <div onClick={intercept}>
-        <Editor
-          key={editor[1]}
-          id={editor[1]}
-          search={search}
-          online={online}
-        />
+        <RouteBoundary key={editor[1]}>
+          <Suspense
+            fallback={
+              <>
+                <header>
+                  <nav aria-label="Guide navigation">
+                    <a href="/" data-sd="route-library">
+                      Library
+                    </a>
+                  </nav>
+                </header>
+                <main id="main" tabIndex={-1}>
+                  <h1>Guide editor</h1>
+                  <p role="status">Loading editor…</p>
+                </main>
+              </>
+            }
+          >
+            <Editor
+              key={editor[1]}
+              id={editor[1]}
+              search={search}
+              online={online}
+              exportOpen={editor[2] === 'export'}
+            />
+          </Suspense>
+        </RouteBoundary>
       </div>
     )
   return (

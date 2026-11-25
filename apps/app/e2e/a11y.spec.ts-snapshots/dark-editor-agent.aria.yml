@@ -17,7 +17,7 @@
     - tab "Agent view" [selected]
   - button "Read guide"
   - button "Copy link"
-  - button "Download JSON"
+  - button "Export & publish"
 - main:
   - tabpanel "Agent view":
     - region "Agent text view":

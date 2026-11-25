@@ -81,7 +81,17 @@ relative raster paths or embedded PNG/JPEG/WebP data URLs. Clients must flatten 
 review those images first; these functions neither read pixels nor fetch images.
 Without an override, screenshots reference `img/step-N.webp`; the caller packages
 the corresponding rendered blobs. Original image references are never exported.
-The `.stepdoc` editing bundle is a separate M10 format and can retain redacted originals.
+The `.stepdoc` editing bundle is a separate format and can retain redacted originals.
+
+Direct modules `export/archive`, `export/markdown-zip` and `export/docx` provide
+`exportBundle`/`importBundle`, `exportMarkdownZip` and asynchronous `exportDocx`.
+Callers supply a step-ID map of rendered raster bytes and optional already-redacted
+sources. Word requires client-normalized PNGs; core never decodes pixels. Bundle
+import validates bounded ZIP structure, CRCs, hashes, schema and raster headers;
+the app decodes/re-masks before native storage. See the
+[versioned bundle contract](../../docs/v2/bundle-format.md) for limits and privacy.
+Generated Word uses semantic headings, accessible images, A4 page geometry,
+authored timestamps and paragraph chains that keep each step together.
 
 Exporters validate a fresh guide copy, reject duplicate IDs/indices/variables and
 undeclared or mismatched variable references, sort by index and renumber steps.
@@ -94,9 +104,12 @@ inputs throw `GuideExportError` without source data, validation payloads or caus
 
 The HTML document has semantic landmarks, format alternates, stable step IDs, target
 alt text and script-safe HowTo JSON-LD. It uses the token palette with light as the
-default; portable document typography falls back to local system fonts. The Figma
-published-site shell, self-hosted font packaging, agent tabs and site assets remain
-M16 work. Markdown escapes source markup, and SKILL.md includes purpose,
+default; portable document typography falls back to local system fonts. Optional
+`fonts: { sans, mono }` embeds local WOFF2 data URLs, `print: true` adds A4 print
+rules, and `standalone: true` omits companion-format links for a single-file HTML
+download. The SPA supplies fonts and flattened embedded images. The Figma
+published-site shell, agent tabs and site asset packaging remain M16 work.
+Markdown escapes source markup, and SKILL.md includes purpose,
 preconditions, variable declarations and numbered actions/targets/expectations.
 
 `replay.spec.ts` imports `@playwright/test`. Install it and its Chromium binary locally,

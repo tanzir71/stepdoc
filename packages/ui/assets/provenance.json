@@ -808,6 +808,69 @@
           "name": "W03 editor icon"
         }
       ]
+    },
+    {
+      "file": "418d0.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "70a3e.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "8fef2.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "aad3f.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "c4590.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "14a50.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
+    },
+    {
+      "file": "67687.svg",
+      "slots": [
+        {
+          "node": "22:2721",
+          "name": "W05 export dialog icon"
+        }
+      ]
     }
   ]
 }

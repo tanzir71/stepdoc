@@ -35,6 +35,7 @@ import {
 import { TextField, SelectField } from './fields'
 import { TargetPanel } from './target'
 import { CanvasPanel } from './canvas'
+import { ExportDialog } from '../exports/ExportDialog'
 import './styles.css'
 
 function Row({
@@ -108,10 +109,12 @@ export function Editor({
   id,
   search,
   online,
+  exportOpen = false,
 }: {
   id: string
   search: string
   online: boolean
+  exportOpen?: boolean
 }) {
   const [attempt, setAttempt] = useState(0)
   const state = useEditor(id, attempt)
@@ -120,6 +123,7 @@ export function Editor({
       id={id}
       search={search}
       online={online}
+      exportOpen={exportOpen}
       runtime={state.runtime}
     />
   ) : (
@@ -162,11 +166,13 @@ function EditorLoaded({
   search,
   online,
   runtime,
+  exportOpen,
 }: {
   id: string
   search: string
   online: boolean
   runtime: EditorRuntime
+  exportOpen: boolean
 }) {
   const { controller, processor } = runtime
   useLayoutEffect(() => {
@@ -177,7 +183,10 @@ function EditorLoaded({
   const selected = editorRoute(search)
   const step = guide.steps[Math.min(selected.step, guide.steps.length) - 1]!
   const route = (changes: Record<string, string | null>, replace = false) =>
-    navigate(editorUrl(id, search, changes), replace)
+    navigate(
+      editorUrl(id, search, changes, exportOpen ? 'export' : 'edit'),
+      replace,
+    )
   const select = (step: Step) =>
     route({ step: String(step.index), layer: null })
   const announce = useActivity()
@@ -531,25 +540,25 @@ function EditorLoaded({
         </Button>
         <Button
           icon="download"
-          data-sd="editor-download-json"
+          data-sd="export-open"
           disabled={imageBusy}
           onClick={() => {
             void controller.flush().then((ok) => {
               if (!ok) return
-              try {
-                download(controller.snapshot().guide)
-                announce('Guide JSON downloaded. Images are stored separately.')
-              } catch {
-                announce(
-                  'Guide JSON could not be exported. Check its URLs and metadata.',
-                )
-              }
+              navigate(editorUrl(id, search, {}, 'export'))
             })
           }}
         >
-          Download JSON
+          Export &amp; publish
         </Button>
       </header>
+      {exportOpen ? (
+        <ExportDialog
+          guide={guide}
+          search={search}
+          close={() => navigate(editorUrl(id, search, { formats: null }), true)}
+        />
+      ) : null}
       {!online ? (
         <p role="status" className="offline-banner">
           <Icon name="offline" />

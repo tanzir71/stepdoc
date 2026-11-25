@@ -3,6 +3,7 @@ import { preview } from 'vite'
 import { chromium } from '@playwright/test'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import assert from 'node:assert/strict'
+import { unzipSync } from 'fflate'
 
 const files = (
   await readdir(new URL('../dist/', import.meta.url), { recursive: true })
@@ -89,8 +90,40 @@ try {
     'Edited in the static production bundle',
   )
   await page.locator('.editor-image>img').waitFor()
+  await page.locator('[data-sd="export-open"]').click()
+  for (const id of ['pdf', 'markdown', 'json'])
+    await page.locator(`[data-sd="export-format-${id}"]`).uncheck()
+  await page.locator('[data-sd="export-format-docx"]').check()
+  const wordWaiting = page.waitForEvent('download')
+  await page.locator('[data-sd="export-download"]').click()
+  const wordDownload = await wordWaiting
+  const word = unzipSync(
+    new Uint8Array(await readFile(await wordDownload.path())),
+  )
+  assert(
+    new TextDecoder()
+      .decode(word['word/document.xml'])
+      .includes('Edited in the static production bundle'),
+  )
+  assert(Object.keys(word).some((name) => name.startsWith('word/media/')))
+  await page.locator('[data-sd="export-format-docx"]').uncheck()
+  await page.locator('[data-sd="export-format-bundle"]').check()
+  const bundleWaiting = page.waitForEvent('download')
+  await page.locator('[data-sd="export-download"]').click()
+  const bundleDownload = await bundleWaiting
+  const bundle = await readFile(await bundleDownload.path())
+  assert(unzipSync(new Uint8Array(bundle))['manifest.json'])
+  await page.keyboard.press('Escape')
   await page.locator('[data-sd="editor-library"]').click()
   await page.locator('[data-sd="library-guide-open"]').waitFor()
+  await page.locator('[data-sd="library-import-file"]').setInputFiles({
+    name: 'production.stepdoc',
+    mimeType: 'application/vnd.stepdoc+zip',
+    buffer: bundle,
+  })
+  await page.locator('[data-sd="library-import-copy"]').click()
+  await page.locator('[data-sd="library-guide-open"]').nth(1).waitFor()
+  assert.equal(await page.locator('[data-sd="library-guide-open"]').count(), 2)
   await page.evaluate(() => document.fonts.ready)
   assert(
     await page.evaluate(() => document.fonts.check('14px Geist')),
@@ -98,7 +131,7 @@ try {
   )
   assert.deepEqual(failures, [])
   console.log(
-    'Static production bundle: creation → native storage → editor/worker image upload → deep-link reload → library; local fonts/assets; no runtime/network failures.',
+    'Static production bundle: creation → native storage → editor/image worker → deep-link reload → DOCX export worker → portable bundle export/import → separate library copy; local fonts/assets; no runtime/network failures.',
   )
 } finally {
   await browser?.close()

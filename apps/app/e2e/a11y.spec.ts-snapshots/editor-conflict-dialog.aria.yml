@@ -17,7 +17,7 @@
     - tab "Agent view"
   - button "Read guide"
   - button "Copy link"
-  - button "Download JSON"
+  - button "Export & publish"
 - alert:
   - text: A newer version was saved in another tab. Your working copy is still here.
   - button "Resolve conflict"

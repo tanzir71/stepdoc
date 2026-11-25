@@ -37,7 +37,7 @@
   - text: Filter guides
   - searchbox "Filter guides"
   - button "Import"
-  - button "Import guide JSON"
+  - button "Import guide JSON or StepDoc bundle"
   - button "New guide"
 - main:
   - tablist "Guide status":

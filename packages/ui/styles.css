@@ -168,7 +168,7 @@ h2 {
 }
 .sd-badge[data-tone='agent'] {
   background: var(--sd-agent-soft);
-  color: var(--sd-agent-solid);
+  color: var(--sd-agent-text);
 }
 .sd-kbd {
   display: inline-flex;

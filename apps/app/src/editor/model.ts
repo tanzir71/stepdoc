@@ -50,6 +50,7 @@ export function editorUrl(
   id: string,
   search: string,
   changes: Readonly<Record<string, string | null>>,
+  page: 'edit' | 'export' = 'edit',
 ) {
   const p = new URLSearchParams(search)
   for (const [key, value] of Object.entries(changes)) {
@@ -62,7 +63,7 @@ export function editorUrl(
     else p.set(key, value)
   }
   p.sort()
-  return `/g/${id}/edit${p.size ? `?${p}` : ''}`
+  return `/g/${id}/${page}${p.size ? `?${p}` : ''}`
 }
 export function reindex(guide: Guide) {
   guide.steps.forEach((step, index) => (step.index = index + 1))

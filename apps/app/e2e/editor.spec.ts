@@ -246,7 +246,12 @@ test('guards link and browser-back navigation until edits are saved or explicitl
   await hook(page, 'editor-leave-save').click()
   await expect(page).toHaveURL('/')
   expect((await storedGuide(page)).steps[0]!.title).toBe('Save before back')
+  // A full reload must let React's lazy-route scheduler finish before freezing
+  // autosave for the next unsaved-navigation assertion.
+  await page.clock.resume()
   await page.goto('/g/editor-guide/edit?step=1')
+  await expect(hook(page, 'step-title')).toHaveValue('Save before back')
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 1000))
   await hook(page, 'step-title').fill('Discard this edit')
   await hook(page, 'editor-library').click()
   await hook(page, 'editor-leave-discard').click()

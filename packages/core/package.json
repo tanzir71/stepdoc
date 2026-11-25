@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",
+    "docx": "9.16.0",
+    "fflate": "0.8.3",
     "ibantools": "4.5.4",
     "libphonenumber-js": "1.13.17",
     "re2js": "2.10.0"

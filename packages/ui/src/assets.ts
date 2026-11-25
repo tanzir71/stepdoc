@@ -1,4 +1,39 @@
 export const icons = {
+  'export-close': {
+    url: new URL('../assets/418d0.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  'export-link': {
+    url: new URL('../assets/70a3e.svg', import.meta.url).href,
+    width: 18,
+    height: 18,
+  },
+  'export-copy': {
+    url: new URL('../assets/8fef2.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'export-github': {
+    url: new URL('../assets/aad3f.svg', import.meta.url).href,
+    width: 18,
+    height: 18,
+  },
+  'export-cloud': {
+    url: new URL('../assets/c4590.svg', import.meta.url).href,
+    width: 18,
+    height: 18,
+  },
+  'export-shield': {
+    url: new URL('../assets/14a50.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  'export-download': {
+    url: new URL('../assets/67687.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
   'editor-chevron-down': {
     url: new URL('../assets/8f7e3.svg', import.meta.url).href,
     width: 14,

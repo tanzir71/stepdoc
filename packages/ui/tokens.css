@@ -19,6 +19,7 @@
 --sd-accent-text:#9a3412;
 --sd-agent-solid:#3d5bd9;
 --sd-agent-soft:#3d5bd915;
+--sd-agent-text:#2f48b5;
 --sd-success-solid:#15803d;
 --sd-success-soft:#15803d17;
 --sd-warning-solid:#b45309;
@@ -55,6 +56,7 @@
 --sd-radius-lg:12px;
 --sd-radius-xl:16px;
 --sd-radius-full:999px;
+--sd-radius-export-card:10px;
 --sd-shadow-float:0 8px 24px rgba(0,0,0,0.10);
 --sd-shadow-dialog:0 24px 64px rgba(0,0,0,0.10);
 --sd-font-sans:Geist, ui-sans-serif, system-ui, sans-serif;
@@ -91,6 +93,9 @@
 --sd-size-editor-image:680px;
 --sd-size-editor-gutter:50px;
 --sd-size-layer-row:30px;
+--sd-size-export-dialog:920px;
+--sd-size-export-target:380px;
+--sd-size-export-card:212px;
 --sd-type-brand:600 16px/24px var(--sd-font-sans);
 --sd-tracking-brand:-0.5px;
 --sd-type-avatar:500 10px/16px var(--sd-font-sans);
@@ -143,6 +148,7 @@ color-scheme:light;
 --sd-accent-text:#ff8d69;
 --sd-agent-solid:#8ea8ff;
 --sd-agent-soft:#8ea8ff22;
+--sd-agent-text:#8ea8ff;
 --sd-success-solid:#3dd68c;
 --sd-success-soft:#3dd68c1f;
 --sd-warning-solid:#f5b544;

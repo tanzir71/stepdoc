@@ -249,3 +249,54 @@ test('editor delete, unsaved-navigation and concurrent-write recovery are access
   await expect(hook(other, 'step-title')).toHaveValue('Remote title')
   await other.close()
 })
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`${theme} export route, format selection and clipboard menu are accessible`, async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await page.addInitScript(
+      (theme) =>
+        localStorage.setItem(
+          'stepdoc.preferences.v1',
+          JSON.stringify({ version: 1, theme, collapsed: false }),
+        ),
+      theme,
+    )
+    await prepareEditor(page)
+    await hook(page, 'export-open').click()
+    await expect(
+      page.getByRole('dialog', { name: 'Export & publish' }),
+    ).toBeVisible()
+    await audit(page, `${theme}-export`)
+    await hook(page, 'export-copy-menu').click()
+    await audit(page, `${theme}-export-clipboard`)
+    await page.keyboard.press('Escape')
+    await expect(
+      page.getByRole('dialog', { name: 'Export & publish' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('group', { name: 'Clipboard formats' }),
+    ).not.toBeVisible()
+    for (const id of ['pdf', 'markdown', 'json'])
+      await hook(page, `export-format-${id}`).uncheck()
+    await audit(page, `${theme}-export-empty-selection`)
+    await page.keyboard.press('Escape')
+    await expect(page).toHaveURL(/\/edit\?step=3/)
+    await page.evaluate(async () => {
+      const path = '/src/repository.ts'
+      const repo: typeof import('../src/repository') = await import(
+        /* @vite-ignore */ path
+      )
+      const adapter = await repo.getStorage(),
+        guide = await adapter.getGuide('editor-guide')
+      guide.steps[2]!.screenshot!.original = null
+      guide.steps[2]!.screenshot!.rendered = 'unavailable-image'
+      await adapter.saveGuide(guide, guide.version)
+    })
+    await page.goto('/g/editor-guide/export?step=3&formats=html')
+    await hook(page, 'export-download').click()
+    await expect(hook(page, 'export-feedback')).toHaveAttribute('role', 'alert')
+    await audit(page, `${theme}-export-error`)
+  })
+}

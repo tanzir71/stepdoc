@@ -17,7 +17,7 @@
     - tab "Agent view"
   - button "Read guide"
   - button "Copy link"
-  - button "Download JSON"
+  - button "Export & publish"
 - main:
   - tabpanel "Preview":
     - article:

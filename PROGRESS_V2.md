@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Schema, text/locators, detectors and client flattening complete; exporters next | — |
+| M9 | In progress | 2026-11-25 | Schema and core exporters complete; shared-package consolidation next | — |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -24,7 +24,7 @@
   - [x] Step text and locator ranking.
   - [x] Redaction detectors including Luhn, mod-97 and token entropy.
   - [x] Worker-safe client flattening via OffscreenCanvas.
-  - [ ] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
+  - [x] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
   - [ ] Fold v1 shared code into schema/core, update consumers and delete `packages/shared`.
 
 ## M10 — SPA + browser-only mode
@@ -106,6 +106,9 @@
 
 - 2026-11-25 — M9 client flattening: added the worker-safe `@stepdoc/core/canvas` API for PNG/JPEG/WebP input, pixelated/solid redaction, crops, rectangle/arrow/text/pin annotations and token-coloured click markers. `prepareCapture` returns a redacted full-size original and a separately flattened render; every selected mask is applied before either blob is encoded. Jobs snapshot options before decoding, convert capture CSS rectangles using DPR, clip/round masks outward, bound dimensions/bytes/layers/text, sanitize native failures and release bitmap/canvas resources. The v1 extension capture adapter now uses the same compositor and accepts only local raster data URLs. Added 35 unit tests and an actual Chromium module-worker fixture with 41 pixel/resource/failure checks, including options mutation, malformed input, crop/annotation coordinates, encoding failure and the extension adapter with zero HTTP requests. Applied the owner's direct-to-`main`, no-PR instruction to the repository guidance. Next unit: MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD exporters with snapshots.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (413 unit tests; both Chromium worker checks, including 41 canvas checks; all 8 app Playwright tests; strict typecheck and all workspace production builds; zero lint errors and the two existing image warnings). `git diff --check` passed. M9 remains open for exporters and shared cleanup; no milestone tag yet. Work is committed and pushed directly to `main`; no PR or deployment.
+
+- 2026-11-25 — M9 exporters: added pure `@stepdoc/core/export/*` renderers for Markdown, portable semantic HTML, guide@1 JSON, standalone Playwright, SKILL.md and HowTo JSON-LD. A shared validation pass copies/orders/renumbers steps, checks identity and variable declarations, strips HTTP credentials/query/fragments and URL-expectation query tails, remaps only rendered images to portable raster assets and omits originals. HTML includes landmarks, stable ordered steps, target alt text, format alternates, token styling and script-safe JSON-LD; Markdown and skill content escape source markup. Replay uses environment variables/secrets without example defaults, role/name → test ID → ranked fallback resolution with unique visible matches, frame/open-shadow scoping, all captured actions and URL/visibility/text assertions. Manual, underspecified and section-only guides fail explicitly. Traces/screenshots/video are disabled, pages close before teardown to prevent failure DOM snapshots, and native errors are sanitized. Added 12 minimal/complete snapshots and 47 unit checks plus strict generated TypeScript and a real Chromium 21-step replay with six negative cases (manual, section-only, missing environment, ambiguity, native input error and failure after secret input). The HTML document baseline is exercised in Chromium; the Figma published-site shell and tabs remain M16. Next unit: fold the remaining v1 shared schemas/consumers into schema/core and delete `packages/shared`.
+- Verification: `pnpm install --frozen-lockfile` and final `pnpm verify` passed (460 unit tests, 12 export snapshots, both existing Chromium worker checks including 41 canvas checks, generated replay success plus six expected failures with no recordings/DOM snapshots, all 8 app Playwright tests, strict typechecks and all production builds; zero lint errors and the same two existing image warnings). `git diff --check` passed. M9 remains open for shared-package consolidation; no milestone tag yet. Committed and pushed directly to `main`; no PR, live service or deployment.
 
 ## Defaults in use
 

@@ -11,14 +11,16 @@
     "./locators": "./src/locators.ts",
     "./selector": "./src/selector.ts",
     "./redaction": "./src/redaction/index.ts",
-    "./canvas": "./src/canvas/index.ts"
+    "./canvas": "./src/canvas/index.ts",
+    "./export": "./src/export/index.ts",
+    "./export/*": "./src/export/*.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && pnpm test:browser",
-    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs"
+    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs"
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",
@@ -27,6 +29,7 @@
     "re2js": "2.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "@types/jsdom": "21.1.7",
     "@types/node": "24.3.0",
     "jsdom": "26.1.0",

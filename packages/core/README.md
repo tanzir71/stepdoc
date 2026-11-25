@@ -71,7 +71,50 @@ until the remaining shared schemas are folded into `@stepdoc/schema` during M9.
 The complete guide@1 capture pipeline, frame chain and accessible-name collection
 are scheduled for M11; callers supply semantic locator candidates and counts here.
 
+`@stepdoc/core/export` (also individual `export/*` modules) provides synchronous,
+pure `exportMarkdown`, `exportHtml`, `exportGuideJson`, `exportPlaywright`,
+`exportSkill` and `exportJsonLd` functions. Each accepts a guide@1 input and optional
+`{ canonicalUrl, images }`. The image map is keyed by step ID and contains portable
+relative raster paths or embedded PNG/JPEG/WebP data URLs. Clients must flatten and
+review those images first; these functions neither read pixels nor fetch images.
+Without an override, screenshots reference `img/step-N.webp`; the caller packages
+the corresponding rendered blobs. Original image references are never exported.
+The `.stepdoc` editing bundle is a separate M10 format and can retain redacted originals.
+
+Exporters validate a fresh guide copy, reject duplicate IDs/indices/variables and
+undeclared or mismatched variable references, sort by index and renumber steps.
+HTTP page/origin/canonical URLs lose credentials, query and fragments. Relative page
+URLs resolve against the app origin; unsupported navigation becomes unavailable.
+`urlMatches` accepts a path prefix, literal HTTP URL or regex; literal query/fragment
+tails are stripped, invalid patterns and ambiguous credential-bearing regexes are
+rejected. Image paths cannot be remote/signed URLs or traverse directories. Invalid
+inputs throw `GuideExportError` without source data, validation payloads or causes.
+
+The HTML document has semantic landmarks, format alternates, stable step IDs, target
+alt text and script-safe HowTo JSON-LD. It uses the token palette with light as the
+default; portable document typography falls back to local system fonts. The Figma
+published-site shell, self-hosted font packaging, agent tabs and site assets remain
+M16 work. Markdown escapes source markup, and SKILL.md includes purpose,
+preconditions, variable declarations and numbered actions/targets/expectations.
+
+`replay.spec.ts` imports `@playwright/test`. Install it and its Chromium binary locally,
+set `STEPDOC_<VARIABLE_NAME_IN_UPPERCASE>` for each required input, and run
+`playwright test replay.spec.ts` with the required authenticated context. Secret and
+ordinary variables use the same environment-only mechanism; examples are never
+defaults. Select literals/runtime values identify option labels; upload variables
+identify local file paths; key names are literals. Captured role/name comes first,
+then test ID and other ranked fallbacks, with exactly one visible match required.
+Frame selectors and open shadow hosts scope actions and expectations. Waits use
+assertions/visibility, sections are headings, and manual or underspecified steps fail
+instead of reporting a successful replay. Traces, screenshots and video are disabled;
+pages close before teardown to prevent failure DOM snapshots; native failures are
+replaced with errors containing only the step number or initialization status. The generated spec is verified
+with Playwright 1.55, including failure after a secret fill and no retained artifacts.
+
 Run `pnpm --filter @stepdoc/core test` for rules, privacy and DOM regressions plus
 `test:browser`, which bundles the detector and compositor in memory and verifies
 masking, real decoded pixels, offsets, image-layer behavior, the extension adapter,
-failure paths and zero HTTP requests in real Chromium module workers.
+failure paths and zero HTTP requests in real Chromium module workers. Export tests
+include 12 minimal/complete snapshots, semantic/privacy/injection regressions, strict
+typechecking of generated specs, a 21-step Chromium replay against intercepted local
+fixtures, six fail-closed replay cases and real-browser HTML interpretation.

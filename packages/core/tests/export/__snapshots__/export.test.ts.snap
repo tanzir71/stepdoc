@@ -1,0 +1,1093 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`guide@1 export snapshots > html: complete guide 1`] = `
+"<!doctype html>
+<html lang="en" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="StepDoc"><meta name="description" content="Update a plan and invite its billing contact.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Change the workspace plan</title>
+<link rel="canonical" href="https://docs.example.com/billing/change-plan/">
+<link rel="alternate" type="application/json" href="guide.json"><link rel="alternate" type="text/markdown" href="guide.md">
+<style>:root{--sd-bg-canvas:#f3f3f0;--sd-bg-surface:#ffffff;--sd-bg-raised:#f7f7f4;--sd-bg-sunken:#f0f0ec;--sd-bg-hover:#eaeae5;--sd-bg-selected:#e4e4de;--sd-bg-overlay:#14141466;--sd-border-subtle:#e7e6e1;--sd-border-strong:#d4d3cd;--sd-text-primary:#141416;--sd-text-secondary:#56565e;--sd-text-tertiary:#73737b;--sd-text-on-accent:#170a04;--sd-accent-solid:#f2551f;--sd-accent-hover:#da4914;--sd-accent-soft:#f2551f1a;--sd-accent-text:#c2410c;--sd-agent-solid:#3d5bd9;--sd-agent-soft:#3d5bd915;--sd-success-solid:#15803d;--sd-success-soft:#15803d17;--sd-warning-solid:#b45309;--sd-warning-soft:#b4530917;--sd-danger-solid:#dc2626;--sd-danger-soft:#dc262614;--sd-code-bg:#16161a;--sd-code-text:#d4d4d8;--sd-code-key:#ff9e7d;--sd-code-string:#a6ddb0;--sd-code-muted:#7a7a82;--sd-space-1:4px;--sd-space-2:8px;--sd-space-3:12px;--sd-space-4:16px;--sd-space-5:20px;--sd-space-6:24px;--sd-space-8:32px;--sd-space-10:40px;--sd-space-12:48px;--sd-space-16:64px;--sd-space-24:96px;--sd-type-display-xl:600 68px/72px var(--sd-font-sans);--sd-type-display-l:600 48px/52px var(--sd-font-sans);--sd-type-heading-l:600 30px/36px var(--sd-font-sans);--sd-type-heading-m:600 20px/28px var(--sd-font-sans);--sd-type-heading-s:600 16px/24px var(--sd-font-sans);--sd-type-body-l:400 17px/28px var(--sd-font-sans);--sd-type-body-m:400 14px/22px var(--sd-font-sans);--sd-type-body-s:400 13px/20px var(--sd-font-sans);--sd-type-label-m:500 14px/20px var(--sd-font-sans);--sd-type-label-s:500 12px/16px var(--sd-font-sans);--sd-type-mono-m:400 13px/20px var(--sd-font-mono);--sd-type-mono-s:400 12px/18px var(--sd-font-mono);--sd-type-mono-eyebrow:500 11px/16px var(--sd-font-mono);--sd-font-sans:Geist, ui-sans-serif, system-ui, sans-serif;--sd-font-mono:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace}
+[data-theme="dark"]{--sd-bg-canvas:#09090a;--sd-bg-surface:#111113;--sd-bg-raised:#18181b;--sd-bg-sunken:#0d0d0f;--sd-bg-hover:#1e1e22;--sd-bg-selected:#26262b;--sd-bg-overlay:#000000cc;--sd-border-subtle:#1f1f23;--sd-border-strong:#2e2e34;--sd-text-primary:#ededef;--sd-text-secondary:#a1a1aa;--sd-text-tertiary:#6c6c75;--sd-text-on-accent:#170a04;--sd-accent-solid:#ff6a3d;--sd-accent-hover:#ff825a;--sd-accent-soft:#ff6a3d24;--sd-accent-text:#ff8d69;--sd-agent-solid:#8ea8ff;--sd-agent-soft:#8ea8ff22;--sd-success-solid:#3dd68c;--sd-success-soft:#3dd68c1f;--sd-warning-solid:#f5b544;--sd-warning-soft:#f5b5441f;--sd-danger-solid:#ff6161;--sd-danger-soft:#ff61611f;--sd-code-bg:#0c0c0e;--sd-code-text:#d4d4d8;--sd-code-key:#ff9e7d;--sd-code-string:#a6ddb0;--sd-code-muted:#6c6c75}
+*{box-sizing:border-box}body{margin:0;background:var(--sd-bg-canvas);color:var(--sd-text-primary);font:var(--sd-type-body-l)}
+body>header,nav,main,body>footer{padding:var(--sd-space-4) max(var(--sd-space-4),calc((100% - var(--sd-space-24)*9)/2))}body>header,nav{background:var(--sd-bg-raised)}
+nav{display:flex;flex-wrap:wrap;gap:var(--sd-space-4)}a{color:var(--sd-accent-text)}a:focus-visible{outline:1px solid var(--sd-accent-solid);outline-offset:2px}
+main{background:var(--sd-bg-surface)}h1{font:var(--sd-type-heading-l)}h2{font:var(--sd-type-heading-m)}p,li{overflow-wrap:anywhere}
+.metadata,figcaption{color:var(--sd-text-secondary);font:var(--sd-type-body-s)}aside{padding:var(--sd-space-4);background:var(--sd-bg-raised)}
+ol{padding-left:var(--sd-space-6)}ol>li{padding-block:var(--sd-space-6);break-inside:avoid}figure{margin:var(--sd-space-6) 0}img{display:block;max-width:100%;height:auto}
+dt{font:var(--sd-type-label-m)}dd{margin:0 0 var(--sd-space-4)}footer{color:var(--sd-text-secondary)}@media print{nav{display:none}body,main{background:var(--sd-bg-surface)}img{max-height:80vh;object-fit:contain}}
+</style><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Change the workspace plan",
+  "description": "Update a plan and invite its billing contact.",
+  "inLanguage": "en",
+  "dateCreated": "2026-11-24T10:00:00Z",
+  "dateModified": "2026-11-25T10:00:00+06:00",
+  "url": "https://docs.example.com/billing/change-plan/",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Click Change plan",
+      "text": "Open the plan dialog.",
+      "url": "https://docs.example.com/billing/change-plan/#step-1",
+      "image": "https://docs.example.com/billing/change-plan/img/step-1.webp"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Fill in the Billing contact field",
+      "text": "Fill in the Billing contact field",
+      "url": "https://docs.example.com/billing/change-plan/#step-2"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Fill in the Seats field",
+      "text": "Fill in the Seats field",
+      "url": "https://docs.example.com/billing/change-plan/#step-3"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Select Team",
+      "text": "Select Team",
+      "url": "https://docs.example.com/billing/change-plan/#step-4"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Press Enter",
+      "text": "Press Enter",
+      "url": "https://docs.example.com/billing/change-plan/#step-5"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 6,
+      "name": "Finish setup",
+      "text": "Finish setup",
+      "url": "https://docs.example.com/billing/change-plan/#step-6"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 7,
+      "name": "Go to the dashboard",
+      "text": "Go to the dashboard",
+      "url": "https://docs.example.com/billing/change-plan/#step-7"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 8,
+      "name": "Confirm the new plan",
+      "text": "Confirm the new plan",
+      "url": "https://docs.example.com/billing/change-plan/#step-8"
+    }
+  ]
+}</script></head>
+<body><header><a href="#guide">StepDoc guide</a></header>
+<nav aria-label="Guide formats"><a data-sd="export-json" href="guide.json">JSON</a><a data-sd="export-markdown" href="guide.md">Markdown</a><a data-sd="export-playwright" href="replay.spec.ts">Playwright</a><a data-sd="export-skill" href="SKILL.md">Agent skill</a></nav>
+<main id="guide"><article><header><h1>Change the workspace plan</h1><p>Update a plan and invite its billing contact.</p><p class="metadata">App: Example workspace · Captured: 2026-11-24T10:00:00Z · Verified: passed (2026-11-25T09:00:00Z) · Schema: stepdoc/guide@1 · Version: 3</p></header>
+<aside aria-label="Requirements"><h2>Preconditions</h2><ul><li>Signed in with the Owner role</li></ul>
+<h2>Variables</h2><dl><dt>billing_email (secret)</dt><dd>Billing contact</dd><dt>seats (variable)</dt><dd>number</dd><dt>plan (variable)</dt><dd>enum</dd></dl></aside>
+<ol><li id="step-1" data-sd-step="1">
+<h2>Click Change plan</h2><p>Open the plan dialog.</p>
+<p>Page: <a href="https://example.com/settings" rel="noreferrer">https://example.com/settings</a></p>
+<p>Target: button “Change plan”; frames: iframe#settings; open shadow hosts: plan-card</p>
+<p>Action: click</p>
+
+<p>Expected: URL matches /settings</p>
+<p>Expected: dialog Choose plan is visible</p>
+<p>Expected: status Loading is hidden</p>
+<p>Expected: heading contains Choose a plan</p>
+<figure><img src="img/step-1.webp" alt="The Change plan button" width="1440" height="900"><figcaption>The Change plan button</figcaption></figure>
+<p>Note: Use the current plan card.</p>
+</li>
+<li id="step-2" data-sd-step="2">
+<h2>Fill in the Billing contact field</h2><p>Fill in the Billing contact field</p>
+
+<p>Target: textbox “Billing contact”</p>
+<p>Action: fill</p>
+<p>Value: billing_email (secret; STEPDOC_BILLING_EMAIL)</p>
+
+
+
+</li>
+<li id="step-3" data-sd-step="3">
+<h2>Fill in the Seats field</h2><p>Fill in the Seats field</p>
+
+
+<p>Action: fill</p>
+<p>Value: seats (variable; STEPDOC_SEATS)</p>
+
+
+
+</li>
+<li id="step-4" data-sd-step="4">
+<h2>Select Team</h2><p>Select Team</p>
+
+
+<p>Action: select</p>
+<p>Value: Option: Team</p>
+
+
+
+</li>
+<li id="step-5" data-sd-step="5">
+<h2>Press Enter</h2><p>Press Enter</p>
+
+
+<p>Action: press</p>
+<p>Value: Key: Enter</p>
+
+
+
+</li>
+<li id="step-6" data-sd-step="6">
+<h2>Finish setup</h2><p>Finish setup</p>
+
+
+
+
+
+
+
+</li>
+<li id="step-7" data-sd-step="7">
+<h2>Go to the dashboard</h2><p>Go to the dashboard</p>
+<p>Page: <a href="https://example.com/dashboard" rel="noreferrer">https://example.com/dashboard</a></p>
+
+<p>Action: navigate</p>
+
+
+
+
+</li>
+<li id="step-8" data-sd-step="8">
+<h2>Confirm the new plan</h2><p>Confirm the new plan</p>
+
+
+<p>Action: assert</p>
+
+<p>Expected: Page contains Team</p>
+
+
+</li></ol></article></main><footer>Created with StepDoc · stepdoc/guide@1</footer></body></html>
+"
+`;
+
+exports[`guide@1 export snapshots > html: minimal guide 1`] = `
+"<!doctype html>
+<html lang="en" data-theme="light">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="StepDoc"><meta name="description" content="">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Getting started</title>
+
+<link rel="alternate" type="application/json" href="guide.json"><link rel="alternate" type="text/markdown" href="guide.md">
+<style>:root{--sd-bg-canvas:#f3f3f0;--sd-bg-surface:#ffffff;--sd-bg-raised:#f7f7f4;--sd-bg-sunken:#f0f0ec;--sd-bg-hover:#eaeae5;--sd-bg-selected:#e4e4de;--sd-bg-overlay:#14141466;--sd-border-subtle:#e7e6e1;--sd-border-strong:#d4d3cd;--sd-text-primary:#141416;--sd-text-secondary:#56565e;--sd-text-tertiary:#73737b;--sd-text-on-accent:#170a04;--sd-accent-solid:#f2551f;--sd-accent-hover:#da4914;--sd-accent-soft:#f2551f1a;--sd-accent-text:#c2410c;--sd-agent-solid:#3d5bd9;--sd-agent-soft:#3d5bd915;--sd-success-solid:#15803d;--sd-success-soft:#15803d17;--sd-warning-solid:#b45309;--sd-warning-soft:#b4530917;--sd-danger-solid:#dc2626;--sd-danger-soft:#dc262614;--sd-code-bg:#16161a;--sd-code-text:#d4d4d8;--sd-code-key:#ff9e7d;--sd-code-string:#a6ddb0;--sd-code-muted:#7a7a82;--sd-space-1:4px;--sd-space-2:8px;--sd-space-3:12px;--sd-space-4:16px;--sd-space-5:20px;--sd-space-6:24px;--sd-space-8:32px;--sd-space-10:40px;--sd-space-12:48px;--sd-space-16:64px;--sd-space-24:96px;--sd-type-display-xl:600 68px/72px var(--sd-font-sans);--sd-type-display-l:600 48px/52px var(--sd-font-sans);--sd-type-heading-l:600 30px/36px var(--sd-font-sans);--sd-type-heading-m:600 20px/28px var(--sd-font-sans);--sd-type-heading-s:600 16px/24px var(--sd-font-sans);--sd-type-body-l:400 17px/28px var(--sd-font-sans);--sd-type-body-m:400 14px/22px var(--sd-font-sans);--sd-type-body-s:400 13px/20px var(--sd-font-sans);--sd-type-label-m:500 14px/20px var(--sd-font-sans);--sd-type-label-s:500 12px/16px var(--sd-font-sans);--sd-type-mono-m:400 13px/20px var(--sd-font-mono);--sd-type-mono-s:400 12px/18px var(--sd-font-mono);--sd-type-mono-eyebrow:500 11px/16px var(--sd-font-mono);--sd-font-sans:Geist, ui-sans-serif, system-ui, sans-serif;--sd-font-mono:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace}
+[data-theme="dark"]{--sd-bg-canvas:#09090a;--sd-bg-surface:#111113;--sd-bg-raised:#18181b;--sd-bg-sunken:#0d0d0f;--sd-bg-hover:#1e1e22;--sd-bg-selected:#26262b;--sd-bg-overlay:#000000cc;--sd-border-subtle:#1f1f23;--sd-border-strong:#2e2e34;--sd-text-primary:#ededef;--sd-text-secondary:#a1a1aa;--sd-text-tertiary:#6c6c75;--sd-text-on-accent:#170a04;--sd-accent-solid:#ff6a3d;--sd-accent-hover:#ff825a;--sd-accent-soft:#ff6a3d24;--sd-accent-text:#ff8d69;--sd-agent-solid:#8ea8ff;--sd-agent-soft:#8ea8ff22;--sd-success-solid:#3dd68c;--sd-success-soft:#3dd68c1f;--sd-warning-solid:#f5b544;--sd-warning-soft:#f5b5441f;--sd-danger-solid:#ff6161;--sd-danger-soft:#ff61611f;--sd-code-bg:#0c0c0e;--sd-code-text:#d4d4d8;--sd-code-key:#ff9e7d;--sd-code-string:#a6ddb0;--sd-code-muted:#6c6c75}
+*{box-sizing:border-box}body{margin:0;background:var(--sd-bg-canvas);color:var(--sd-text-primary);font:var(--sd-type-body-l)}
+body>header,nav,main,body>footer{padding:var(--sd-space-4) max(var(--sd-space-4),calc((100% - var(--sd-space-24)*9)/2))}body>header,nav{background:var(--sd-bg-raised)}
+nav{display:flex;flex-wrap:wrap;gap:var(--sd-space-4)}a{color:var(--sd-accent-text)}a:focus-visible{outline:1px solid var(--sd-accent-solid);outline-offset:2px}
+main{background:var(--sd-bg-surface)}h1{font:var(--sd-type-heading-l)}h2{font:var(--sd-type-heading-m)}p,li{overflow-wrap:anywhere}
+.metadata,figcaption{color:var(--sd-text-secondary);font:var(--sd-type-body-s)}aside{padding:var(--sd-space-4);background:var(--sd-bg-raised)}
+ol{padding-left:var(--sd-space-6)}ol>li{padding-block:var(--sd-space-6);break-inside:avoid}figure{margin:var(--sd-space-6) 0}img{display:block;max-width:100%;height:auto}
+dt{font:var(--sd-type-label-m)}dd{margin:0 0 var(--sd-space-4)}footer{color:var(--sd-text-secondary)}@media print{nav{display:none}body,main{background:var(--sd-bg-surface)}img{max-height:80vh;object-fit:contain}}
+</style><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Getting started",
+  "description": "",
+  "inLanguage": "en",
+  "dateCreated": "2026-11-25T10:00:00Z",
+  "dateModified": "2026-11-25T10:00:00Z",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Open the workspace",
+      "text": "Open the workspace",
+      "url": "#step-1"
+    }
+  ]
+}</script></head>
+<body><header><a href="#guide">StepDoc guide</a></header>
+<nav aria-label="Guide formats"><a data-sd="export-json" href="guide.json">JSON</a><a data-sd="export-markdown" href="guide.md">Markdown</a><a data-sd="export-playwright" href="replay.spec.ts">Playwright</a><a data-sd="export-skill" href="SKILL.md">Agent skill</a></nav>
+<main id="guide"><article><header><h1>Getting started</h1><p></p><p class="metadata">App: Not specified · Captured: 2026-11-25T10:00:00Z · Verified: never-run · Schema: stepdoc/guide@1 · Version: 1</p></header>
+<aside aria-label="Requirements"><h2>Preconditions</h2><ul><li>None specified.</li></ul>
+</aside>
+<ol><li id="step-1" data-sd-step="1">
+<h2>Open the workspace</h2><p>Open the workspace</p>
+
+
+
+
+
+
+
+</li></ol></article></main><footer>Created with StepDoc · stepdoc/guide@1</footer></body></html>
+"
+`;
+
+exports[`guide@1 export snapshots > json: complete guide 1`] = `
+"{
+  "schema": "stepdoc/guide@1",
+  "id": "change-plan",
+  "uuid": "123e4567-e89b-42d3-a456-426614174000",
+  "title": "Change the workspace plan",
+  "description": "Update a plan and invite its billing contact.",
+  "app": {
+    "name": "Example workspace",
+    "origin": "https://example.com/",
+    "version": "2"
+  },
+  "locale": "en",
+  "collectionId": "billing",
+  "tags": [
+    "billing",
+    "onboarding"
+  ],
+  "preconditions": [
+    "Signed in with the Owner role"
+  ],
+  "variables": [
+    {
+      "name": "billing_email",
+      "kind": "secret",
+      "type": "string",
+      "description": "Billing contact"
+    },
+    {
+      "name": "seats",
+      "kind": "variable",
+      "type": "number",
+      "example": "5"
+    },
+    {
+      "name": "plan",
+      "kind": "variable",
+      "type": "enum",
+      "options": [
+        "Basic",
+        "Team"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "open-plan",
+      "index": 1,
+      "type": "action",
+      "action": "click",
+      "title": "Click Change plan",
+      "description": "Open the plan dialog.",
+      "url": "https://example.com/settings",
+      "target": {
+        "role": "button",
+        "name": "Change plan",
+        "tag": "button",
+        "locators": [
+          {
+            "strategy": "role",
+            "value": "button",
+            "name": "Change plan",
+            "exact": true,
+            "unique": true
+          },
+          {
+            "strategy": "testId",
+            "value": "change-plan",
+            "exact": true,
+            "unique": true
+          },
+          {
+            "strategy": "label",
+            "value": "Change plan",
+            "exact": true
+          },
+          {
+            "strategy": "placeholder",
+            "value": "Search plans",
+            "exact": true
+          },
+          {
+            "strategy": "text",
+            "value": "Change plan",
+            "exact": true,
+            "unique": false
+          },
+          {
+            "strategy": "altText",
+            "value": "Plan details",
+            "exact": true
+          },
+          {
+            "strategy": "title",
+            "value": "Change plan",
+            "exact": true
+          },
+          {
+            "strategy": "css",
+            "value": "#change-plan",
+            "exact": true
+          },
+          {
+            "strategy": "xpath",
+            "value": "//button[@id='change-plan']",
+            "exact": true
+          }
+        ],
+        "frame": [
+          "iframe#settings"
+        ],
+        "shadowPath": [
+          "plan-card"
+        ],
+        "rect": {
+          "x": 25,
+          "y": 40,
+          "width": 120,
+          "height": 32
+        }
+      },
+      "value": {
+        "kind": "none"
+      },
+      "expect": {
+        "urlMatches": "/settings",
+        "visible": {
+          "role": "dialog",
+          "name": "Choose plan"
+        },
+        "hidden": {
+          "role": "status",
+          "name": "Loading"
+        },
+        "text": {
+          "role": "heading",
+          "contains": "Choose a plan"
+        }
+      },
+      "screenshot": {
+        "rendered": "img/step-1.webp",
+        "width": 1440,
+        "height": 900,
+        "devicePixelRatio": 1,
+        "alt": "The Change plan button"
+      },
+      "click": {
+        "x": 65,
+        "y": 54,
+        "radius": 18
+      },
+      "edits": {
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900
+        },
+        "annotations": [
+          {
+            "type": "rectangle",
+            "x": 24,
+            "y": 39,
+            "width": 122,
+            "height": 34,
+            "color": "accent"
+          },
+          {
+            "type": "arrow",
+            "x": 180,
+            "y": 90,
+            "toX": 145,
+            "toY": 56,
+            "color": "accent"
+          },
+          {
+            "type": "text",
+            "x": 180,
+            "y": 80,
+            "text": "Plan settings",
+            "color": "accent"
+          },
+          {
+            "type": "pin",
+            "x": 25,
+            "y": 40,
+            "text": "1",
+            "color": "accent"
+          }
+        ]
+      },
+      "redactions": [
+        {
+          "kind": "email",
+          "source": "policy",
+          "rule": "billing-email",
+          "rect": {
+            "x": 300,
+            "y": 50,
+            "width": 200,
+            "height": 30
+          },
+          "status": "applied"
+        }
+      ],
+      "confidence": 0.99,
+      "lowConfidence": false,
+      "notes": "Use the current plan card."
+    },
+    {
+      "id": "email",
+      "index": 2,
+      "type": "action",
+      "action": "fill",
+      "title": "Fill in the Billing contact field",
+      "description": "",
+      "target": {
+        "role": "textbox",
+        "name": "Billing contact"
+      },
+      "value": {
+        "kind": "secret",
+        "variable": "billing_email"
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "seats",
+      "index": 3,
+      "type": "action",
+      "action": "fill",
+      "title": "Fill in the Seats field",
+      "description": "",
+      "value": {
+        "kind": "variable",
+        "variable": "seats"
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "plan",
+      "index": 4,
+      "type": "action",
+      "action": "select",
+      "title": "Select Team",
+      "description": "",
+      "value": {
+        "kind": "literal",
+        "literal": "Team"
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "save",
+      "index": 5,
+      "type": "action",
+      "action": "press",
+      "title": "Press Enter",
+      "description": "",
+      "value": {
+        "kind": "literal",
+        "literal": "Enter"
+      },
+      "key": "Enter",
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "finish",
+      "index": 6,
+      "type": "section",
+      "title": "Finish setup",
+      "description": "",
+      "url": null,
+      "click": null,
+      "edits": {
+        "crop": null
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "home",
+      "index": 7,
+      "type": "navigate",
+      "action": "navigate",
+      "title": "Go to the dashboard",
+      "description": "",
+      "url": "https://example.com/dashboard",
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "confirm",
+      "index": 8,
+      "type": "assert",
+      "action": "assert",
+      "title": "Confirm the new plan",
+      "description": "",
+      "expect": {
+        "text": {
+          "contains": "Team"
+        }
+      },
+      "redactions": [],
+      "lowConfidence": false
+    }
+  ],
+  "version": 3,
+  "status": "published",
+  "createdAt": "2026-11-24T10:00:00Z",
+  "updatedAt": "2026-11-25T10:00:00+06:00",
+  "capturedAt": "2026-11-24T10:00:00Z",
+  "verification": {
+    "status": "passed",
+    "at": "2026-11-25T09:00:00Z",
+    "runner": "guide-me",
+    "failedStep": null
+  },
+  "publish": {
+    "publicId": "public-plan",
+    "isPublic": true,
+    "targets": [
+      "link",
+      "embed",
+      "github-pages",
+      "cloudflare-pages"
+    ]
+  }
+}
+"
+`;
+
+exports[`guide@1 export snapshots > json: minimal guide 1`] = `
+"{
+  "schema": "stepdoc/guide@1",
+  "id": "getting-started",
+  "title": "Getting started",
+  "description": "",
+  "locale": "en",
+  "tags": [],
+  "preconditions": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "intro",
+      "index": 1,
+      "type": "manual",
+      "title": "Open the workspace",
+      "description": "",
+      "redactions": [],
+      "lowConfidence": false
+    }
+  ],
+  "version": 1,
+  "status": "draft",
+  "createdAt": "2026-11-25T10:00:00Z",
+  "updatedAt": "2026-11-25T10:00:00Z"
+}
+"
+`;
+
+exports[`guide@1 export snapshots > jsonLd: complete guide 1`] = `
+"{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Change the workspace plan",
+  "description": "Update a plan and invite its billing contact.",
+  "inLanguage": "en",
+  "dateCreated": "2026-11-24T10:00:00Z",
+  "dateModified": "2026-11-25T10:00:00+06:00",
+  "url": "https://docs.example.com/billing/change-plan/",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Click Change plan",
+      "text": "Open the plan dialog.",
+      "url": "https://docs.example.com/billing/change-plan/#step-1",
+      "image": "https://docs.example.com/billing/change-plan/img/step-1.webp"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 2,
+      "name": "Fill in the Billing contact field",
+      "text": "Fill in the Billing contact field",
+      "url": "https://docs.example.com/billing/change-plan/#step-2"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 3,
+      "name": "Fill in the Seats field",
+      "text": "Fill in the Seats field",
+      "url": "https://docs.example.com/billing/change-plan/#step-3"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 4,
+      "name": "Select Team",
+      "text": "Select Team",
+      "url": "https://docs.example.com/billing/change-plan/#step-4"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 5,
+      "name": "Press Enter",
+      "text": "Press Enter",
+      "url": "https://docs.example.com/billing/change-plan/#step-5"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 6,
+      "name": "Finish setup",
+      "text": "Finish setup",
+      "url": "https://docs.example.com/billing/change-plan/#step-6"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 7,
+      "name": "Go to the dashboard",
+      "text": "Go to the dashboard",
+      "url": "https://docs.example.com/billing/change-plan/#step-7"
+    },
+    {
+      "@type": "HowToStep",
+      "position": 8,
+      "name": "Confirm the new plan",
+      "text": "Confirm the new plan",
+      "url": "https://docs.example.com/billing/change-plan/#step-8"
+    }
+  ]
+}
+"
+`;
+
+exports[`guide@1 export snapshots > jsonLd: minimal guide 1`] = `
+"{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "Getting started",
+  "description": "",
+  "inLanguage": "en",
+  "dateCreated": "2026-11-25T10:00:00Z",
+  "dateModified": "2026-11-25T10:00:00Z",
+  "step": [
+    {
+      "@type": "HowToStep",
+      "position": 1,
+      "name": "Open the workspace",
+      "text": "Open the workspace",
+      "url": "#step-1"
+    }
+  ]
+}
+"
+`;
+
+exports[`guide@1 export snapshots > markdown: complete guide 1`] = `
+"# Change the workspace plan
+
+Update a plan and invite its billing contact\\.
+
+App: Example workspace · Captured: 2026\\-11\\-24T10:00:00Z · Verified: passed \\(2026\\-11\\-25T09:00:00Z\\) · Schema: stepdoc/guide@1 · Version: 3
+
+## Preconditions
+
+- Signed in with the Owner role
+
+## Variables
+
+| Name | Kind | Type | Environment | Description |
+| --- | --- | --- | --- | --- |
+| billing\\_email | secret | string | STEPDOC_BILLING_EMAIL | Billing contact |
+| seats | variable | number | STEPDOC_SEATS |  |
+| plan | variable | enum | STEPDOC_PLAN | Options: Basic, Team |
+
+Supply values at replay time. Stored examples are never used as replay defaults.
+
+## Steps
+
+### 1. Click Change plan
+
+Open the plan dialog\\.
+
+Page: <https://example.com/settings>
+
+Target: button “Change plan”; frames: iframe\\#settings; open shadow hosts: plan\\-card
+
+Action: click
+
+Expected: URL matches /settings
+
+Expected: dialog Choose plan is visible
+
+Expected: status Loading is hidden
+
+Expected: heading contains Choose a plan
+
+![The Change plan button](<img/step-1.webp>)
+
+Note: Use the current plan card\\.
+
+### 2. Fill in the Billing contact field
+
+Target: textbox “Billing contact”
+
+Action: fill
+
+Value: billing\\_email \\(secret; STEPDOC\\_BILLING\\_EMAIL\\)
+
+### 3. Fill in the Seats field
+
+Action: fill
+
+Value: seats \\(variable; STEPDOC\\_SEATS\\)
+
+### 4. Select Team
+
+Action: select
+
+Value: Option: Team
+
+### 5. Press Enter
+
+Action: press
+
+Value: Key: Enter
+
+### 6. Finish setup
+
+### 7. Go to the dashboard
+
+Page: <https://example.com/dashboard>
+
+Action: navigate
+
+### 8. Confirm the new plan
+
+Action: assert
+
+Expected: Page contains Team
+"
+`;
+
+exports[`guide@1 export snapshots > markdown: minimal guide 1`] = `
+"# Getting started
+
+
+
+App: Not specified · Captured: 2026\\-11\\-25T10:00:00Z · Verified: never\\-run · Schema: stepdoc/guide@1 · Version: 1
+
+## Preconditions
+
+None specified.
+
+## Variables
+
+No variables required.
+
+## Steps
+
+### 1. Open the workspace
+"
+`;
+
+exports[`guide@1 export snapshots > playwright: complete guide 1`] = `
+"import { test, expect, type Locator, type Page } from '@playwright/test';
+
+// Runtime variables: STEPDOC_BILLING_EMAIL, STEPDOC_SEATS, STEPDOC_PLAN.
+// Run with a local authenticated browser context when preconditions require one.
+test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+// Close pages before fixture teardown so failure context snapshots cannot retain input.
+test.afterEach(async ({ context }) => {
+  await Promise.all(context.pages().map((page) => page.close()));
+});
+
+function readVariable(name: string): string {
+  const value = process.env[name];
+  if (value === undefined) throw new Error('Required replay variable is missing');
+  return value;
+}
+
+function matchesUrl(input: URL, expected: string): boolean {
+  const url = new URL(input.href);
+  url.username = url.password = url.search = url.hash = '';
+  if (expected.startsWith('/')) return url.pathname.startsWith(expected);
+  if (/^https?:\\/\\//i.test(expected)) return url.href === expected;
+  return new RegExp(expected).test(url.href);
+}
+
+async function resolveTarget(candidates: Array<() => Locator>): Promise<Locator> {
+  let target: Locator | undefined;
+  await expect(async () => {
+    for (const create of candidates) {
+      try {
+        const candidate = create();
+        if (await candidate.count() === 1 && await candidate.isVisible()) {
+          target = candidate;
+          return;
+        }
+      } catch { /* Invalid/stale selectors must not suppress usable fallbacks. */ }
+    }
+    throw new Error('No unique visible target');
+  }).toPass({ timeout: 5000 });
+  if (!target) throw new Error('No unique visible target');
+  return target;
+}
+
+test("Change the workspace plan", async ({ page }) => {
+
+  try { await page.goto("https://example.com/settings"); } catch { throw new Error('Replay initialization failed'); }
+  await test.step("1. Click Change plan", async () => {
+    try {
+      const target = await resolveTarget([() => page.frameLocator("iframe#settings").locator("plan-card").getByRole("button" as Parameters<Page['getByRole']>[0], { name: "Change plan", exact: true }), () => page.frameLocator("iframe#settings").locator("plan-card").getByTestId("change-plan"), () => page.frameLocator("iframe#settings").locator("plan-card").getByLabel("Change plan", { exact: true }), () => page.frameLocator("iframe#settings").locator("plan-card").getByPlaceholder("Search plans", { exact: true }), () => page.frameLocator("iframe#settings").locator("plan-card").getByAltText("Plan details", { exact: true }), () => page.frameLocator("iframe#settings").locator("plan-card").getByTitle("Change plan", { exact: true }), () => page.frameLocator("iframe#settings").locator("plan-card").locator("#change-plan"), () => page.frameLocator("iframe#settings").locator("plan-card").locator("xpath=//button[@id='change-plan']"), () => page.frameLocator("iframe#settings").locator("plan-card").getByText("Change plan", { exact: true })]);
+      await target.click();
+      await expect(page).toHaveURL((url) => matchesUrl(url, "/settings"));
+      await expect(page.frameLocator("iframe#settings").locator("plan-card").getByRole("dialog" as Parameters<Page['getByRole']>[0], { name: "Choose plan", exact: true })).toBeVisible();
+      await expect(page.frameLocator("iframe#settings").locator("plan-card").getByRole("status" as Parameters<Page['getByRole']>[0], { name: "Loading", exact: true })).toBeHidden();
+      await expect(page.frameLocator("iframe#settings").locator("plan-card").getByRole("heading" as Parameters<Page['getByRole']>[0]).filter({ hasText: "Choose a plan" })).toBeVisible();
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 1 failed or is not replayable");
+    }
+  });
+  await test.step("2. Fill in the Billing contact field", async () => {
+    try {
+      const target = await resolveTarget([() => page.getByRole("textbox" as Parameters<Page['getByRole']>[0], { name: "Billing contact", exact: true })]);
+      await target.fill(readVariable("STEPDOC_BILLING_EMAIL"));
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 2 failed or is not replayable");
+    }
+  });
+  await test.step("3. Fill in the Seats field", async () => {
+    try {
+      throw new Error("Step 3 is not replayable: target locator is missing");
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 3 failed or is not replayable");
+    }
+  });
+  await test.step("4. Select Team", async () => {
+    try {
+      throw new Error("Step 4 is not replayable: target locator is missing");
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 4 failed or is not replayable");
+    }
+  });
+  await test.step("5. Press Enter", async () => {
+    try {
+      await page.keyboard.press("Enter");
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 5 failed or is not replayable");
+    }
+  });
+  await test.step("6. Finish setup", async () => {
+    try {
+
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 6 failed or is not replayable");
+    }
+  });
+  await test.step("7. Go to the dashboard", async () => {
+    try {
+      await page.goto("https://example.com/dashboard");
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 7 failed or is not replayable");
+    }
+  });
+  await test.step("8. Confirm the new plan", async () => {
+    try {
+      await expect(page.getByText("Team", { exact: false })).toBeVisible();
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 8 failed or is not replayable");
+    }
+  });
+});
+"
+`;
+
+exports[`guide@1 export snapshots > playwright: minimal guide 1`] = `
+"import { test, expect, type Locator, type Page } from '@playwright/test';
+
+// Runtime variables: none.
+// Run with a local authenticated browser context when preconditions require one.
+test.use({ trace: 'off', screenshot: 'off', video: 'off' });
+// Close pages before fixture teardown so failure context snapshots cannot retain input.
+test.afterEach(async ({ context }) => {
+  await Promise.all(context.pages().map((page) => page.close()));
+});
+
+function readVariable(name: string): string {
+  const value = process.env[name];
+  if (value === undefined) throw new Error('Required replay variable is missing');
+  return value;
+}
+
+function matchesUrl(input: URL, expected: string): boolean {
+  const url = new URL(input.href);
+  url.username = url.password = url.search = url.hash = '';
+  if (expected.startsWith('/')) return url.pathname.startsWith(expected);
+  if (/^https?:\\/\\//i.test(expected)) return url.href === expected;
+  return new RegExp(expected).test(url.href);
+}
+
+async function resolveTarget(candidates: Array<() => Locator>): Promise<Locator> {
+  let target: Locator | undefined;
+  await expect(async () => {
+    for (const create of candidates) {
+      try {
+        const candidate = create();
+        if (await candidate.count() === 1 && await candidate.isVisible()) {
+          target = candidate;
+          return;
+        }
+      } catch { /* Invalid/stale selectors must not suppress usable fallbacks. */ }
+    }
+    throw new Error('No unique visible target');
+  }).toPass({ timeout: 5000 });
+  if (!target) throw new Error('No unique visible target');
+  return target;
+}
+
+test("Getting started", async ({ page }) => {
+
+
+  await test.step("1. Open the workspace", async () => {
+    try {
+      throw new Error("Step 1 is not replayable: manual instruction");
+    } catch {
+      // Native call logs can contain runtime input. Never attach the original error.
+      throw new Error("Step 1 failed or is not replayable");
+    }
+  });
+});
+"
+`;
+
+exports[`guide@1 export snapshots > skill: complete guide 1`] = `
+"---
+name: change-plan
+description: "Update a plan and invite its billing contact."
+---
+
+# Change the workspace plan
+
+## Purpose
+
+Update a plan and invite its billing contact\\.
+
+App: Example workspace · Captured: 2026\\-11\\-24T10:00:00Z · Verified: passed \\(2026\\-11\\-25T09:00:00Z\\) · Schema: stepdoc/guide@1 · Version: 3
+
+## Preconditions
+
+- Signed in with the Owner role
+
+## Variables
+
+| Name | Kind | Type | Environment | Description |
+| --- | --- | --- | --- | --- |
+| billing\\_email | secret | string | STEPDOC_BILLING_EMAIL | Billing contact |
+| seats | variable | number | STEPDOC_SEATS |  |
+| plan | variable | enum | STEPDOC_PLAN | Options: Basic, Team |
+
+Supply values at replay time. Stored examples are never used as replay defaults.
+
+## Steps
+
+1. Click Change plan
+   Open the plan dialog\\.
+   - Action: click
+   - Target: button “Change plan”; frames: iframe\\#settings; open shadow hosts: plan\\-card
+   - Page: <https://example.com/settings>
+   - Expected: URL matches /settings
+   - Expected: dialog Choose plan is visible
+   - Expected: status Loading is hidden
+   - Expected: heading contains Choose a plan
+   - Note: Use the current plan card\\.
+
+2. Fill in the Billing contact field
+   - Action: fill
+   - Target: textbox “Billing contact”
+   - Value: billing\\_email \\(secret; STEPDOC\\_BILLING\\_EMAIL\\)
+   - Expected: No captured assertion.
+
+3. Fill in the Seats field
+   - Action: fill
+   - Target: No captured target
+   - Value: seats \\(variable; STEPDOC\\_SEATS\\)
+   - Expected: No captured assertion.
+
+4. Select Team
+   - Action: select
+   - Target: No captured target
+   - Value: Option: Team
+   - Expected: No captured assertion.
+
+5. Press Enter
+   - Action: press
+   - Target: No captured target
+   - Value: Key: Enter
+   - Expected: No captured assertion.
+
+6. Finish setup
+   - Action: section
+   - Target: No captured target
+   - Expected: No captured assertion.
+
+7. Go to the dashboard
+   - Action: navigate
+   - Target: No captured target
+   - Page: <https://example.com/dashboard>
+   - Expected: No captured assertion.
+
+8. Confirm the new plan
+   - Action: assert
+   - Target: No captured target
+   - Expected: Page contains Team
+"
+`;
+
+exports[`guide@1 export snapshots > skill: minimal guide 1`] = `
+"---
+name: getting-started
+description: "Getting started"
+---
+
+# Getting started
+
+## Purpose
+
+Getting started
+
+App: Not specified · Captured: 2026\\-11\\-25T10:00:00Z · Verified: never\\-run · Schema: stepdoc/guide@1 · Version: 1
+
+## Preconditions
+
+- None specified.
+
+## Variables
+
+No variables required.
+
+## Steps
+
+1. Open the workspace
+   - Action: manual
+   - Target: No captured target
+   - Expected: No captured assertion.
+"
+`;

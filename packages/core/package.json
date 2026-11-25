@@ -9,22 +9,29 @@
     ".": "./src/index.ts",
     "./describe-step": "./src/describe-step.ts",
     "./locators": "./src/locators.ts",
-    "./selector": "./src/selector.ts"
+    "./selector": "./src/selector.ts",
+    "./redaction": "./src/redaction/index.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run && pnpm test:browser",
+    "test:browser": "node tests/redaction-worker.verify.mjs"
   },
   "dependencies": {
-    "@stepdoc/schema": "workspace:*"
+    "@stepdoc/schema": "workspace:*",
+    "ibantools": "4.5.4",
+    "libphonenumber-js": "1.13.17",
+    "re2js": "2.10.0"
   },
   "devDependencies": {
     "@types/jsdom": "21.1.7",
     "@types/node": "24.3.0",
     "jsdom": "26.1.0",
+    "playwright": "1.55.0",
     "typescript": "5.9.2",
+    "vite": "7.1.3",
     "vitest": "3.2.4"
   }
 }

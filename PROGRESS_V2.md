@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Schema/migration and core text/locator ranking complete; redaction next | — |
+| M9 | In progress | 2026-11-25 | Schema, text/locators and detectors complete; client flattening next | — |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -22,7 +22,7 @@
   - [x] v1→guide@1 migration and v1 Playwright fixture tests, with a schema version note.
 - [ ] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
   - [x] Step text and locator ranking.
-  - [ ] Redaction detectors including Luhn, mod-97 and token entropy.
+  - [x] Redaction detectors including Luhn, mod-97 and token entropy.
   - [ ] Worker-safe client flattening via OffscreenCanvas.
   - [ ] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
   - [ ] Fold v1 shared code into schema/core, update consumers and delete `packages/shared`.
@@ -84,6 +84,7 @@
 - M18+: audit one area per run against §10 and Figma, fix the worst gap and add a regression test.
 - Safari build, OIDC/SAML add-on, BYO-key translation, analytics dashboard, BookStack/Wiki.js/Docmost export.
 - Keep v1 operational until each replacement reaches parity; remove server image processing when client flattening replaces those paths.
+- M11: connect core text-detector spans to visible-text DOM Range rectangles, omit editable/form values, and abort capture/upload on detector errors or limits.
 
 ## Deviations
 
@@ -99,6 +100,8 @@
 - 2026-11-25 — M9 core text/locators: added `@stepdoc/core` with the ported v1 text/selector functions and guide@1 instruction generation. Fill/upload values are not read; editable input/textarea innerText is ignored when generating text; Unicode labels truncate without splitting surrogate pairs; unsupported navigation URLs produce a flagged fallback and valid URL text omits credentials/query/fragment. Locator ranking normalizes/deduplicates copies, prefers measured uniqueness and exact semantic matches, drops zero matches or malformed selectors, preserves unverified flags and exposes a fragile-locator assessment. CSS fallbacks now escape leading digits/control characters, avoid duplicate IDs/test IDs, disambiguate repeated names and work within iframe documents/open shadow roots. The v1 shared text/selector exports forward to core, so existing consumers exercise the port; Next explicitly transpiles core. Shared schema removal remains the final M9 cleanup item. Next unit: redaction detectors including Luhn, mod-97, token entropy, IP/MAC and custom rules.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (243 unit tests, including 74 new core tests and all 40 original shared regressions; 8 Playwright Chromium e2e tests; strict typecheck; all workspace builds; zero lint errors and the two existing image warnings). Tests exercise real DOM selector matching, duplicates, iframe/shadow scoping, resolver counts/failures, missing labels/options/keys, and throwing input-value access guards. `git diff --check` passed. M9 remains open for detectors, client flattening, exporters and shared cleanup; no milestone tag yet.
 - Push note: the first two pushes of `273a80e` were rejected by GitHub with HTTP 500 `Internal Server Error`; both Git and the GitHub API confirmed the remote had stayed at `3682ce1`. Retrying with `git -c http.version=HTTP/1.1 push origin v2` succeeded. No persistent Git configuration or repository settings were changed.
+- 2026-11-25 — M9 redaction detectors: added the client/worker-safe `@stepdoc/core/redaction` API for Unicode email, international/national phones, Luhn-checked cards, country-length/mod-97 IBANs, prefixed/JWT/high-entropy tokens, and IPv4/IPv6/MAC. Findings contain categories, rule/source IDs and UTF-16 offsets only; no matched values or input are returned/logged. Added overlapping-range text masking, sanitized errors, bounded input/matches/rules/program sizes and RE2-based custom patterns with backtracking-dependent syntax disabled. Pinned RE2JS, IBANTools country data and libphonenumber metadata; phone parsing defaults to US with a country override. Regression fixes cover adjacent cards/phones, address boundaries and complete IBANs before prose. Added a local in-memory Vite/Chromium module-worker check to the core test command, proving every category, offsets and masking with no worker HTTP requests. Capture DOM collection/rectangle mapping remain in M11. Next unit: worker-safe OffscreenCanvas flattening.
+- Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (378 unit tests, including 135 new detector/privacy/checksum tests; Chromium worker verification; all 8 app Playwright tests; strict typecheck and all workspace builds; zero lint errors and the two existing image warnings). IBAN checks include an independent BigInt mod-97 oracle; custom-rule tests cover nested quantifiers, unsupported/zero-width syntax, size/input/match budgets and private error suppression. `git diff --check` passed. M9 remains open for client flattening, exporters and shared cleanup; no milestone tag yet.
 
 ## Defaults in use
 

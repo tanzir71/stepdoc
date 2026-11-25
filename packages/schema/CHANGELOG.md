@@ -5,6 +5,11 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M9 consolidation adds the isolated `@stepdoc/schema/legacy-v1` entry point for the
+unchanged v1 API/capture schemas moved from `packages/shared`. Root guide@1 exports,
+wire formats, defaults and migration output are unchanged; no version bump or
+persisted-data migration is needed for this source/package relocation.
+
 This first implementation tightens the previously documentation-only contract:
 fill steps require a named variable or secret; literals are limited to select
 options and key names; tagged values require their matching payload; secret

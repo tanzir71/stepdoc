@@ -1,7 +1,7 @@
 import { getSupabase } from './supabase'
 import { clone, isTestStore, testGuides } from './test-store'
 import type { Guide, Step } from './types'
-import type { SessionInput } from '@stepdoc/shared'
+import type { SessionInput } from '@stepdoc/schema/legacy-v1'
 import { flattenImage } from './render'
 async function sign(path:string|null){if(!path)return null;const{data,error}=await getSupabase().storage.from('screenshots').createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
 export async function listGuides(search=''){if(isTestStore())return [...testGuides.values()].filter(g=>g.title.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>b.updated_at.localeCompare(a.updated_at)).map(clone);let q=getSupabase().from('guides').select('*,steps(id,position,screenshot_path,rendered_path)').order('updated_at',{ascending:false});if(search)q=q.ilike('title',`%${search}%`);const{data,error}=await q;if(error)throw error;const guides=(data??[])as unknown as Guide[];await Promise.all(guides.map(async g=>{g.steps=(g.steps??[]).sort((a,b)=>a.position-b.position);const first=g.steps[0];if(first)first.imageUrl=await sign(first.rendered_path??first.screenshot_path)}));return guides}

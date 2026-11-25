@@ -66,8 +66,10 @@ IBAN lengths come from the pinned [IBANTools](https://github.com/Simplify/ibanto
 phone metadata/search use the pinned [libphonenumber-js](https://github.com/catamphetamine/libphonenumber-js)
 `min` build. Checksum/format detection does not assert that an account or number exists.
 
-The v1 shared package forwards its text/selector imports to this implementation
-until the remaining shared schemas are folded into `@stepdoc/schema` during M9.
+The v1 extension imports text/selector helpers directly from core. Its payload
+contracts and the v1 web app's schemas live in `@stepdoc/schema/legacy-v1`;
+`packages/shared` was removed during M9. Core's minimal description metadata type
+is derived from that schema and deliberately exposes no input-value field.
 The complete guide@1 capture pipeline, frame chain and accessible-name collection
 are scheduled for M11; callers supply semantic locator candidates and counts here.
 

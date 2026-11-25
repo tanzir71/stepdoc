@@ -12,6 +12,8 @@ import {
   type Variable,
 } from '../src/guide'
 
+// A narrow database-row projection, distinct from the legacy API payload module:
+// migration consumes only replay metadata, not capture-only click/viewport fields.
 const v1ElementMetaSchema = z.object({
   event: z.enum(['click', 'input', 'select', 'submit', 'navigation']),
   tag: z.string(),

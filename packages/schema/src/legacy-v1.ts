@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+// Isolated v1 API/capture contracts. guide@1 lives in ./guide; these names are
+// intentionally available only through @stepdoc/schema/legacy-v1 until M14 parity.
+
 export const clickSchema = z.object({ x: z.number(), y: z.number(), radius: z.number().positive().default(24) })
 export const elementMetaSchema = z.object({
   event: z.enum(['click','input','select','submit','navigation']), tag: z.string(), role: z.string().optional(),

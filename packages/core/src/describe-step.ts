@@ -1,4 +1,5 @@
 import type { StepInput } from '@stepdoc/schema'
+import type { ElementMeta } from '@stepdoc/schema/legacy-v1'
 
 export interface Description {
   text: string
@@ -6,21 +7,22 @@ export interface Description {
 }
 
 /** The metadata needed by the v1 text rules; it deliberately has no value field. */
-export interface DescriptionMetadata {
-  event: 'click' | 'input' | 'select' | 'submit' | 'navigation'
-  tag: string
-  url: string
-  label?: string
-  ariaLabel?: string
-  innerText?: string
-  placeholder?: string
-  alt?: string
-  title?: string
-  name?: string
-  role?: string
-  inputType?: string
-  optionLabel?: string
-}
+export type DescriptionMetadata = Pick<
+  ElementMeta,
+  | 'event'
+  | 'tag'
+  | 'url'
+  | 'label'
+  | 'ariaLabel'
+  | 'innerText'
+  | 'placeholder'
+  | 'alt'
+  | 'title'
+  | 'name'
+  | 'role'
+  | 'inputType'
+  | 'optionLabel'
+>
 
 export type GuideDescriptionInput = Partial<
   Pick<

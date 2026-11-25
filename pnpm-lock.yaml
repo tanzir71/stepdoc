@@ -20,9 +20,9 @@ importers:
       '@stepdoc/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@stepdoc/shared':
+      '@stepdoc/schema':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/schema
     devDependencies:
       '@types/chrome':
         specifier: 0.0.326
@@ -48,9 +48,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: 3.2.2
         version: 3.2.2(react@19.2.4)
-      '@stepdoc/shared':
+      '@stepdoc/schema':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../../packages/schema
       '@supabase/supabase-js':
         specifier: 2.56.0
         version: 2.56.0
@@ -156,28 +156,6 @@ importers:
       ajv:
         specifier: 8.17.1
         version: 8.17.1
-      typescript:
-        specifier: 5.9.2
-        version: 5.9.2
-      vitest:
-        specifier: 3.2.4
-        version: 3.2.4(@types/node@24.3.0)(jsdom@26.1.0)
-
-  packages/shared:
-    dependencies:
-      '@stepdoc/core':
-        specifier: workspace:*
-        version: link:../core
-      zod:
-        specifier: 4.0.17
-        version: 4.0.17
-    devDependencies:
-      '@types/jsdom':
-        specifier: 21.1.7
-        version: 21.1.7
-      jsdom:
-        specifier: 26.1.0
-        version: 26.1.0
       typescript:
         specifier: 5.9.2
         version: 5.9.2

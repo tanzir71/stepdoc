@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import type { ImageEdits } from '@stepdoc/shared'
+import type { ImageEdits } from '@stepdoc/schema/legacy-v1'
 
 type Rect = { x: number; y: number; width: number; height: number }
 type Click = { x: number; y: number; radius: number } | null | undefined

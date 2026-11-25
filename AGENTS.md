@@ -19,11 +19,14 @@ packages/
   publish/      static site builder (guide.html/json/md, replay.spec.ts, SKILL.md, llms.txt, sitemap).
   mcp/          MCP server (stdio CLI + HTTP handler shared by every server target).
   ui/           React components mirroring Figma components (Button, Badge, StepRow, …).
-  shared/       v1 package; fold into schema/core during M9 and delete.
 tests/contract/ One HTTP suite run against every server target.
 site/           Marketing site + docs (GitHub Pages).
 docs/v2/        guide.schema.json, storage-api.openapi.yaml, design-tokens.json, RESEARCH.md
 ```
+
+M9 removed `packages/shared`: its v1 payload contracts live only at
+`@stepdoc/schema/legacy-v1`, and its text/selector helpers and regression tests live
+in core. Keep the legacy contract until the v1 consumers reach v2 parity in M14.
 
 ## Commands
 

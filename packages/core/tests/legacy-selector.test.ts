@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
-import { buildSelector, cssEscape } from './selector'
+import { buildSelector, cssEscape } from '../src/selector'
 
 describe('buildSelector', () => {
   beforeEach(() => { document.body.innerHTML = '' })

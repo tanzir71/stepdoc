@@ -1,7 +1,7 @@
 import { makeStep } from './capture'
 import { composite } from './image'
 import { CaptureQueue } from './queue'
-import type { ElementMeta } from '@stepdoc/shared'
+import type { ElementMeta } from '@stepdoc/schema/legacy-v1'
 
 type Pending = { meta: ElementMeta; sensitive: { x: number; y: number; width: number; height: number }[] }
 type SessionBody = { title: string; description: string; sourceUrl?: string; steps: unknown[] }

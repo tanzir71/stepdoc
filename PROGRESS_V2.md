@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Schema and core exporters complete; shared-package consolidation next | — |
+| M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | v2-m9 |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -20,12 +20,12 @@
 - [x] `@stepdoc/schema`: guide@1 types + zod mirroring `docs/v2/guide.schema.json`; Ajv validation test against fixtures; v1→guide@1 migration with tests on the v1 Playwright fixtures.
   - [x] guide@1 types, zod and Ajv fixture validation.
   - [x] v1→guide@1 migration and v1 Playwright fixture tests, with a schema version note.
-- [ ] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
+- [x] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
   - [x] Step text and locator ranking.
   - [x] Redaction detectors including Luhn, mod-97 and token entropy.
   - [x] Worker-safe client flattening via OffscreenCanvas.
   - [x] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
-  - [ ] Fold v1 shared code into schema/core, update consumers and delete `packages/shared`.
+  - [x] Fold v1 shared code into schema/core, update consumers and delete `packages/shared`.
 
 ## M10 — SPA + browser-only mode
 
@@ -72,6 +72,7 @@
 
 ## Owner later (non-blocking)
 
+- Optional local dependency cleanup: automatic approval review rejected recursive removal of the ignored `packages/shared` leftovers with "blocked by policy". All tracked package/source files and dependencies are removed; the remaining ignored `node_modules`/empty directories do not participate in the workspace or builds.
 - GitHub's default branch remains `master`; current work is committed directly to `main`. Any default-branch settings change is owner-later, not required for implementation.
 - Install in the owner's browser; Chrome/Edge stores and Firefox signing/AMO submission.
 - Live Supabase migrations/integration (carried from v1 `PROGRESS.md`) and deployments to PHP, Cloudflare or Node hosts.
@@ -109,6 +110,10 @@
 
 - 2026-11-25 — M9 exporters: added pure `@stepdoc/core/export/*` renderers for Markdown, portable semantic HTML, guide@1 JSON, standalone Playwright, SKILL.md and HowTo JSON-LD. A shared validation pass copies/orders/renumbers steps, checks identity and variable declarations, strips HTTP credentials/query/fragments and URL-expectation query tails, remaps only rendered images to portable raster assets and omits originals. HTML includes landmarks, stable ordered steps, target alt text, format alternates, token styling and script-safe JSON-LD; Markdown and skill content escape source markup. Replay uses environment variables/secrets without example defaults, role/name → test ID → ranked fallback resolution with unique visible matches, frame/open-shadow scoping, all captured actions and URL/visibility/text assertions. Manual, underspecified and section-only guides fail explicitly. Traces/screenshots/video are disabled, pages close before teardown to prevent failure DOM snapshots, and native errors are sanitized. Added 12 minimal/complete snapshots and 47 unit checks plus strict generated TypeScript and a real Chromium 21-step replay with six negative cases (manual, section-only, missing environment, ambiguity, native input error and failure after secret input). The HTML document baseline is exercised in Chromium; the Figma published-site shell and tabs remain M16. Next unit: fold the remaining v1 shared schemas/consumers into schema/core and delete `packages/shared`.
 - Verification: `pnpm install --frozen-lockfile` and final `pnpm verify` passed (460 unit tests, 12 export snapshots, both existing Chromium worker checks including 41 canvas checks, generated replay success plus six expected failures with no recordings/DOM snapshots, all 8 app Playwright tests, strict typechecks and all production builds; zero lint errors and the same two existing image warnings). `git diff --check` passed. M9 remains open for shared-package consolidation; no milestone tag yet. Committed and pushed directly to `main`; no PR, live service or deployment.
+
+- 2026-11-25 — M9 consolidation and completion: moved the unchanged v1 API/capture contracts into the isolated `@stepdoc/schema/legacy-v1` module and switched all extension/web consumers to direct schema/core imports. Derived core's minimal description metadata type from the legacy schema, retained the migration's deliberately narrow database-row projection, and moved all 40 original text/selector regressions into core. Removed every tracked `packages/shared` file, its workspace importer/dependencies and forwarding modules; updated Next transpilation, package docs, the schema version note and repository map. A source comparison proves the legacy schemas differ only by comments/blank lines, so v1 payloads, defaults, unknown-key stripping and guide@1 migration output are unchanged. Recursive cleanup of ignored local artifacts was rejected twice by automatic approval review; it is logged above and does not affect the tracked package removal. Next unit: M10 storage foundations and the static SPA.
+- M9 acceptance audit: verified the StepDoc origin/MIT licence and absence of workflow files/old repository references; inspected source JSON Schema parity and the migration tests that consume the actual v1 Playwright session fixture; confirmed core text/locator/privacy/checksum/entropy coverage, the real OffscreenCanvas worker's pixel/resource checks, and all six export formats with semantic/injection/privacy assertions and executable replay. All M9 checklist criteria are satisfied; M10–M17 remain unimplemented. No live service, deployment or owner test was used.
+- Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed across the five remaining workspace projects (460 unit tests: schema 113, core 331 including the retained 40, web 9, extension 7; 12 export snapshots; redaction/41-check canvas workers; 21-step generated Chromium replay plus six expected failure cases without recordings/DOM snapshots; all 8 app Playwright tests; strict typechecks and all production builds). Lint has zero errors and the same two existing image warnings. The capture bundle now builds at 3.92 kB versus the previous 55.50 kB after bypassing the shared runtime barrel. No obsolete shared imports or lockfile dependencies remain, and `git diff --check` passed. The milestone completion commit is tagged `v2-m9` and pushed directly to `main`; the Milestones row records its resolved commit after the tag push.
 
 ## Defaults in use
 

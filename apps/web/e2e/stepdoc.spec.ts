@@ -1,17 +1,9 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
+import { onboardingSession } from './fixtures/session'
 
 async function seed(request: APIRequestContext, count = 30) {
   const response = await request.post('/api/sessions', {
-    data: {
-      title: 'Browser onboarding',
-      description: 'A complete test guide',
-      sourceUrl: 'https://example.com/app',
-      steps: Array.from({ length: count }, (_, i) => ({
-        position: i,
-        type: 'action',
-        text: `Complete action ${i + 1}`,
-      })),
-    },
+    data: onboardingSession(count),
   })
   expect(response.status()).toBe(201)
   return (await response.json()).id as string

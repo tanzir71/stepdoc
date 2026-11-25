@@ -49,6 +49,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["name", "kind"],
+      "allOf": [{ "if": { "properties": { "kind": { "const": "secret" } }, "required": ["kind"] }, "then": { "not": { "required": ["example"] } } }],
       "properties": {
         "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$" },
         "kind": { "enum": ["variable", "secret"], "description": "secret values are never stored, exported or displayed; replay reads them from the environment." },
@@ -99,8 +100,13 @@
       "properties": {
         "kind": { "enum": ["none", "literal", "variable", "secret"] },
         "literal": { "type": "string", "description": "Only for non-typed values (select option labels, key names). Never free text the user typed." },
-        "variable": { "type": "string" }
-      }
+        "variable": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$" }
+      },
+      "oneOf": [
+        { "properties": { "kind": { "const": "none" } }, "not": { "anyOf": [{ "required": ["literal"] }, { "required": ["variable"] }] } },
+        { "properties": { "kind": { "const": "literal" } }, "required": ["literal"], "not": { "required": ["variable"] } },
+        { "properties": { "kind": { "enum": ["variable", "secret"] } }, "required": ["variable"], "not": { "required": ["literal"] } }
+      ]
     },
     "expect": {
       "type": "object",
@@ -114,6 +120,7 @@
     },
     "annotation": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["type", "x", "y"],
       "properties": {
         "type": { "enum": ["rectangle", "arrow", "text", "pin"] },
@@ -152,6 +159,10 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "index", "type", "title"],
+      "allOf": [
+        { "if": { "properties": { "action": { "const": "fill" } }, "required": ["action"] }, "then": { "required": ["value"], "properties": { "value": { "type": "object", "properties": { "kind": { "enum": ["variable", "secret"] } } } } } },
+        { "if": { "properties": { "value": { "type": "object", "properties": { "kind": { "const": "literal" } }, "required": ["kind"] } }, "required": ["value"] }, "then": { "required": ["action"], "properties": { "action": { "enum": ["select", "press"] } } } }
+      ],
       "properties": {
         "id": { "type": "string" },
         "index": { "type": "integer", "minimum": 1 },
@@ -165,9 +176,10 @@
         "key": { "type": "string", "description": "For action=press, e.g. 'Enter'." },
         "expect": { "$ref": "#/$defs/expect" },
         "screenshot": { "$ref": "#/$defs/screenshot" },
-        "click": { "type": ["object", "null"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "radius": { "type": "number", "default": 18 } } },
+        "click": { "type": ["object", "null"], "additionalProperties": false, "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "radius": { "type": "number", "default": 18 } } },
         "edits": {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "crop": { "oneOf": [{ "$ref": "#/$defs/rect" }, { "type": "null" }] },
             "annotations": { "type": "array", "items": { "$ref": "#/$defs/annotation" } }

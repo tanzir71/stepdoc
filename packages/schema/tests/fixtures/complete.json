@@ -1,0 +1,186 @@
+{
+  "schema": "stepdoc/guide@1",
+  "id": "change-plan",
+  "uuid": "123e4567-e89b-42d3-a456-426614174000",
+  "title": "Change the workspace plan",
+  "description": "Update a plan and invite its billing contact.",
+  "app": {
+    "name": "Example workspace",
+    "origin": "https://example.com",
+    "version": "2"
+  },
+  "locale": "en",
+  "collectionId": "billing",
+  "tags": ["billing", "onboarding"],
+  "preconditions": ["Signed in with the Owner role"],
+  "variables": [
+    {
+      "name": "billing_email",
+      "kind": "secret",
+      "type": "string",
+      "description": "Billing contact"
+    },
+    { "name": "seats", "kind": "variable", "type": "number", "example": "5" },
+    {
+      "name": "plan",
+      "kind": "variable",
+      "type": "enum",
+      "options": ["Basic", "Team"]
+    }
+  ],
+  "steps": [
+    {
+      "id": "open-plan",
+      "index": 1,
+      "type": "action",
+      "action": "click",
+      "title": "Click Change plan",
+      "description": "Open the plan dialog.",
+      "url": "https://example.com/settings",
+      "target": {
+        "role": "button",
+        "name": "Change plan",
+        "tag": "button",
+        "locators": [
+          {
+            "strategy": "role",
+            "value": "button",
+            "name": "Change plan",
+            "exact": true,
+            "unique": true
+          },
+          { "strategy": "testId", "value": "change-plan", "unique": true },
+          { "strategy": "label", "value": "Change plan" },
+          { "strategy": "placeholder", "value": "Search plans" },
+          { "strategy": "text", "value": "Change plan", "unique": false },
+          { "strategy": "altText", "value": "Plan details" },
+          { "strategy": "title", "value": "Change plan" },
+          { "strategy": "css", "value": "#change-plan" },
+          { "strategy": "xpath", "value": "//button[@id='change-plan']" }
+        ],
+        "frame": ["iframe#settings"],
+        "shadowPath": ["plan-card"],
+        "rect": { "x": 25, "y": 40, "width": 120, "height": 32 }
+      },
+      "value": { "kind": "none" },
+      "expect": {
+        "urlMatches": "/settings",
+        "visible": { "role": "dialog", "name": "Choose plan" },
+        "hidden": { "role": "status", "name": "Loading" },
+        "text": { "role": "heading", "contains": "Choose a plan" }
+      },
+      "screenshot": {
+        "original": "guides/change-plan/open-plan/original.webp",
+        "rendered": "guides/change-plan/open-plan/rendered.webp",
+        "width": 1440,
+        "height": 900,
+        "devicePixelRatio": 1,
+        "alt": "The Change plan button"
+      },
+      "click": { "x": 65, "y": 54, "radius": 18 },
+      "edits": {
+        "crop": { "x": 0, "y": 0, "width": 1440, "height": 900 },
+        "annotations": [
+          {
+            "type": "rectangle",
+            "x": 24,
+            "y": 39,
+            "width": 122,
+            "height": 34,
+            "color": "accent"
+          },
+          { "type": "arrow", "x": 180, "y": 90, "toX": 145, "toY": 56 },
+          { "type": "text", "x": 180, "y": 80, "text": "Plan settings" },
+          { "type": "pin", "x": 25, "y": 40, "text": "1" }
+        ]
+      },
+      "redactions": [
+        {
+          "kind": "email",
+          "source": "policy",
+          "rule": "billing-email",
+          "rect": { "x": 300, "y": 50, "width": 200, "height": 30 },
+          "status": "applied"
+        }
+      ],
+      "confidence": 0.99,
+      "lowConfidence": false,
+      "notes": "Use the current plan card."
+    },
+    {
+      "id": "email",
+      "index": 2,
+      "type": "action",
+      "action": "fill",
+      "title": "Fill in the Billing contact field",
+      "value": { "kind": "secret", "variable": "billing_email" },
+      "target": { "role": "textbox", "name": "Billing contact" }
+    },
+    {
+      "id": "seats",
+      "index": 3,
+      "type": "action",
+      "action": "fill",
+      "title": "Fill in the Seats field",
+      "value": { "kind": "variable", "variable": "seats" }
+    },
+    {
+      "id": "plan",
+      "index": 4,
+      "type": "action",
+      "action": "select",
+      "title": "Select Team",
+      "value": { "kind": "literal", "literal": "Team" }
+    },
+    {
+      "id": "save",
+      "index": 5,
+      "type": "action",
+      "action": "press",
+      "title": "Press Enter",
+      "key": "Enter",
+      "value": { "kind": "literal", "literal": "Enter" }
+    },
+    {
+      "id": "finish",
+      "index": 6,
+      "type": "section",
+      "title": "Finish setup",
+      "click": null,
+      "url": null,
+      "edits": { "crop": null }
+    },
+    {
+      "id": "home",
+      "index": 7,
+      "type": "navigate",
+      "action": "navigate",
+      "title": "Go to the dashboard",
+      "url": "https://example.com/dashboard"
+    },
+    {
+      "id": "confirm",
+      "index": 8,
+      "type": "assert",
+      "action": "assert",
+      "title": "Confirm the new plan",
+      "expect": { "text": { "contains": "Team" } }
+    }
+  ],
+  "version": 3,
+  "status": "published",
+  "createdAt": "2026-11-24T10:00:00Z",
+  "updatedAt": "2026-11-25T10:00:00+06:00",
+  "capturedAt": "2026-11-24T10:00:00Z",
+  "verification": {
+    "status": "passed",
+    "at": "2026-11-25T09:00:00Z",
+    "runner": "guide-me",
+    "failedStep": null
+  },
+  "publish": {
+    "publicId": "public-plan",
+    "isPublic": true,
+    "targets": ["link", "embed", "github-pages", "cloudflare-pages"]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "stepdoc/guide@1",
+  "id": "getting-started",
+  "title": "Getting started",
+  "steps": [
+    {
+      "id": "intro",
+      "index": 1,
+      "type": "manual",
+      "title": "Open the workspace"
+    }
+  ],
+  "version": 1,
+  "createdAt": "2026-11-25T10:00:00Z",
+  "updatedAt": "2026-11-25T10:00:00Z"
+}

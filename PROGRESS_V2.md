@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Repository renamed, v2 branch pushed, MIT licence and build plan recorded | — |
+| M9 | In progress | 2026-11-25 | Repository setup and guide@1 schema/migration complete; core next | — |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -17,9 +17,9 @@
 ## M9 — Repo setup, schema and core
 
 - [x] Repository renamed to `tanzir71/stepdoc` with admin access; `origin` updated; `v2` created from `master` and first push completed. Old references updated, root repository metadata and MIT licence added.
-- [ ] `@stepdoc/schema`: guide@1 types + zod mirroring `docs/v2/guide.schema.json`; Ajv validation test against fixtures; v1→guide@1 migration with tests on the v1 Playwright fixtures.
-  - [ ] guide@1 types, zod and Ajv fixture validation.
-  - [ ] v1→guide@1 migration and v1 Playwright fixture tests, with a schema version note.
+- [x] `@stepdoc/schema`: guide@1 types + zod mirroring `docs/v2/guide.schema.json`; Ajv validation test against fixtures; v1→guide@1 migration with tests on the v1 Playwright fixtures.
+  - [x] guide@1 types, zod and Ajv fixture validation.
+  - [x] v1→guide@1 migration and v1 Playwright fixture tests, with a schema version note.
 - [ ] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
   - [ ] Step text and locator ranking.
   - [ ] Redaction detectors including Luhn, mod-97 and token entropy.
@@ -88,11 +88,14 @@
 ## Deviations
 
 - None in v2 setup. Historical v1 manual checks and its post-M7 live-verification prerequisite are superseded by §0; owner-only work is listed above.
+- The first schema implementation enforces privacy rules that were previously only prose in the supplied JSON Schema: no secret examples, no literals on fill steps, matching tagged value payloads, and no unknown properties in click/edit/annotation objects. These corrections ship as package version `0.1.0` under the initial guide@1 identifier; no guide@1 data existed before this implementation. The v1 migration and version note live in `packages/schema`.
 
 ## Run log
 
 - 2026-11-25 — M9 setup: read both handoffs and the v1 progress log; created `v2` from `master` at `05b432c`; confirmed admin permission and renamed the GitHub repository; updated `origin` and completed the first `v2` push. Recorded the supplied v2 contracts, instructions and milestone checklist, added MIT licensing/repository metadata, updated old source links and moved v1 external checks to Owner later. The first verification exposed a cold-start E2E race: PATCH returned 200, but initial dev compilation exceeded the save-indicator wait. The existing autosave regression now waits for the successful PATCH response before checking the indicator; persistence and keyboard assertions are retained. Next unit: guide@1 types/zod and Ajv fixtures in `@stepdoc/schema`.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (lint: zero errors, two existing image warnings; strict typecheck; 56 unit tests; 8 Playwright Chromium e2e tests against the local test-store; shared, extension and Next production builds). `pnpm website:verify`, repository metadata/JSON parse checks and `git diff --check` passed. No old repository URLs or workflow files found. M9 remains in progress; no milestone tag yet.
+- 2026-11-25 — M9 schema: added `@stepdoc/schema` version `0.1.0`, guide@1 Zod schemas and inferred types, the source JSON Schema export, minimal/full fixtures and Ajv 2020-12 parity tests. Both validators enforce the privacy rules above, and agree on RFC formats, Unicode text limits and integer semantics. Added a deterministic v1 row migration that preserves IDs, order, instructions, timestamps, public IDs, click geometry and image edit layers; maps targets and manual redactions; declares fill variables/secrets without reading `.value`; strips URL credentials/query/fragment and discards signed image URLs. Image migrations require client-supplied dimensions and existing flattened blobs for edited screenshots. Extracted the existing onboarding fixture so browser tests and migration tests share the same v1 input. Next unit: core step text and locator ranking.
+- Verification: final `pnpm verify` passed (169 unit tests, including 113 schema/migration tests; 8 Playwright Chromium e2e tests; strict typecheck; all workspace builds; zero lint errors and the same two existing image warnings). Migration checks cover 1/2/3/10/30/50-step v1 fixtures, manual images/layers, ordering, public identity, unsafe URLs, malformed rows and a throwing `.value` access guard. `git diff --check` passed. M9 remains open for core work; no milestone tag yet.
 
 ## Defaults in use
 

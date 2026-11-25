@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | In progress | 2026-11-26 | Native SPA, editor and exports audited; milestone checkpoint next | — |
+| M10 | Complete | 2026-11-26 | Native SPA/storage, editor, client exports; visual and accessibility gates passed | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
@@ -153,6 +153,8 @@
 - Comparison evidence: inspected full W03/W05 Figma context and expanded W02/W12 into both sidebars, headers, filters and all eight visible cards per theme. Compared all six refreshed 1440×900 native captures and recorded explicit browser-mode/data adaptations in `docs/v2/screens/README.md`. All 76 referenced SVGs are retained within the 95-file inventory; native PNG equality proves four dark color variants share the exact existing mask silhouettes. Per-screen checks assert original/effective dimensions and attach local vector callsite reports. The caption has a native pixel-bounds regression at the reference location/size. Two new core checks and a real browser flow cover invalid caption coordinates, bounded font size, numeric editing, grouped movement, caption selection, persistence and clearing only its pixels. The canvas worker now passes 57 pixel/resource checks. Two caption aria states bring the route/state total to 56 plus the existing two component snapshots; the independent accessibility gate passes. All M10 acceptance items are implemented; the final full gate and milestone checkpoint follow. Next milestone: M11 WXT extension foundations and capture contract; no owner test, live service or deployment.
 
 - Final verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and independent `pnpm test:a11y` passed: 538 unit tests; 159 native storage checks; redaction and 57-check canvas workers; 21-step generated replay plus six expected failures; eight legacy and 36 SPA browser tests; 56 route/state aria snapshots plus two component snapshots and axe; strict typechecks and every production build. The real static bundle still passes native editing/image upload, compiled-worker DOCX/bundle export and separate-copy bundle import, with local fonts/assets, no runtime/non-local requests and no packaged fixtures. Initial JavaScript remains 444.23 kB. The first full gate exposed a fault-injection test patching an adapter instance that could be bypassed; it now fails the second native OPFS stream write and asserts that the injection fired before verifying cleanup. The targeted test and full rerun pass. Lint has zero errors and the same two existing image warnings. All M10 acceptance criteria are proven; the milestone checkpoint/tag follows. M11 is the next work unit. No PR, deployment, live backend or owner testing.
+
+- M10 completion audit: reconciled every M10 criterion with the current adapter/SPA source, route and failure-state tests, six compared Figma captures, local vector proofs, native document/bundle flows and accessibility trees. Required local commands are green on the completed runtime tree. The completion checkpoint is `v2-m10`; its resolved commit is recorded in the Milestones table after the tag push. M11–M17 remain open under the original goal and scope.
 
 ## Defaults in use
 

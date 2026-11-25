@@ -1,0 +1,158 @@
+- link "Skip to editor":
+  - /url: "#main"
+- banner:
+  - navigation "Guide navigation":
+    - link "Library":
+      - /url: /
+    - link "Finance ops":
+      - /url: /?collection=finance-ops
+  - heading "Upgrade a workspace to the Team plan" [level=1]:
+    - button "Upgrade a workspace to the Team plan"
+  - text: Draft
+  - button /Saved, version \d+\. Open history\./:
+    - status: Saved · v12
+  - tablist "Editor mode":
+    - tab "Edit" [selected]
+    - tab "Preview"
+    - tab "Agent view"
+  - button "Read guide"
+  - button "Copy link"
+  - button "Download JSON"
+- main:
+  - tabpanel "Edit":
+    - complementary "Guide steps":
+      - heading "Steps" [level=2]
+      - button "Clean up"
+      - button "Add step"
+      - button "Search steps"
+      - listbox "Guide steps":
+        - option /\d+ Go to app\.ledgerly\.io\/settings navigate · button/
+        - option /\d+ Click "Billing" in the sidebar click · link/
+        - option /\d+ Click "Change plan" click · button/ [selected]
+        - option /\d+ Select "Team — \$\d+ \/ month" from the Plan dropdown select · combobox/
+        - option /\d+ Click here click · button Review/
+        - 'option /\d+ Fill in the "Seats" field fill · spinbutton · \{seats\}/'
+        - option /\d+ Fill in the "Invoice email" field fill · textbox · secret/
+        - option /\d+ Click "Save changes" click · button/
+        - option /\d+ Check the "Plan updated" message assert · button/
+      - button "Add step"
+      - button "Add image"
+    - region "Selected step":
+      - toolbar "Image annotation tools":
+        - button "Select layer" [pressed]
+        - button "Add blur"
+        - button "Crop screenshot"
+        - button "Add arrow"
+        - button "Add rectangle"
+        - button "Add text annotation"
+        - button "Add pin"
+        - button "Undo edit" [disabled]
+        - button "Redo edit" [disabled]
+        - combobox "Image zoom":
+          - option "Fit" [selected]
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+      - img "Fictional Ledgerly billing settings"
+      - textbox "Step title": Click "Change plan"
+      - text: Replay passed Step description
+      - textbox "Step description": Opens the plan picker. Only workspace owners see this button; members get a "Request upgrade" link instead.
+      - text: click · button app.ledgerly.io/settings/billing
+      - region "Layers":
+        - heading "Layers" [level=2]
+        - text: Select a layer to edit its numbers
+        - listbox "Image layers":
+          - option /Click marker x \d+ y \d+ r \d+/ [selected]:
+            - code: /x \d+ y \d+ r \d+/
+          - option /rectangle x \d+ y \d+ w \d+ h \d+/:
+            - code: /x \d+ y \d+ w \d+ h \d+/
+          - option /text · Owners only x \d+ y \d+/:
+            - code: /x \d+ y \d+/
+          - option "Blur · email auto · applied":
+            - code: auto · applied
+          - option "Blur · card auto · applied":
+            - code: auto · applied
+        - button "Add click marker"
+        - button "Replace image"
+        - group "Click marker":
+          - spinbutton "Layer x"
+          - spinbutton "Layer y"
+          - spinbutton "Layer radius"
+          - button "Remove layer"
+    - complementary "Step inspector":
+      - tablist "Inspector":
+        - tab "Step"
+        - tab "Target"
+        - tab "Redact"
+        - tab "History" [selected]
+      - tabpanel "History":
+        - heading "Version history" [level=2]
+        - paragraph: Every saved change creates a version on this device. Inspect or download any saved version.
+        - list "Saved versions":
+          - listitem:
+            - strong: /Version \d+/
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: /Version \d+/
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: /Version \d+/
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 9
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 8
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 7
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 6
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 5
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 4
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 3
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 2
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Saved
+            - button "Download JSON"
+          - listitem:
+            - strong: Version 1
+            - time: /\d+\/\d+\/\d+, \d+:\d+:\d+ PM/
+            - text: This device · Created
+            - button "Download JSON"
+- button "Upload screenshot"
+- status
+- contentinfo:
+  - button "Activity"

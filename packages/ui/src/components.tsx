@@ -166,7 +166,7 @@ export function Toggle({
   ...props
 }: Hook & {
   on: boolean
-  onChange: (on: boolean) => void
+  onChange?: (on: boolean) => void
   'aria-label': string
   disabled?: boolean
 }) {
@@ -176,9 +176,10 @@ export function Toggle({
       type="button"
       role="switch"
       aria-checked={on}
+      disabled={props.disabled || !onChange}
       aria-label={label}
       className="sd-toggle"
-      onClick={() => onChange(!on)}
+      onClick={() => onChange?.(!on)}
     >
       <img src={on ? toggleOn : toggleOff} alt="" width={32} height={18} />
     </button>
@@ -373,9 +374,15 @@ export function Avatar({ initials }: { initials: string }) {
     </span>
   )
 }
-export function Logo({ markOnly = false }: { markOnly?: boolean }) {
+export function Logo({
+  markOnly = false,
+  size = 's',
+}: {
+  markOnly?: boolean
+  size?: 's' | 'm'
+}) {
   return (
-    <span className="sd-logo">
+    <span className="sd-logo" data-size={size}>
       <span className="sd-logo-symbol">
         <img
           className="sd-logo-light"

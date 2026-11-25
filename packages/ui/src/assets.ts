@@ -1,4 +1,134 @@
 export const icons = {
+  'editor-chevron-down': {
+    url: new URL('../assets/8f7e3.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'code-small': {
+    url: new URL('../assets/e080d.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'target-button-small': {
+    url: new URL('../assets/604bc.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'check-small': {
+    url: new URL('../assets/6f259.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'pointer-small': {
+    url: new URL('../assets/3c1b3.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'blur-small': {
+    url: new URL('../assets/ef428.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'rectangle-small': {
+    url: new URL('../assets/e8d2e.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  eye: {
+    url: new URL('../assets/f16e0.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'target-small': {
+    url: new URL('../assets/a6142.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  redo: {
+    url: new URL('../assets/49553.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  undo: {
+    url: new URL('../assets/279d7.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  pin: {
+    url: new URL('../assets/428a0.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  type: {
+    url: new URL('../assets/e472b.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  rectangle: {
+    url: new URL('../assets/00f64.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  arrow: {
+    url: new URL('../assets/1fb09.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  crop: {
+    url: new URL('../assets/17370.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  blur: {
+    url: new URL('../assets/8b397.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  pointer: {
+    url: new URL('../assets/afed7.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  'record-small': {
+    url: new URL('../assets/0942c.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  add: {
+    url: new URL('../assets/92dec.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  sparkle: {
+    url: new URL('../assets/f66a2.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  download: {
+    url: new URL('../assets/a260d.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  share: {
+    url: new URL('../assets/cd76b.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  target: {
+    url: new URL('../assets/1781e.svg', import.meta.url).href,
+    width: 16,
+    height: 16,
+  },
+  history: {
+    url: new URL('../assets/9bb4b.svg', import.meta.url).href,
+    width: 14,
+    height: 14,
+  },
+  'chevron-right': {
+    url: new URL('../assets/99260.svg', import.meta.url).href,
+    width: 12,
+    height: 12,
+  },
   columns: {
     url: new URL('../assets/f95dc.svg', import.meta.url).href,
     width: 16,

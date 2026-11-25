@@ -19,6 +19,7 @@ import {
 import { useLibrary } from './hooks'
 import { Library, StatePanel } from './library'
 import { Preview } from './preview'
+import { Editor } from './editor/Editor'
 import { CreateDialog } from './dialogs'
 import { humanize, libraryUrl, parseLibrary } from './model'
 import { navigate, useLocation } from './navigation'
@@ -35,13 +36,20 @@ export function App() {
   const [pathname, rawSearch = ''] = url.split('?')
   const search = `?${rawSearch}`
   const route = parseLibrary(search)
+  const editor = /^\/g\/([a-z0-9][a-z0-9-]{2,80})\/edit\/?$/.exec(
+    pathname ?? '',
+  )
   const [preferences, setPreferences] = useState<Preferences>(readPreferences)
   const [refresh, setRefresh] = useState(0)
   const [online, setOnline] = useState(navigator.onLine)
   const searchRef = useRef<HTMLInputElement>(null)
   const createDialog = useRef<HTMLDialogElement>(null)
   const storageDialog = useRef<HTMLDialogElement>(null)
-  const state = useLibrary(pathname === '/' ? route.query : {}, refresh)
+  const state = useLibrary(
+    pathname === '/' ? route.query : {},
+    refresh,
+    !editor,
+  )
   const collections = [
     ...new Set(
       state.all
@@ -69,6 +77,7 @@ export function App() {
     const keyboard = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
+        if (document.querySelector('dialog[open]')) return
         if (pathname !== '/') navigate('/')
         requestAnimationFrame(() => searchRef.current?.focus())
       }
@@ -97,6 +106,7 @@ export function App() {
     document.title = `StepDoc · ${pathname === '/' ? (route.collections ? 'Collections' : 'Library') : pathname === '/settings/general' ? 'Settings' : 'Guide'}`
   }, [pathname, route.collections])
   const preview = /^\/g\/([a-z0-9][a-z0-9-]{2,80})\/?$/.exec(pathname ?? '')
+
   const intercept = (event: MouseEvent) => {
     if (
       event.defaultPrevented ||
@@ -122,6 +132,17 @@ export function App() {
     event.preventDefault()
     navigate(anchor.pathname + anchor.search + anchor.hash)
   }
+  if (editor?.[1])
+    return (
+      <div onClick={intercept}>
+        <Editor
+          key={editor[1]}
+          id={editor[1]}
+          search={search}
+          online={online}
+        />
+      </div>
+    )
   return (
     <div
       className={`app-shell ${preferences.collapsed ? 'app-compact' : ''}`}

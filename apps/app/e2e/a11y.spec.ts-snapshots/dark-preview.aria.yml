@@ -34,6 +34,8 @@
 - banner:
   - link "← Library":
     - /url: /
+  - link "Edit guide":
+    - /url: /g/fixture-guide-00/edit?step=1
   - button "Download guide.json"
 - main:
   - article:

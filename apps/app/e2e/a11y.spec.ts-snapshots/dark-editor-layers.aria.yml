@@ -1,0 +1,139 @@
+- link "Skip to editor":
+  - /url: "#main"
+- banner:
+  - navigation "Guide navigation":
+    - link "Library":
+      - /url: /
+    - link "Finance ops":
+      - /url: /?collection=finance-ops
+  - heading "Upgrade a workspace to the Team plan" [level=1]:
+    - button "Upgrade a workspace to the Team plan"
+  - text: Draft
+  - button /Saved, version \d+\. Open history\./:
+    - status: Saved · v12
+  - tablist "Editor mode":
+    - tab "Edit" [selected]
+    - tab "Preview"
+    - tab "Agent view"
+  - button "Read guide"
+  - button "Copy link"
+  - button "Download JSON"
+- main:
+  - tabpanel "Edit":
+    - complementary "Guide steps":
+      - heading "Steps" [level=2]
+      - button "Clean up"
+      - button "Add step"
+      - button "Search steps"
+      - listbox "Guide steps":
+        - option /\d+ Go to app\.ledgerly\.io\/settings navigate · button/
+        - option /\d+ Click "Billing" in the sidebar click · link/
+        - option /\d+ Click "Change plan" click · button/ [selected]
+        - option /\d+ Select "Team — \$\d+ \/ month" from the Plan dropdown select · combobox/
+        - option /\d+ Click here click · button Review/
+        - 'option /\d+ Fill in the "Seats" field fill · spinbutton · \{seats\}/'
+        - option /\d+ Fill in the "Invoice email" field fill · textbox · secret/
+        - option /\d+ Click "Save changes" click · button/
+        - option /\d+ Check the "Plan updated" message assert · button/
+      - button "Add step"
+      - button "Add image"
+    - region "Selected step":
+      - toolbar "Image annotation tools":
+        - button "Select layer" [pressed]
+        - button "Add blur"
+        - button "Crop screenshot"
+        - button "Add arrow"
+        - button "Add rectangle"
+        - button "Add text annotation"
+        - button "Add pin"
+        - button "Undo edit" [disabled]
+        - button "Redo edit" [disabled]
+        - combobox "Image zoom":
+          - option "Fit" [selected]
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+      - img "Fictional Ledgerly billing settings"
+      - textbox "Step title": Click "Change plan"
+      - text: Replay passed Step description
+      - textbox "Step description": Opens the plan picker. Only workspace owners see this button; members get a "Request upgrade" link instead.
+      - text: click · button app.ledgerly.io/settings/billing
+      - region "Layers":
+        - heading "Layers" [level=2]
+        - text: Select a layer to edit its numbers
+        - listbox "Image layers":
+          - option /Click marker x \d+ y \d+ r \d+/ [selected]:
+            - code: /x \d+ y \d+ r \d+/
+          - option /rectangle x \d+ y \d+ w \d+ h \d+/:
+            - code: /x \d+ y \d+ w \d+ h \d+/
+          - option /text · Owners only x \d+ y \d+/:
+            - code: /x \d+ y \d+/
+          - option "Blur · email auto · applied":
+            - code: auto · applied
+          - option "Blur · card auto · applied":
+            - code: auto · applied
+        - button "Add click marker"
+        - button "Replace image"
+        - group "Click marker":
+          - spinbutton "Layer x"
+          - spinbutton "Layer y"
+          - spinbutton "Layer radius"
+          - button "Remove layer"
+    - complementary "Step inspector":
+      - tablist "Inspector":
+        - tab "Step"
+        - tab "Target" [selected]
+        - tab "Redact"
+        - tab "History"
+      - tabpanel "Target":
+        - text: Action
+        - combobox "Action":
+          - option "click" [selected]
+          - option "dblclick"
+          - option "fill"
+          - option "select"
+          - option "check"
+          - option "uncheck"
+          - option "press"
+          - option "hover"
+          - option "upload"
+          - option "navigate"
+          - option "assert"
+          - option "wait"
+        - region "Target":
+          - heading "Target" [level=2]
+          - text: Replay order
+          - list "Ordered target locators":
+            - listitem:
+              - 'button "Edit locator 1: role button"':
+                - code: button "Change plan"
+            - listitem:
+              - 'button "Edit locator 2: testId billing-change-plan"':
+                - code: billing-change-plan
+            - listitem:
+              - 'button "Edit locator 3: text Change plan"':
+                - code: Change plan
+            - listitem:
+              - 'button "Edit locator 4: css section.plan > button"':
+                - code: section.plan > button
+            - listitem:
+              - 'button "Edit locator 5: xpath //main//section[1]//button"':
+                - code: //main//section[1]//button
+          - button "Add locator"
+        - text: Page URL
+        - textbox "Page URL": https://app.ledgerly.io/settings/billing
+        - switch "Strip query strings and fragments, enforced in browser mode" [checked] [disabled]
+        - text: Queries and fragments always removed
+        - heading "Expect after this step" [level=2]
+        - group: dialog "Choose a plan" is visible
+        - button "Open live page"
+        - button "Copy Playwright"
+        - text: "await page.getByRole(\"button\", { name: \"Change plan\", exact: true }).click();"
+        - group: Role and accessible name
+- button "Upload screenshot"
+- status
+- contentinfo:
+  - button "Activity"

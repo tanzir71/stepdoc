@@ -738,3 +738,7 @@
 .library-heading h1 {
   overflow-wrap: anywhere;
 }
+
+.app-dialog .dialog-actions {
+  flex-wrap: wrap;
+}

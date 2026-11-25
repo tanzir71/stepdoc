@@ -357,6 +357,10 @@
     "editor-inspector": 340,
     "extension-panel": 400,
     "popup": "360x560",
-    "library-primary": 135
+    "library-primary": 135,
+    "editor-topbar": 56,
+    "editor-image": 680,
+    "editor-gutter": 50,
+    "layer-row": 30
   }
 }

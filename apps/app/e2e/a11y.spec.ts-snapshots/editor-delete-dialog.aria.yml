@@ -1,0 +1,114 @@
+- link "Skip to editor":
+  - /url: "#main"
+- banner:
+  - navigation "Guide navigation":
+    - link "Library":
+      - /url: /
+    - link "Finance ops":
+      - /url: /?collection=finance-ops
+  - heading "Upgrade a workspace to the Team plan" [level=1]:
+    - button "Upgrade a workspace to the Team plan"
+  - text: Draft
+  - button /Saved, version \d+\. Open history\./:
+    - status: Saved · v12
+  - tablist "Editor mode":
+    - tab "Edit" [selected]
+    - tab "Preview"
+    - tab "Agent view"
+  - button "Read guide"
+  - button "Copy link"
+  - button "Download JSON"
+- main:
+  - tabpanel "Edit":
+    - complementary "Guide steps":
+      - heading "Steps" [level=2]
+      - button "Clean up"
+      - button "Add step"
+      - button "Search steps"
+      - listbox "Guide steps":
+        - option /\d+ Go to app\.ledgerly\.io\/settings navigate · button/
+        - option /\d+ Click "Billing" in the sidebar click · link/
+        - option /\d+ Click "Change plan" click · button/ [selected]
+        - option /\d+ Select "Team — \$\d+ \/ month" from the Plan dropdown select · combobox/
+        - option /\d+ Click here click · button Review/
+        - 'option /\d+ Fill in the "Seats" field fill · spinbutton · \{seats\}/'
+        - option /\d+ Fill in the "Invoice email" field fill · textbox · secret/
+        - option /\d+ Click "Save changes" click · button/
+        - option /\d+ Check the "Plan updated" message assert · button/
+      - button "Add step"
+      - button "Add image"
+    - region "Selected step":
+      - toolbar "Image annotation tools":
+        - button "Select layer" [pressed]
+        - button "Add blur"
+        - button "Crop screenshot"
+        - button "Add arrow"
+        - button "Add rectangle"
+        - button "Add text annotation"
+        - button "Add pin"
+        - button "Undo edit" [disabled]
+        - button "Redo edit" [disabled]
+        - combobox "Image zoom":
+          - option "Fit" [selected]
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+          - option /\d+%/
+      - img "Fictional Ledgerly billing settings"
+      - textbox "Step title": Click "Change plan"
+      - text: Replay passed Step description
+      - textbox "Step description": Opens the plan picker. Only workspace owners see this button; members get a "Request upgrade" link instead.
+      - text: click · button app.ledgerly.io/settings/billing
+      - region "Layers":
+        - heading "Layers" [level=2]
+        - text: Select a layer to edit its numbers
+        - listbox "Image layers":
+          - option /Click marker x \d+ y \d+ r \d+/:
+            - code: /x \d+ y \d+ r \d+/
+          - option /rectangle x \d+ y \d+ w \d+ h \d+/:
+            - code: /x \d+ y \d+ w \d+ h \d+/
+          - option /text · Owners only x \d+ y \d+/:
+            - code: /x \d+ y \d+/
+          - option "Blur · email auto · applied":
+            - code: auto · applied
+          - option "Blur · card auto · applied":
+            - code: auto · applied
+        - button "Add click marker"
+        - button "Replace image"
+    - complementary "Step inspector":
+      - tablist "Inspector":
+        - tab "Step" [selected]
+        - tab "Target"
+        - tab "Redact"
+        - tab "History"
+      - tabpanel "Step":
+        - text: Step title
+        - textbox "Step title": Click "Change plan"
+        - text: Step description
+        - textbox "Step description": Opens the plan picker. Only workspace owners see this button; members get a "Request upgrade" link instead.
+        - text: Step type
+        - combobox "Step type":
+          - option "action" [selected]
+          - option "navigate"
+          - option "section"
+          - option "manual"
+          - option "assert"
+        - text: Screenshot alt text
+        - textbox "Screenshot alt text": Fictional Ledgerly billing settings
+        - text: Notes
+        - textbox "Notes"
+        - button "Move up"
+        - button "Move down"
+        - button "Delete step"
+        - button "Upload image"
+- button "Upload screenshot"
+- dialog "Delete this step?":
+  - heading "Delete this step?" [level=2]
+  - paragraph: The step will be removed from the current guide. Undo can bring it back.
+  - button "Cancel"
+  - button "Delete step"
+- status
+- contentinfo:
+  - button "Activity"

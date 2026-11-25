@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { prepare, hook } from './helpers'
 import { fixture } from './fixtures'
+import { prepareEditor } from './editor-helpers'
 
 async function audit(page: Page, name: string) {
   await expect(page.locator('body')).toMatchAriaSnapshot({
@@ -150,4 +151,101 @@ test('duplicate import and activity feedback are accessible', async ({
     page.getByRole('dialog', { name: 'This guide is already in your library' }),
   ).toBeVisible()
   await audit(page, 'duplicate-import-dialog')
+})
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`${theme} editor modes, inspector panels and numeric layers are accessible`, async ({
+    page,
+  }) => {
+    test.setTimeout(150_000)
+    await page.addInitScript(
+      (theme) =>
+        localStorage.setItem(
+          'stepdoc.preferences.v1',
+          JSON.stringify({ version: 1, theme, collapsed: false }),
+        ),
+      theme,
+    )
+    await prepareEditor(page)
+    await audit(page, `${theme}-editor-target`)
+    await hook(page, 'canvas-layer-select').first().click()
+    await audit(page, `${theme}-editor-layers`)
+    for (const panel of ['step', 'redact', 'history']) {
+      await hook(page, `inspector-${panel}`).click()
+      if (panel === 'history')
+        await expect(
+          page.getByRole('list', { name: 'Saved versions' }),
+        ).toBeVisible()
+      await audit(page, `${theme}-editor-${panel}`)
+    }
+    await hook(page, 'editor-mode-preview').click()
+    await expect(page.locator('.editor-document #step-1 img')).toBeVisible()
+    await audit(page, `${theme}-editor-preview`)
+    await hook(page, 'editor-mode-agent').click()
+    await audit(page, `${theme}-editor-agent`)
+  })
+}
+test('editor dialogs expose named keyboard controls', async ({ page }) => {
+  test.setTimeout(150_000)
+  await prepareEditor(page)
+  await hook(page, 'editor-add-step').click()
+  await audit(page, 'editor-add-dialog')
+  await page.keyboard.press('Escape')
+  await hook(page, 'editor-guide-details').click()
+  await audit(page, 'editor-guide-dialog')
+  await page.keyboard.press('Escape')
+  await hook(page, 'target-locator-edit').first().click()
+  await audit(page, 'editor-locator-dialog')
+  await page.keyboard.press('Escape')
+  await hook(page, 'ai-cleanup').click()
+  await audit(page, 'editor-cleanup-dialog')
+  await page.keyboard.press('Escape')
+  await hook(page, 'target-action').selectOption('fill')
+  await hook(page, 'target-variable-add').click()
+  await audit(page, 'editor-variable-dialog')
+  await page.keyboard.press('Escape')
+})
+
+test('editor delete, unsaved-navigation and concurrent-write recovery are accessible', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000)
+  await prepareEditor(page)
+  await hook(page, 'inspector-step').click()
+  await hook(page, 'step-delete').click()
+  await audit(page, 'editor-delete-dialog')
+  await page.keyboard.press('Escape')
+  await page.clock.install({ time: new Date('2026-11-25T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-11-25T12:00:01Z'))
+  await hook(page, 'step-title').fill('Unsaved local title')
+  await hook(page, 'editor-library').click()
+  // Axe schedules timers internally. The navigation guard has already opened;
+  // let autosave settle before auditing its still-open, native dialog.
+  await page.clock.resume()
+  await expect(hook(page, 'editor-save-status')).toContainText('Saved ·')
+  await audit(page, 'editor-leave-dialog')
+  await hook(page, 'editor-leave-stay').click()
+  await page.keyboard.press('Control+s')
+  await expect(hook(page, 'editor-save-status')).toContainText('Saved ·')
+  const other = await context.newPage()
+  await other.clock.setFixedTime(new Date('2026-11-25T12:00:01Z'))
+  await other.goto('/g/editor-guide/edit?step=3')
+  await expect(hook(other, 'step-title')).toHaveValue('Unsaved local title')
+  await expect(hook(other, 'canvas-image')).toHaveAttribute(
+    'aria-busy',
+    'false',
+  )
+  await hook(page, 'step-title').fill('Remote title')
+  await page.keyboard.press('Control+s')
+  await expect(hook(page, 'editor-save-status')).toContainText('Saved ·')
+  await hook(other, 'step-title').fill('Conflicting title')
+  await other.keyboard.press('Control+s')
+  await expect(
+    other.getByRole('dialog', { name: 'Another tab saved a newer version' }),
+  ).toBeVisible()
+  await audit(other, 'editor-conflict-dialog')
+  await hook(other, 'editor-conflict-reload').click()
+  await expect(hook(other, 'step-title')).toHaveValue('Remote title')
+  await other.close()
 })

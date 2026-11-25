@@ -1,0 +1,66 @@
+- link "Skip to editor":
+  - /url: "#main"
+- banner:
+  - navigation "Guide navigation":
+    - link "Library":
+      - /url: /
+    - link "Finance ops":
+      - /url: /?collection=finance-ops
+  - heading "Upgrade a workspace to the Team plan" [level=1]:
+    - button "Upgrade a workspace to the Team plan"
+  - text: Draft
+  - button /Saved, version \d+\. Open history\./:
+    - status: Saved · v12
+  - tablist "Editor mode":
+    - tab "Edit"
+    - tab "Preview" [selected]
+    - tab "Agent view"
+  - button "Read guide"
+  - button "Copy link"
+  - button "Download JSON"
+- main:
+  - tabpanel "Preview":
+    - article:
+      - paragraph
+      - list:
+        - listitem:
+          - heading "Go to app.ledgerly.io/settings" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Click \"Billing\" in the sidebar" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Click \"Change plan\"" [level=2]
+          - paragraph: Opens the plan picker. Only workspace owners see this button; members get a "Request upgrade" link instead.
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading /Select "Team — \$\d+ \/ month" from the Plan dropdown/ [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Click here" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Fill in the \"Seats\" field" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Fill in the \"Invoice email\" field" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Click \"Save changes\"" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+        - listitem:
+          - heading "Check the \"Plan updated\" message" [level=2]
+          - figure "Fictional Ledgerly billing settings":
+            - img "Fictional Ledgerly billing settings"
+- button "Upload screenshot"
+- status
+- contentinfo:
+  - button "Activity"

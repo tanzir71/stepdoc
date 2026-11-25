@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { JSDOM } from 'jsdom'
+import { previewReplayStep } from '../../src/export/playwright'
 import { guideSchema, type GuideInput } from '@stepdoc/schema'
 import minimal from '../../../schema/tests/fixtures/minimal.json'
 import complete from '../../../schema/tests/fixtures/complete.json'
@@ -36,6 +37,24 @@ describe('guide@1 export snapshots', () => {
 })
 
 describe('shared export contract', () => {
+  it('previews the preferred instruction using runtime references and sanitized URLs', () => {
+    const input = guideSchema.parse(structuredClone(complete))
+    const step = input.steps.find((step) => step.action === 'fill')!
+    const line = previewReplayStep(input, step.id)
+    expect(line).toContain('readVariable(')
+    expect(line).not.toContain('resolveTarget')
+    const navigation = input.steps.find(
+      (step) => step.action === 'navigate' || step.type === 'navigate',
+    )
+    if (navigation) {
+      navigation.url =
+        'https://owner:synthetic@example.com/path?token=synthetic#fragment'
+      expect(previewReplayStep(input, navigation.id)).not.toContain('synthetic')
+    }
+    expect(() => previewReplayStep(input, 'missing-step')).toThrow(
+      GuideExportError,
+    )
+  })
   it('exports validated copies, orders/renumbers steps and never mutates input', () => {
     const input = structuredClone(guide)
     input.steps.reverse()

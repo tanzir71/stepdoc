@@ -87,6 +87,10 @@
 --sd-size-editor-inspector:340px;
 --sd-size-extension-panel:400px;
 --sd-size-library-primary:135px;
+--sd-size-editor-topbar:56px;
+--sd-size-editor-image:680px;
+--sd-size-editor-gutter:50px;
+--sd-size-layer-row:30px;
 --sd-type-brand:600 16px/24px var(--sd-font-sans);
 --sd-tracking-brand:-0.5px;
 --sd-type-avatar:500 10px/16px var(--sd-font-sans);

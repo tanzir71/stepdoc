@@ -5,7 +5,7 @@ import {
   type GuideSummary,
 } from '@stepdoc/storage'
 import { allGuides, getStorage } from './repository'
-export function useLibrary(query: GuideQuery, refresh: number) {
+export function useLibrary(query: GuideQuery, refresh: number, enabled = true) {
   const [state, setState] = useState<{
     busy: boolean
     items: GuideSummary[]
@@ -15,6 +15,7 @@ export function useLibrary(query: GuideQuery, refresh: number) {
   }>({ busy: true, items: [], all: [], reviewCount: 0, error: null })
   const { q, status, collection } = query
   useEffect(() => {
+    if (!enabled) return
     let active = true
     setState((previous) => ({ ...previous, busy: true, error: null }))
     const requested = { q, status, collection }
@@ -53,7 +54,7 @@ export function useLibrary(query: GuideQuery, refresh: number) {
     return () => {
       active = false
     }
-  }, [q, status, collection, refresh])
+  }, [q, status, collection, refresh, enabled])
   return state
 }
 export function useBlob(key: string | null) {

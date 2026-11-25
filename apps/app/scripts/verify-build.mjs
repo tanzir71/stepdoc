@@ -64,7 +64,32 @@ try {
     .getByRole('heading', { name: 'Production bundle guide', exact: true })
     .waitFor()
   await page.locator('#step-1[data-sd-step="1"]').waitFor()
-  await page.locator('[data-sd="guide-library"]').click()
+  await page.locator('[data-sd="guide-edit"]').click()
+  await page
+    .locator('[data-sd="step-title"]')
+    .fill('Edited in the static production bundle')
+  await page.keyboard.press('Control+s')
+  await page.getByRole('button', { name: /^Saved, version/ }).waitFor()
+  await page.locator('[data-sd="editor-image-file"]').setInputFiles({
+    name: 'fixture.png',
+    mimeType: 'image/png',
+    buffer: await readFile(
+      new URL('../e2e/fixtures/editor-original.png', import.meta.url),
+    ),
+  })
+  await page
+    .getByText('Image processed in this browser and saved.', { exact: true })
+    .first()
+    .waitFor()
+  await page.locator('.editor-image>img').waitFor()
+  await page.reload()
+  await page.locator('[data-sd="step-title"]').waitFor()
+  assert.equal(
+    await page.locator('[data-sd="step-title"]').inputValue(),
+    'Edited in the static production bundle',
+  )
+  await page.locator('.editor-image>img').waitFor()
+  await page.locator('[data-sd="editor-library"]').click()
   await page.locator('[data-sd="library-guide-open"]').waitFor()
   await page.evaluate(() => document.fonts.ready)
   assert(
@@ -73,7 +98,7 @@ try {
   )
   assert.deepEqual(failures, [])
   console.log(
-    'Static production bundle: creation → native storage → deep-link reload → library; local fonts/assets; no runtime/network failures.',
+    'Static production bundle: creation → native storage → editor/worker image upload → deep-link reload → library; local fonts/assets; no runtime/network failures.',
   )
 } finally {
   await browser?.close()

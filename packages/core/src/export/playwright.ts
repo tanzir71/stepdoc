@@ -1,15 +1,21 @@
 import type { GuideInput, Locator, Step, Target } from '@stepdoc/schema'
 import { rankLocators } from '../locators'
-import { envName, js, prepareExport, type ExportOptions } from './common'
+import {
+  envName,
+  js,
+  prepareExport,
+  GuideExportError,
+  type ExportOptions,
+} from './common'
 
-function role(value: string): string {
-  return `${js(value)} as Parameters<Page['getByRole']>[0]`
+function role(value: string, typed = true): string {
+  return `${js(value)}${typed ? " as Parameters<Page['getByRole']>[0]" : ''}`
 }
 
-function locatorCode(locator: Locator, root: string): string {
+function locatorCode(locator: Locator, root: string, typed = true): string {
   switch (locator.strategy) {
     case 'role':
-      return `${root}.getByRole(${role(locator.value)}, { ${locator.name !== undefined ? `name: ${js(locator.name)}, ` : ''}exact: ${locator.exact} })`
+      return `${root}.getByRole(${role(locator.value, typed)}, { ${locator.name !== undefined ? `name: ${js(locator.name)}, ` : ''}exact: ${locator.exact} })`
     case 'testId':
       return `${root}.getByTestId(${js(locator.value)})`
     case 'css':
@@ -36,8 +42,8 @@ function rootCode(target?: Target): string {
   return root
 }
 
-function targetCode(target: Target | undefined, root: string): string | null {
-  if (!target) return null
+export function replayLocators(target?: Target): Locator[] {
+  if (!target) return []
   const inferred: Locator[] =
     target.role && target.name
       ? [
@@ -54,8 +60,18 @@ function targetCode(target: Target | undefined, root: string): string | null {
     .sort((a, b) => priority(a) - priority(b))
   if (!candidates.length && target.name)
     candidates.push({ strategy: 'text', value: target.name, exact: true })
+  return candidates
+}
+function targetCode(
+  target: Target | undefined,
+  root: string,
+  primary = false,
+): string | null {
+  const candidates = replayLocators(target)
   return candidates.length
-    ? `await resolveTarget([${candidates.map((candidate) => `() => ${locatorCode(candidate, root)}`).join(', ')}])`
+    ? primary
+      ? locatorCode(candidates[0]!, root, false)
+      : `await resolveTarget([${candidates.map((candidate) => `() => ${locatorCode(candidate, root)}`).join(', ')}])`
     : null
 }
 function priority(locator: Locator): number {
@@ -116,9 +132,9 @@ function expectations(
   return result
 }
 
-function stepCode(step: Step): string[] {
+function stepCode(step: Step, primary = false): string[] {
   const root = rootCode(step.target)
-  const target = targetCode(step.target, root)
+  const target = targetCode(step.target, root, primary)
   const result: string[] = []
   const expected = expectations(step, root, target)
   if (step.type === 'section') return expected
@@ -182,6 +198,38 @@ function stepCode(step: Step): string[] {
     } else result.push(notReplayable(step, 'action is missing'))
   }
   return [...result, ...expected]
+}
+
+/** A standalone test; no guide payload, secret values, examples or service credentials embedded. */
+export function previewReplayStep(input: GuideInput, stepId: string): string {
+  const source = input.steps.find((step) => step.id === stepId)
+  if (!source) throw new GuideExportError('invalid_guide')
+  const { guide } = prepareExport({
+    ...input,
+    steps: [{ ...source, screenshot: undefined }],
+  })
+  const step = guide.steps[0]!
+  const lines = stepCode(
+    {
+      ...step,
+      expect:
+        step.action === 'assert' || step.action === 'wait'
+          ? step.expect
+          : undefined,
+    },
+    true,
+  )
+  if (lines[0]?.startsWith('const target = ')) {
+    const locator = lines.shift()!.slice('const target = '.length, -1)
+    return lines
+      .map((line) =>
+        line.startsWith('await target.')
+          ? `await ${locator}.${line.slice('await target.'.length)}`
+          : line,
+      )
+      .join('\n')
+  }
+  return lines.join('\n')
 }
 
 /** A standalone test; no guide payload, secret values, examples or service credentials embedded. */

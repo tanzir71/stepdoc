@@ -7,7 +7,7 @@ import { useBlob } from './hooks'
 import { useActivity } from './activity'
 import { StatePanel } from './library'
 
-function StepImage({ step }: { step: Guide['steps'][number] }) {
+export function StepImage({ step }: { step: Guide['steps'][number] }) {
   const url = useBlob(step.screenshot?.rendered ?? null)
   if (!step.screenshot) return null
   const alt =
@@ -54,6 +54,14 @@ export function Preview({ id, refresh }: { id: string; refresh: number }) {
       <header className="preview-header">
         <a href="/" data-sd="guide-library">
           ← Library
+        </a>
+        <a
+          href={`/g/${id}/edit?step=1`}
+          className="sd-button"
+          data-kind="secondary"
+          data-sd="guide-edit"
+        >
+          Edit guide
         </a>
         {guide ? (
           <Button

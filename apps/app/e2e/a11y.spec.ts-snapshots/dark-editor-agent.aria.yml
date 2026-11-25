@@ -1,0 +1,30 @@
+- link "Skip to editor":
+  - /url: "#main"
+- banner:
+  - navigation "Guide navigation":
+    - link "Library":
+      - /url: /
+    - link "Finance ops":
+      - /url: /?collection=finance-ops
+  - heading "Upgrade a workspace to the Team plan" [level=1]:
+    - button "Upgrade a workspace to the Team plan"
+  - text: Draft
+  - button /Saved, version \d+\. Open history\./:
+    - status: Saved · v12
+  - tablist "Editor mode":
+    - tab "Edit"
+    - tab "Preview"
+    - tab "Agent view" [selected]
+  - button "Read guide"
+  - button "Copy link"
+  - button "Download JSON"
+- main:
+  - tabpanel "Agent view":
+    - region "Agent text view":
+      - heading "Agent text view" [level=2]
+      - paragraph: Guide text and runtime input references. Screenshots are omitted.
+      - text: "/# Upgrade a workspace to the Team plan App: Ledgerly · Captured: \\d+\\\\-\\d+\\\\-25T00:\\d+:00Z · Verified: passed · Schema: stepdoc\\/guide@1 · Version: \\d+ ## Preconditions None specified\\. ## Variables \\| Name \\| Kind \\| Type \\| Environment \\| Description \\| \\| --- \\| --- \\| --- \\| --- \\| --- \\| \\| seats \\| variable \\| number \\| STEPDOC_SEATS \\| \\| \\| invoice\\\\_email \\| secret \\| string \\| STEPDOC_INVOICE_EMAIL \\| \\| Supply values at replay time\\. Stored examples are never used as replay defaults\\. ## Steps ### 1\\. Go to app\\\\\\.ledgerly\\\\\\.io\\/settings Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: button “Go to app\\\\\\.ledgerly\\\\\\.io\\/settings” Action: navigate !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-1\\.webp>\\) ### 2\\. Click \"Billing\" in the sidebar Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: link “Billing” Action: click !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-2\\.webp>\\) ### 3\\. Click \"Change plan\" Opens the plan picker\\\\\\. Only workspace owners see this button; members get a \"Request upgrade\" link instead\\\\\\. Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: button “Change plan” Action: click Expected: dialog Choose a plan is visible !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-3\\.webp>\\) ### 4\\. Select \"Team — \\$\\d+ \\/ month\" from the Plan dropdown Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: combobox “Plan” Action: select Value: Option: Team — \\$\\d+ \\/ month !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-4\\.webp>\\) ### 5\\. Click here Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: button “Click here” Action: click !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-5\\.webp>\\) ### 6\\. Fill in the \"Seats\" field Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: spinbutton “Seats” Action: fill Value: seats \\\\\\(variable; STEPDOC\\\\_SEATS\\\\\\) !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-6\\.webp>\\) ### 7\\. Fill in the \"Invoice email\" field Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: textbox “Invoice email” Action: fill Value: invoice\\\\_email \\\\\\(secret; STEPDOC\\\\_INVOICE\\\\_EMAIL\\\\\\) !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-7\\.webp>\\) ### 8\\. Click \"Save changes\" Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: button “Save changes” Action: click !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-8\\.webp>\\) ### 9\\. Check the \"Plan updated\" message Page: <https:\\/\\/app\\.ledgerly\\.io\\/settings\\/billing> Target: button “Check the \"Plan updated\" message” Action: assert !\\[Fictional Ledgerly billing settings\\]\\(<img\\/step-9\\.webp>\\)/"
+- button "Upload screenshot"
+- status
+- contentinfo:
+  - button "Activity"

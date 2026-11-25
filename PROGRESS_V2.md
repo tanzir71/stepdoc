@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | In progress | 2026-11-26 | Browser storage, token UI and local library complete; editor/export next | — |
+| M10 | In progress | 2026-11-26 | Browser storage, token UI, local library and editor; W05/client exports next | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
@@ -33,14 +33,17 @@
   - [x] `@stepdoc/storage`: adapter contract, transactional IndexedDB guides/history and OPFS blobs with a browser-verified IndexedDB fallback.
   - [x] Token-driven `packages/ui`, self-hosted fonts and static SPA shell.
   - [x] Library/search/status/layout/collection routes, manual creation, JSON import/download, private saved-guide preview, General settings and local loading/empty/error/offline states on the native adapter.
-  - [ ] W03 editor and W05 export routes on the local adapter.
+  - [x] W03 local editor: metadata/steps/targets, client image tools and numeric layers, automatic versioned saves, undo/redo, concurrent-tab recovery, Preview/Agent views, redaction review and saved-version downloads.
+  - [ ] W05 export routes on the local adapter.
 - [ ] Visual parity with Figma for W02/W03/W05 at 1440×900, light + dark: compare automated Playwright screenshots against the linked frames and commit screenshots under `docs/v2/screens/`.
   - [x] W02/W12 local-library screenshots compared and recorded, with reference geometry checks and documented browser-mode copy/accessibility adaptations.
-  - [ ] W03/W05 light/dark screenshots and complete milestone parity audit.
+  - [x] W03 light/dark screenshots compared and recorded with pane/image geometry checks and documented browser-mode adaptations.
+  - [ ] W05 light/dark screenshots and complete milestone parity audit, including W03's annotation-label treatment.
 - [ ] Client-side PDF (print CSS), DOCX, `.stepdoc` import/export round-trip test.
 - [ ] a11y gate: aria snapshots + axe for these routes.
   - [x] Library/grid/list/collections/preview/General settings and current states/dialogs: 24 route/state snapshots and axe; native component controls checked in both themes.
-  - [ ] Editor/export route snapshots and axe.
+  - [x] Editor modes, inspector panels, numeric layers, add/metadata/locator/variable/cleanup/delete/leave/conflict dialogs: 22 additional aria snapshots and axe.
+  - [ ] Export route snapshots and axe.
 
 ## M11 — Extension v2
 
@@ -95,6 +98,7 @@
 - Keep v1 operational until each replacement reaches parity; remove server image processing when client flattening replaces those paths.
 - M11: connect core text-detector spans to visible-text DOM Range rectangles, omit editable/form values, and abort capture/upload on detector errors or limits.
 - M15 storage maintenance: collect unreachable OPFS files left by terminated writes/failed cleanup, protecting files retained by history and active writes; add trash restore/purge. Replace local full-guide library filtering with an indexed summary/search projection if large-library measurements warrant it.
+- M10 final visual audit: finish W03's pill-shaped label using explicit annotation data; any new guide fields require a migration. M18 performance audit: measure large-guide thumbnail decoding and session undo memory before adding deferral/coalescing; saved native version history remains unlimited. Consider route chunks for the SPA's 508.75 kB initial JavaScript, currently just above Vite's advisory threshold.
 
 ## Deviations
 
@@ -131,6 +135,11 @@
 - Visual/accessibility evidence: compared actual 1440×900 light/dark library screenshots against Figma W02/W12 and committed them under `docs/v2/screens/`. Geometry matches the 248px sidebar, 104px header, 56px filter area, (280,160) grid, four 270px cards and 152px thumbnails. Browser-mode copy/navigation describes local creation/storage/exports instead of fictional team identity, hosting, passkeys or connected MCP clients. Deeper semantic light-theme status/accent text and image labels fix measured AA failures; collection ellipsis preserves full accessible text. These adaptations and fixture provenance are documented; full W03/W05 parity remains open.
 - Integration fixes: shared-token changes intentionally update the HTML export's two style snapshots. Its spacing serializer now makes valid custom-property names for fractional keys, checked through computed CSS in real Chromium. The final full run also exposed a pre-existing legacy image-upload test race: the POST was still pending when its five-second canvas assertion expired. The test now awaits/asserts the successful upload before checking the canvas; autosave, persisted blur/rendered path, Undo and Redo assertions remain.
 - Verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and `pnpm test:a11y` passed. Evidence: 501 unit tests; 159 native storage checks; redaction and 41-check canvas workers; generated 21-step Chromium replay plus six expected failures; all 8 legacy and 14 SPA Playwright tests; 24 route/state aria snapshots plus two component snapshots and axe in both themes; strict typechecks and all production builds. The actual static SPA bundle independently passes creation → native persistence → deep-link reload → library with local fonts/assets and no runtime/non-local request failures; test fixtures are excluded. Lint has zero errors and the same two existing image warnings. M10 remains in progress; no milestone tag, PR, live service or deployment. Committed and pushed directly to `main`.
+
+- 2026-11-26 — M10 local guide editor: implemented the W03 three-pane screen on the real native adapter, with deterministic selection/mode/inspector/layer/tool/zoom URLs. Added guide/step metadata, all action types, sections/manual instructions, search, native drag and Alt-arrow reordering, undo/redo, local rule-based title review, semantic Preview and portable Agent text. Target editing shares the replay export's actual locator order and preferred-instruction generator; edits invalidate stale verification/uniqueness claims. Fill/upload actions reference declared variables/secrets without value inputs. Page and expected-result URLs strip credentials, queries and fragments before storage. No endpoint or guide@1 wire change.
+- Persistence and image behavior: one optimistic writer serializes immutable saves, preserves edits arriving during image processing, retries sanitized storage failures and exposes concurrent-tab merge, separate-copy (including native blobs), explicit reload and working-JSON recovery. Native leave dialogs guard links/browser Back; browser unload warns on unsaved work. The module worker loads local Geist and processes upload/replace, blur, crop, arrow, rectangle, text, pin and click layers before native blob writes. Numeric fields and keyboard layer controls parallel pointer gestures. Saved blur pixels cannot be recovered by Undo. The editor displays real immutable history and version downloads; restore, provider AI, extension live highlighting/Guide Me and sharing/publishing stay assigned to their later milestones.
+- Visual/accessibility evidence: committed actual 1440×900 W03 light/dark screenshots after comparison with full Figma context, using original SVG assets, 56/320/340px pane geometry and a 680×425 native screenshot. Local capability labels, actual screenshot thumbnails, data-driven section headings, locked query stripping and the remaining annotation-pill difference are recorded in `docs/v2/screens/README.md`. Preview's scroll area is now keyboard-focusable, and conflict actions wrap inside the dialog. Added 22 editor aria snapshots, native keyboard/dialog audits, six actual-adapter Chromium flows and controller/merge failure regressions. Next unit: W05 export route and client document/portable bundle exports; M10 remains in progress with no milestone tag.
+- Verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and standalone `pnpm test:a11y` passed (the standalone run uses a separate output directory). Evidence: 516 unit tests; 159 native storage checks; redaction and 41-check canvas workers; 21-step Chromium replay plus six expected failures; all 8 legacy and 25 SPA browser tests; 46 route/state aria snapshots plus two component snapshots and axe; strict typechecks and all production builds. The real static bundle independently passes creation → editor save → worker image upload → reload → library with local fonts/assets, no runtime/external-request failures and no packaged fixtures. Lint has zero errors and the same two existing image warnings; Vite's initial-bundle size advisory is tracked above. Intermediate checks corrected stale locator-order snapshots and a snapshot indentation error, without weakening assertions. `git diff --cached --check` passed. Committed and pushed directly to `main`; no PR, live service, deployment or owner testing.
 
 ## Defaults in use
 

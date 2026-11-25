@@ -1,1 +1,29 @@
-export async function composite(dataUrl:string,sensitive:{x:number;y:number;width:number;height:number}[],click?:{x:number;y:number},dpr=1){const blob=await(await fetch(dataUrl)).blob(),bitmap=await createImageBitmap(blob),canvas=new OffscreenCanvas(bitmap.width,bitmap.height),ctx=canvas.getContext('2d')!;ctx.drawImage(bitmap,0,0);for(const r of sensitive){const x=Math.max(0,r.x*dpr),y=Math.max(0,r.y*dpr),w=Math.min(bitmap.width-x,r.width*dpr),h=Math.min(bitmap.height-y,r.height*dpr);if(w<=0||h<=0)continue;const sample=new OffscreenCanvas(Math.max(1,Math.ceil(w/14)),Math.max(1,Math.ceil(h/14))),sampleContext=sample.getContext('2d')!;sampleContext.drawImage(canvas,x,y,w,h,0,0,sample.width,sample.height);ctx.imageSmoothingEnabled=false;ctx.drawImage(sample,0,0,sample.width,sample.height,x,y,w,h)}if(click){ctx.strokeStyle='#ef4444';ctx.lineWidth=5*dpr;ctx.beginPath();ctx.arc(click.x*dpr,click.y*dpr,20*dpr,0,Math.PI*2);ctx.stroke()}return blobToDataUrl(await canvas.convertToBlob({type:'image/webp',quality:.88}))}async function blobToDataUrl(blob:Blob){const b=new Uint8Array(await blob.arrayBuffer());let s='';for(const x of b)s+=String.fromCharCode(x);return`data:${blob.type};base64,${btoa(s)}`}
+import { flattenImage } from '@stepdoc/core/canvas'
+
+export async function composite(
+  dataUrl: string,
+  sensitive: { x: number; y: number; width: number; height: number }[],
+  click?: { x: number; y: number },
+  dpr = 1,
+) {
+  // Capture data URLs are local raster data; never fetch a page or remote image here.
+  if (!/^data:image\/(png|webp|jpeg);base64,/i.test(dataUrl))
+    throw new Error('Invalid capture image')
+  const input = await (await fetch(dataUrl)).blob()
+  const image = await flattenImage(input, {
+    sensitiveRects: sensitive,
+    devicePixelRatio: dpr,
+    click: click
+      ? { x: click.x * dpr, y: click.y * dpr, radius: 20 * dpr }
+      : null,
+    strokeWidth: 5 * dpr,
+  })
+  return blobToDataUrl(image.blob)
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return `data:${blob.type};base64,${btoa(binary)}`
+}

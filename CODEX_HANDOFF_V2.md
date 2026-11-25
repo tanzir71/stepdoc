@@ -23,13 +23,13 @@ Start at frame **00 Read me** (index, route map, decisions). Every frame is link
 2. `git remote set-url origin https://github.com/tanzir71/stepdoc.git`.
 3. Replace every old repository reference with `tanzir71/stepdoc` / `github.com/tanzir71/stepdoc` (including `site/index.html`, `site/llms.txt`, this file; also add `"repository"` to the root `package.json`). Package scope stays `@stepdoc/*`.
 
-**Branch.** Create `v2` from `master` and do all work there. Never push to `master`, `gh-pages` or `ci/add-workflow`; never force-push; never merge, rebase or delete other branches. The owner merges `v2` into `master` when ready.
+**Branch (owner update, 25 Nov 2026).** Work on `main`; commit and push directly, with **no pull requests**. This supersedes the original `v2`-only rule and owner-merge step. Initial M9 work was completed on `v2`; `main` is created from that history so it retains the completed work. Never push to `master`, `gh-pages` or `ci/add-workflow`; never force-push; never merge, rebase or delete other branches. No repository default-branch setting change is required.
 
 **Commit** after every completed unit of work, conventional format with the milestone scope: `feat(m10): library grid on IndexedDbAdapter`. `pnpm verify` must be green before each commit.
 
 **Push** so progress is visible in the repo:
-- `git push origin v2` at the end of every run.
-- When a milestone's checklist is complete: commit `chore(mN): milestone complete`, create an annotated tag `v2-mN` (message = one-line summary), then `git push origin v2 --follow-tags`, and update the **Milestones** table at the top of PROGRESS_V2.md (milestone · status · date · summary · commit hash).
+- `git push origin main` at the end of every run; no PR.
+- When a milestone's checklist is complete: commit `chore(mN): milestone complete`, create an annotated tag `v2-mN` (message = one-line summary), then `git push origin main --follow-tags`, and update the **Milestones** table at the top of PROGRESS_V2.md (milestone · status · date · summary · commit hash).
 - If a push fails (auth, network), keep committing locally, note it in the Run log, retry on the next run. Never stop working because of it.
 
 **No GitHub Actions.** Do not add `.github/workflows/*` (in this repo or in anything StepDoc generates for users), do not run `gh workflow …` / `gh run …`, do not create GitHub releases or Pages deployments, and do not change repository settings other than the rename above. Every check runs locally via `pnpm verify`.
@@ -260,10 +260,10 @@ Rebuild `site/` from L01/L02 (static HTML/CSS, no framework; keep `site/llms.txt
 Copy rules: only claim agent compatibility the automated suite tests; no enterprise-quote numbers; no italics; light theme. Use the RESEARCH.md prices with the "checked 25 Nov 2026" stamp; re-checking them before launch is owner-later. Do not deploy the site; the owner publishes it.
 
 ## 14. Milestones (v2)
-Work strictly in order; a milestone is done when every criterion passes and its automated tests are green. **Every milestone ends with: commit → tag `v2-mN` → `git push origin v2 --follow-tags` → Milestones table updated (§0).** No criterion may require the owner, a live service or a GitHub Action.
+Work strictly in order; a milestone is done when every criterion passes and its automated tests are green. **Every milestone ends with: commit → tag `v2-mN` → `git push origin main --follow-tags` → Milestones table updated (§0).** No PR is created. No criterion may require the owner, a live service or a GitHub Action.
 
 **M9 — Repo setup, schema and core**
-- Repo rename and `v2` branch per §0; references updated; first push of `v2`.
+- Initial repo rename and `v2` branch setup; references updated; first push of `v2` (completed). Subsequent work goes directly to `main` per the owner update in §0.
 - `@stepdoc/schema`: guide@1 types + zod mirroring `docs/v2/guide.schema.json`; Ajv validation test against fixtures; v1→guide@1 migration with tests on the v1 Playwright fixtures.
 - `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
 
@@ -304,20 +304,20 @@ Work strictly in order; a milestone is done when every criterion passes and its 
 **M18+ — Refinement loop** (as v1 §6 M8): audit one area per run against §10 and Figma, fix the worst gap, add a regression test. Backlog seeds: Safari build, OIDC/SAML add-on, translation (BYO key), analytics dashboard, BookStack/Wiki.js/Docmost export.
 
 ## 15. Loop protocol (every run)
-1. Read `AGENTS.md`, this file, then `PROGRESS_V2.md`. On the first run: do the §0 setup (branch `v2`, rename), then create `PROGRESS_V2.md` with, in this order: a **Milestones** table (M9–M17: status · date · summary · commit), the M9–M17 checklist from §14, `## Owner later (non-blocking)`, `## Backlog`, `## Deviations`, `## Run log`, and `## Defaults in use` copied from §16.
+1. Read `AGENTS.md`, this file, then `PROGRESS_V2.md`. Use branch `main` per §0 (initial `v2` setup and rename are already complete). On a first run without progress tracking, create `PROGRESS_V2.md` with, in this order: a **Milestones** table (M9–M17: status · date · summary · commit), the M9–M17 checklist from §14, `## Owner later (non-blocking)`, `## Backlog`, `## Deviations`, `## Run log`, and `## Defaults in use` copied from §16.
 2. Pick the first unchecked criterion in the earliest incomplete milestone (split big ones into sub-boxes first).
 3. Implement fully — no stubs. Keep the contract, schema and tokens files in sync with code.
 4. Verify locally: `pnpm verify` (+ `pnpm test:contract` for server work, `pnpm test:a11y` for UI work). For UI, compare against the Figma frame in §12 at the same size. No GitHub Actions, no live services, no manual steps.
-5. Record and publish progress: check boxes, append a Run log entry (date, change, next, new backlog items), commit, `git push origin v2`. If this finished a milestone: tag `v2-mN`, push with `--follow-tags`, update the Milestones table.
+5. Record and publish progress: check boxes, append a Run log entry (date, change, next, new backlog items), commit, `git push origin main` directly; no PR. If this finished a milestone: tag `v2-mN`, push with `--follow-tags`, update the Milestones table.
 6. Stop clean: working tree clean, verify green, branch pushed.
 Never delete requirements; record deviations with rationale. If something needs the owner (credentials, a live host, a store, a decision), add it to *Owner later* and continue with the largest unblocked task. Never pause to ask.
 
 ## 16. Defaults (in bold; use them, never ask — the owner changes them by editing this file)
-- Repo: **`tanzir71/stepdoc`** (renamed during v2 setup, §0). Work branch: **`v2`**; the owner merges into `master`.
+- Repo: **`tanzir71/stepdoc`** (renamed during v2 setup, §0). Work branch: **`main`**; commit/push directly, **no PR**, per the owner update.
 - Logo: **A "Stepline"** / B "Marker" / C "Fold" (Foundations board).
 - Licence: **MIT** — add `LICENSE` in M9.
 - Name: **StepDoc**.
 - Comments (P11) in v2: **yes, last in M15**.
 - Hosted SaaS: **none** in v2.
 - GitHub Actions: **none**, ever, unless the owner adds them.
-- Owner-later (never blocking): GitHub-side rename if `gh` lacks rights, merging `v2`, browser/store installs, live deployments, real publishing, re-checking competitor prices before launch.
+- Owner-later (never blocking): GitHub-side rename if `gh` lacks rights, browser/store installs, live deployments, real publishing, re-checking competitor prices before launch.

@@ -2,7 +2,7 @@
 
 [Source](https://github.com/tanzir71/stepdoc) · [MIT licence](LICENSE)
 
-The `v2` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md). See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence. The setup and product documentation below describe the shipped v1 app until the v2 targets are ready.
+The `main` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md), with direct commits and no PRs per the owner's instruction. See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence. The setup and product documentation below describe the shipped v1 app until the v2 targets are ready.
 
 [Website](https://stepdoc-guides.vercel.app/) · [Generated HTML guide](https://stepdoc-guides.vercel.app/demo)
 

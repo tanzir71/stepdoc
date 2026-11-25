@@ -35,8 +35,8 @@ docs/v2/        guide.schema.json, storage-api.openapi.yaml, design-tokens.json,
 ## Git, pushing and CI (details in CODEX_HANDOFF_V2.md §0)
 
 - Repo: **`tanzir71/stepdoc`**; remote `https://github.com/tanzir71/stepdoc.git`. The v2 setup renamed the repository; update any old reference you find.
-- Work only on branch **`v2`**. Never push to `master`, `gh-pages` or `ci/add-workflow`; never force-push or merge.
-- Commit every completed unit (`feat(mN): …`); `git push origin v2` at the end of every run; at each completed milestone tag `v2-mN` and `git push origin v2 --follow-tags`, then update the Milestones table in PROGRESS_V2.md.
+- Work on **`main`** and commit/push directly there. **No pull requests**, per the owner's 2026-11-25 instruction, which supersedes the original `v2` branch rule. Never push to `master`, `gh-pages` or `ci/add-workflow`; never force-push or merge.
+- Commit every completed unit (`feat(mN): …`); `git push origin main` at the end of every run; at each completed milestone tag `v2-mN` and `git push origin main --follow-tags`, then update the Milestones table in PROGRESS_V2.md.
 - **No GitHub Actions**: no `.github/workflows/*`, no `gh workflow` / `gh run`, no releases, no Pages deployments, no repo-settings changes (except the rename).
 - **No manual or owner-involved testing.** Only automated local checks count (Playwright Chromium with the extension loaded, virtual WebAuthn, `php -S`, `wrangler dev --local`, local Postgres or the test-store, mocked GitHub/AI/SMTP). Never deploy anywhere. Owner-only items go under "Owner later (non-blocking)" in PROGRESS_V2.md; never wait or ask.
 
@@ -73,6 +73,6 @@ Agents drive this app through the accessibility tree. Treat these as acceptance 
 
 ## Working style
 
-- Follow the loop protocol in CODEX_HANDOFF_V2.md §15: one unit of work per run, verify, record in PROGRESS_V2.md, commit, push `v2`.
+- Follow the loop protocol in CODEX_HANDOFF_V2.md §15: one unit of work per run, verify, record in PROGRESS_V2.md, commit, push `main` directly without a PR.
 - Conventional commits. No `any`, no unexplained `@ts-ignore`.
 - When something needs credentials, a live service or a decision, use the defaults in CODEX_HANDOFF_V2.md §16, log it under "Owner later", and take the largest unblocked task.

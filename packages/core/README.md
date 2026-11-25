@@ -30,6 +30,29 @@ Pure guide logic shared by the extension, SPA, exporters and replay tools.
   without changing source spans. The scanner has no DOM/storage/network dependencies:
   callers must supply visible text, never form values. DOM collection, field masks,
   rectangle mapping and capture integration remain part of M11.
+- `prepareCapture(blob, options)` creates a masked original and a separate cropped,
+  annotated render with `OffscreenCanvas`; `flattenImage(blob, options)` returns just
+  the render when an original is already stored. Both accept raster PNG/JPEG/WebP
+  blobs and encode fresh PNG or WebP blobs with their actual pixel dimensions. No
+  raw source blob is returned, and mask state is snapshotted before async decoding.
+  All supplied `redactions` are image-pixel rectangles; capture `sensitiveRects` alone
+  use CSS pixels scaled by `devicePixelRatio`. Masks are clipped/rounded outward and
+  burned into the full original before cropping, annotations or click markers.
+  The caller's review/policy layer selects which mask rectangles to supply.
+  Pixelation defaults to 14-pixel cells; opaque masks use `redactionMode: 'solid'`.
+  Crop/rectangle/arrow/text/pin/click geometry uses original image coordinates.
+  Accent, mask and pin colors come from the design tokens (light default/dark);
+  annotation colors can override the accent. Text uses the token font stack or
+  `fontFamily`; the caller loads self-hosted fonts into its worker FontFaceSet.
+
+Canvas processing has no document, image URL loader, server or image-library path.
+It closes decoded bitmaps and releases temporary canvases on success/failure.
+Limits: 64 MB encoded input, 16,384 pixels per edge, 64 million decoded/output pixels,
+1000 mask/annotation layers and 5000 characters per text layer. Invalid geometry,
+unavailable capabilities and decode/render/encode failures throw a sanitized
+`CanvasImageError`; no partially processed image is returned. Unsupported input
+formats, empty/outside crops and invalid colors are rejected. The extension's v1
+image adapter now uses this shared path and accepts only local raster data URLs.
 
 Custom rules use [RE2JS](https://github.com/le0pard/re2js), with RE2 syntax and `i`, `m`,
 `s` flags (`g`/`u` are accepted for global Unicode scanning). Backreferences and lookarounds
@@ -49,5 +72,6 @@ The complete guide@1 capture pipeline, frame chain and accessible-name collectio
 are scheduled for M11; callers supply semantic locator candidates and counts here.
 
 Run `pnpm --filter @stepdoc/core test` for rules, privacy and DOM regressions plus
-`test:browser`, which bundles the detector in memory and verifies every category,
-masking, offsets and zero HTTP requests in a real Chromium module worker.
+`test:browser`, which bundles the detector and compositor in memory and verifies
+masking, real decoded pixels, offsets, image-layer behavior, the extension adapter,
+failure paths and zero HTTP requests in real Chromium module workers.

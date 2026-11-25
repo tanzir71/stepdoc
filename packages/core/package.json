@@ -10,14 +10,15 @@
     "./describe-step": "./src/describe-step.ts",
     "./locators": "./src/locators.ts",
     "./selector": "./src/selector.ts",
-    "./redaction": "./src/redaction/index.ts"
+    "./redaction": "./src/redaction/index.ts",
+    "./canvas": "./src/canvas/index.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && pnpm test:browser",
-    "test:browser": "node tests/redaction-worker.verify.mjs"
+    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs"
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",

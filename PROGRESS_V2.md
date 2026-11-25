@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Schema, text/locators and detectors complete; client flattening next | — |
+| M9 | In progress | 2026-11-25 | Schema, text/locators, detectors and client flattening complete; exporters next | — |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -23,7 +23,7 @@
 - [ ] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
   - [x] Step text and locator ranking.
   - [x] Redaction detectors including Luhn, mod-97 and token entropy.
-  - [ ] Worker-safe client flattening via OffscreenCanvas.
+  - [x] Worker-safe client flattening via OffscreenCanvas.
   - [ ] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
   - [ ] Fold v1 shared code into schema/core, update consumers and delete `packages/shared`.
 
@@ -72,7 +72,7 @@
 
 ## Owner later (non-blocking)
 
-- Merge `v2` into `master` when ready.
+- GitHub's default branch remains `master`; current work is committed directly to `main`. Any default-branch settings change is owner-later, not required for implementation.
 - Install in the owner's browser; Chrome/Edge stores and Firefox signing/AMO submission.
 - Live Supabase migrations/integration (carried from v1 `PROGRESS.md`) and deployments to PHP, Cloudflare or Node hosts.
 - Real GitHub publishing and Pages configuration; real email delivery and hardware passkeys. Automated local stand-ins are the milestone criteria.
@@ -90,6 +90,7 @@
 
 - None in v2 setup. Historical v1 manual checks and its post-M7 live-verification prerequisite are superseded by §0; owner-only work is listed above.
 - The first schema implementation enforces privacy rules that were previously only prose in the supplied JSON Schema: no secret examples, no literals on fill steps, matching tagged value payloads, and no unknown properties in click/edit/annotation objects. These corrections ship as package version `0.1.0` under the initial guide@1 identifier; no guide@1 data existed before this implementation. The v1 migration and version note live in `packages/schema`.
+- Owner update on 2026-11-25: commit directly to `main`, with no PRs. The local and remote repository had `master`/`v2` but no `main`, so `main` was created from the completed `v2` history at `4ea113b`, retaining the in-progress canvas work. `AGENTS.md` and the handoff now carry this rule; other branches/default-branch settings are unchanged.
 
 ## Run log
 
@@ -103,13 +104,16 @@
 - 2026-11-25 — M9 redaction detectors: added the client/worker-safe `@stepdoc/core/redaction` API for Unicode email, international/national phones, Luhn-checked cards, country-length/mod-97 IBANs, prefixed/JWT/high-entropy tokens, and IPv4/IPv6/MAC. Findings contain categories, rule/source IDs and UTF-16 offsets only; no matched values or input are returned/logged. Added overlapping-range text masking, sanitized errors, bounded input/matches/rules/program sizes and RE2-based custom patterns with backtracking-dependent syntax disabled. Pinned RE2JS, IBANTools country data and libphonenumber metadata; phone parsing defaults to US with a country override. Regression fixes cover adjacent cards/phones, address boundaries and complete IBANs before prose. Added a local in-memory Vite/Chromium module-worker check to the core test command, proving every category, offsets and masking with no worker HTTP requests. Capture DOM collection/rectangle mapping remain in M11. Next unit: worker-safe OffscreenCanvas flattening.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (378 unit tests, including 135 new detector/privacy/checksum tests; Chromium worker verification; all 8 app Playwright tests; strict typecheck and all workspace builds; zero lint errors and the two existing image warnings). IBAN checks include an independent BigInt mod-97 oracle; custom-rule tests cover nested quantifiers, unsupported/zero-width syntax, size/input/match budgets and private error suppression. `git diff --check` passed. M9 remains open for client flattening, exporters and shared cleanup; no milestone tag yet.
 
+- 2026-11-25 — M9 client flattening: added the worker-safe `@stepdoc/core/canvas` API for PNG/JPEG/WebP input, pixelated/solid redaction, crops, rectangle/arrow/text/pin annotations and token-coloured click markers. `prepareCapture` returns a redacted full-size original and a separately flattened render; every selected mask is applied before either blob is encoded. Jobs snapshot options before decoding, convert capture CSS rectangles using DPR, clip/round masks outward, bound dimensions/bytes/layers/text, sanitize native failures and release bitmap/canvas resources. The v1 extension capture adapter now uses the same compositor and accepts only local raster data URLs. Added 35 unit tests and an actual Chromium module-worker fixture with 41 pixel/resource/failure checks, including options mutation, malformed input, crop/annotation coordinates, encoding failure and the extension adapter with zero HTTP requests. Applied the owner's direct-to-`main`, no-PR instruction to the repository guidance. Next unit: MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD exporters with snapshots.
+- Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (413 unit tests; both Chromium worker checks, including 41 canvas checks; all 8 app Playwright tests; strict typecheck and all workspace production builds; zero lint errors and the two existing image warnings). `git diff --check` passed. M9 remains open for exporters and shared cleanup; no milestone tag yet. Work is committed and pushed directly to `main`; no PR or deployment.
+
 ## Defaults in use
 
-- Repo: **`tanzir71/stepdoc`** (renamed during v2 setup, §0). Work branch: **`v2`**; the owner merges into `master`.
+- Repo: **`tanzir71/stepdoc`** (renamed during v2 setup, §0). Work branch: **`main`**; commit/push directly, **no PR**, per the owner update.
 - Logo: **A "Stepline"** / B "Marker" / C "Fold" (Foundations board).
 - Licence: **MIT** — added in M9.
 - Name: **StepDoc**.
 - Comments (P11) in v2: **yes, last in M15**.
 - Hosted SaaS: **none** in v2.
 - GitHub Actions: **none**, ever, unless the owner adds them.
-- Owner-later (never blocking): GitHub-side rename if `gh` lacks rights, merging `v2`, browser/store installs, live deployments, real publishing, re-checking competitor prices before launch.
+- Owner-later (never blocking): GitHub-side rename if `gh` lacks rights, browser/store installs, live deployments, real publishing, re-checking competitor prices before launch.

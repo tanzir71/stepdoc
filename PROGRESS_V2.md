@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | Not started | — | SPA + browser-only mode | — |
+| M10 | In progress | 2026-11-25 | Browser storage complete; token UI and SPA next | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
@@ -30,6 +30,9 @@
 ## M10 — SPA + browser-only mode
 
 - [ ] `apps/app` (Vite + React + TS + `packages/ui` from tokens). Routes W02, W03, W05, W11, W12 working on IndexedDbAdapter (IndexedDB + OPFS).
+  - [x] `@stepdoc/storage`: adapter contract, transactional IndexedDB guides/history and OPFS blobs with a browser-verified IndexedDB fallback.
+  - [ ] Token-driven `packages/ui`, self-hosted fonts and static SPA shell.
+  - [ ] Library, editor, export and state routes on the local adapter.
 - [ ] Visual parity with Figma for W02/W03/W05 at 1440×900, light + dark: compare automated Playwright screenshots against the linked frames and commit screenshots under `docs/v2/screens/`.
 - [ ] Client-side PDF (print CSS), DOCX, `.stepdoc` import/export round-trip test.
 - [ ] a11y gate: aria snapshots + axe for these routes.
@@ -86,6 +89,7 @@
 - Safari build, OIDC/SAML add-on, BYO-key translation, analytics dashboard, BookStack/Wiki.js/Docmost export.
 - Keep v1 operational until each replacement reaches parity; remove server image processing when client flattening replaces those paths.
 - M11: connect core text-detector spans to visible-text DOM Range rectangles, omit editable/form values, and abort capture/upload on detector errors or limits.
+- M15 storage maintenance: collect unreachable OPFS files left by terminated writes/failed cleanup, protecting files retained by history and active writes; add trash restore/purge. Replace local full-guide library filtering with an indexed summary/search projection if large-library measurements warrant it.
 
 ## Deviations
 
@@ -114,6 +118,9 @@
 - 2026-11-25 — M9 consolidation and completion: moved the unchanged v1 API/capture contracts into the isolated `@stepdoc/schema/legacy-v1` module and switched all extension/web consumers to direct schema/core imports. Derived core's minimal description metadata type from the legacy schema, retained the migration's deliberately narrow database-row projection, and moved all 40 original text/selector regressions into core. Removed every tracked `packages/shared` file, its workspace importer/dependencies and forwarding modules; updated Next transpilation, package docs, the schema version note and repository map. A source comparison proves the legacy schemas differ only by comments/blank lines, so v1 payloads, defaults, unknown-key stripping and guide@1 migration output are unchanged. Recursive cleanup of ignored local artifacts was rejected twice by automatic approval review; it is logged above and does not affect the tracked package removal. Next unit: M10 storage foundations and the static SPA.
 - M9 acceptance audit: verified the StepDoc origin/MIT licence and absence of workflow files/old repository references; inspected source JSON Schema parity and the migration tests that consume the actual v1 Playwright session fixture; confirmed core text/locator/privacy/checksum/entropy coverage, the real OffscreenCanvas worker's pixel/resource checks, and all six export formats with semantic/injection/privacy assertions and executable replay. All M9 checklist criteria are satisfied; M10–M17 remain unimplemented. No live service, deployment or owner test was used.
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed across the five remaining workspace projects (460 unit tests: schema 113, core 331 including the retained 40, web 9, extension 7; 12 export snapshots; redaction/41-check canvas workers; 21-step generated Chromium replay plus six expected failure cases without recordings/DOM snapshots; all 8 app Playwright tests; strict typechecks and all production builds). Lint has zero errors and the same two existing image warnings. The capture bundle now builds at 3.92 kB versus the previous 55.50 kB after bypassing the shared runtime barrel. No obsolete shared imports or lockfile dependencies remain, and `git diff --check` passed. The milestone completion commit is tagged `v2-m9` and pushed directly to `main`; the Milestones row records its resolved commit after the tag push.
+
+- 2026-11-25 — M10 browser storage: added `@stepdoc/storage`, a typed guide/library/history/blob adapter contract and the real `IndexedDbAdapter`. Guide writes validate/snapshot data and atomically commit the document and immutable history with strict durability, optimistic version checks and adapter-owned update metadata. Library filtering covers search/status/review/replay/collections with deterministic timestamp/ID cursors tied to hashed filters. Soft deletion is idempotent and reserves IDs while retaining history and blobs. OPFS is the preferred raster backend, with actual IndexedDB Blob fallback when the API is absent; inputs are restricted to PNG/WebP signatures and 64 MB, keys are immutable, unknown upload metadata is ignored and reads verify size/SHA-256. File writes finish before metadata, re-check guide/step existence and clean up on ordinary failure; quota, corruption, closed/blocked/unavailable storage and conflicts produce sanitized errors. Added 36 unit tests and 159 actual Chromium assertions across both native backends, page reload, a module worker, two competing tabs, transaction/file/metadata failure injection, corruption, retry, schema upgrade and deletion. No endpoint or guide@1 wire change. The OPFS crash-orphan/maintenance limitation is documented and tracked above. Next unit: token-driven UI, fonts and the static SPA shell.
+- Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (496 unit tests, including all previous 460; 159 native browser-storage checks; existing redaction/canvas worker and 21-step/six-failure replay checks; all 8 app Playwright tests; strict typechecks and all workspace production builds). Lint has zero errors and the same two existing image warnings. `git diff --check` passed. M10 remains open for UI/routes, visual parity, client document/bundle exports and accessibility; no milestone tag. Work is committed and pushed directly to `main`; no PR or deployment.
 
 ## Defaults in use
 

@@ -5,6 +5,7 @@ import { exportMarkdown } from '@stepdoc/core/export/markdown'
 import { useActivity } from '../activity'
 import { getStorage } from '../repository'
 import { navigate } from '../navigation'
+import { absoluteAppHref, routeLocation } from '../app-url'
 import { formats, selectedFormats, exportUrl, type ExportFormat } from './model'
 import { download, prepareDownload, printDocument } from './client'
 import './styles.css'
@@ -170,7 +171,7 @@ export function ExportDialog({
         dismiss()
       }}
       onClose={() => {
-        if (/\/export\/?$/.test(location.pathname)) close()
+        if (/\/export\/?$/.test(routeLocation().pathname)) close()
       }}
     >
       <header className="export-header">
@@ -251,7 +252,7 @@ export function ExportDialog({
                 data-sd="export-copy-link"
                 onClick={() => {
                   void navigator.clipboard
-                    .writeText(`${location.origin}/g/${guide.id}`)
+                    .writeText(absoluteAppHref(`/g/${guide.id}`))
                     .then(() =>
                       message(
                         'Local guide link copied. It opens only where this guide is stored.',

@@ -6,6 +6,7 @@ import { getStorage } from './repository'
 import { useBlob } from './hooks'
 import { useActivity } from './activity'
 import { StatePanel } from './library'
+import { appHref } from './app-url'
 
 export function StepImage({ step }: { step: Guide['steps'][number] }) {
   const url = useBlob(step.screenshot?.rendered ?? null)
@@ -52,11 +53,11 @@ export function Preview({ id, refresh }: { id: string; refresh: number }) {
   return (
     <>
       <header className="preview-header">
-        <a href="/" data-sd="guide-library">
+        <a href={appHref('/')} data-sd="guide-library">
           ← Library
         </a>
         <a
-          href={`/g/${id}/edit?step=1`}
+          href={appHref(`/g/${id}/edit?step=1`)}
           className="sd-button"
           data-kind="secondary"
           data-sd="guide-edit"

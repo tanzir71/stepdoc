@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { appHref, readAppRoute, routeLocation } from './app-url'
 const eventName = 'stepdoc:navigate'
 interface Guard {
   dirty: () => boolean
@@ -7,7 +8,8 @@ interface Guard {
 let guard: Guard | undefined
 let index =
   typeof history !== 'undefined' ? Number(history.state?.sdIndex ?? 0) : 0
-let currentPath = typeof location !== 'undefined' ? location.pathname : '/'
+let currentPath =
+  typeof location !== 'undefined' ? routeLocation().pathname : '/'
 let restoring: (() => void) | undefined
 let approvedPop = false
 const listeners = new Set<() => void>()
@@ -21,9 +23,12 @@ export function guardNavigation(next: Guard) {
   }
 }
 export function navigate(url: string, replace = false, approved = false) {
-  const target = new URL(url, location.origin)
-  if (target.origin !== location.origin) return
-  if (!approved && target.pathname !== location.pathname && guard?.dirty()) {
+  const target = new URL(appHref(url), location.href)
+  if (target.protocol !== location.protocol || target.host !== location.host)
+    return
+  const targetPath = new URL(readAppRoute(target), 'https://stepdoc.invalid')
+    .pathname
+  if (!approved && targetPath !== routeLocation().pathname && guard?.dirty()) {
     guard.ask(() => navigate(url, replace, true))
     return
   }
@@ -33,7 +38,7 @@ export function navigate(url: string, replace = false, approved = false) {
     '',
     target.pathname + target.search + target.hash,
   )
-  currentPath = target.pathname
+  currentPath = targetPath
   window.dispatchEvent(new Event(eventName))
 }
 function subscribe(callback: () => void) {
@@ -65,7 +70,7 @@ function pop(event: PopStateEvent) {
   }
   if (
     !approvedPop &&
-    currentPath !== location.pathname &&
+    currentPath !== routeLocation().pathname &&
     guard?.dirty() &&
     targetIndex !== index
   ) {
@@ -81,13 +86,13 @@ function pop(event: PopStateEvent) {
   }
   approvedPop = false
   index = targetIndex
-  currentPath = location.pathname
+  currentPath = routeLocation().pathname
   publish()
 }
 export function useLocation() {
   return useSyncExternalStore(
     subscribe,
-    () => location.pathname + location.search,
+    () => readAppRoute(),
     () => '/',
   )
 }

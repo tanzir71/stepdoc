@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
 | M10 | Complete | 2026-11-26 | Native SPA/storage, editor, client exports; visual and accessibility gates passed | 752b69b (`v2-m10`) |
-| M11 | Not started | — | Extension v2 | — |
+| M11 | In progress | — | WXT/browser runtime foundation; v2 capture/UI next | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |
 | M14 | Not started | — | Node target + v1 migration | — |
@@ -50,10 +50,17 @@
 ## M11 — Extension v2
 
 - [ ] WXT build for Chrome/Edge (side panel) and Firefox (popup + tab). E01–E06 implemented.
+  - [x] WXT MV3 builds for all three browsers, correct entrypoints/permissions, shared SPA packaged privately at the extension origin, pure v1 queue moved to core.
+  - [ ] E01/E02/E04/E05/E06: designed idle/recording/review/pairing/fallback surfaces and their real state transitions.
+  - [ ] E03 Guide Me overlay, matching/fallback locators and verification report (server write-back in M15).
 - [ ] Automated e2e only: load the built Chrome extension in Playwright Chromium against local fixture pages; Firefox build passes `web-ext lint`. No store uploads, signing or manual checklist.
+  - [x] Foundational built-extension suite: three production manifests/assets, native SPA persistence/deep links/history/guards/image and DOCX workers, two-theme axe, injected click capture and v1 upload/failure/retry/cancel. Firefox lint has zero errors; two upstream React DOM warnings remain.
+  - [ ] Extend the loaded-extension suite to v2 capture/blur/review/pairing/Guide Me fixtures as those flows are implemented.
 - [ ] Capture contract (§7) with unit tests on fixture pages (buttons, links, labelled inputs, iframes, open shadow DOM, SPA navigation).
 - [ ] Smart Blur v2 + click-to-blur; secrets never read (test asserts no `.value` access via proxy).
 - [ ] Local mode opens the SPA from the extension origin; v1 upload path still works.
+  - [x] Actual local SPA library/editor at `app.html`, file-safe native/copy links, reload/new-tab/back/forward and IndexedDbAdapter persistence; retained v1 `/api/sessions` flow verified against a local HTTP stub.
+  - [ ] Save reviewed captures into the same native local workspace; destination selection and paired server adapter.
 
 ## M12 — PHP + SQLite target
 
@@ -103,6 +110,8 @@
 - M18 performance audit: measure large-guide thumbnail decoding and session undo memory before adding deferral/coalescing; saved native version history remains unlimited. Editor/Word route chunks now keep the initial SPA JavaScript below Vite's advisory threshold.
 
 ## Deviations
+
+- M11 extension routing: extension resources cannot serve arbitrary SPA paths on reload. The same logical `/g/:id/edit?step=...` route is encoded in `/app.html?route=...` at `chrome-extension://` / `moz-extension://` origins. Native links, copied links, new tabs, history and dirty-navigation guards use that representation; web-hosted route paths are unchanged. The loaded-extension suite proves the file-server behavior.
 
 - None in v2 setup. Historical v1 manual checks and its post-M7 live-verification prerequisite are superseded by §0; owner-only work is listed above.
 - The first schema implementation enforces privacy rules that were previously only prose in the supplied JSON Schema: no secret examples, no literals on fill steps, matching tagged value payloads, and no unknown properties in click/edit/annotation objects. These corrections ship as package version `0.1.0` under the initial guide@1 identifier; no guide@1 data existed before this implementation. The v1 migration and version note live in `packages/schema`.
@@ -155,6 +164,12 @@
 - Final verification: `pnpm install --frozen-lockfile`, final `pnpm verify` and independent `pnpm test:a11y` passed: 538 unit tests; 159 native storage checks; redaction and 57-check canvas workers; 21-step generated replay plus six expected failures; eight legacy and 36 SPA browser tests; 56 route/state aria snapshots plus two component snapshots and axe; strict typechecks and every production build. The real static bundle still passes native editing/image upload, compiled-worker DOCX/bundle export and separate-copy bundle import, with local fonts/assets, no runtime/non-local requests and no packaged fixtures. Initial JavaScript remains 444.23 kB. The first full gate exposed a fault-injection test patching an adapter instance that could be bypassed; it now fails the second native OPFS stream write and asserts that the injection fired before verifying cleanup. The targeted test and full rerun pass. Lint has zero errors and the same two existing image warnings. All M10 acceptance criteria are proven; the milestone checkpoint/tag follows. M11 is the next work unit. No PR, deployment, live backend or owner testing.
 
 - M10 completion audit: reconciled every M10 criterion with the current adapter/SPA source, route and failure-state tests, six compared Figma captures, local vector proofs, native document/bundle flows and accessibility trees. Required local commands are green on the completed runtime tree. The completion checkpoint is `v2-m10`; its resolved commit is recorded in the Milestones table after the tag push. M11–M17 remain open under the original goal and scope.
+
+- 2026-11-26 — M11 WXT/browser runtime foundation: replaced the v1 Vite manifest build with pinned WXT MV3 builds for Chrome and Edge side panels and the Firefox popup/full-tab app. Explicit background/content initializers keep build-time Node imports safe; browser calls use WXT's cross-browser API. Moved the pure v1 capture queue and its five regressions to `@stepdoc/core/capture-queue`. The retained capture/settings controls use the existing v2 tokens and self-hosted fonts. E01–E06 design/state work, v2 capture metadata, Smart Blur, pairing and reviewed local capture saving remain unchecked; this is the first complete foundation unit, not milestone completion.
+- Local runtime: packaged the actual shared SPA at the private extension `app.html` resource with native IndexedDbAdapter persistence. A shared URL helper preserves logical library/editor/export state through file-safe native/copied links, reload, new tab, history and unsaved-navigation guards; ordinary web paths stay unchanged. Five URL tests cover both extension schemes, queries/anchors, external-route rejection and web compatibility. WXT rewrites `import.meta.url`, so SVG/font URLs and image/export workers now use explicit Vite imports. The built-extension check compares every imported SVG byte-for-byte with its original source, checks local fonts/compiled workers and rejects fixture, temporary-asset, uncompiled-worker and dynamic-compiler leaks. Imported the same pinned RFC format validators directly to remove the unused Ajv dynamic compiler without changing guide@1 validation/data semantics; schema parity tests remain green.
+- Automated evidence: `pnpm install --frozen-lockfile` and `pnpm verify` pass with 543 unit tests, 159 native storage checks, the redaction/canvas/replay worker suites, eight legacy and 36 SPA browser tests, unchanged Figma geometry checks, route/component accessibility trees and all production builds. The production SPA smoke passes native editing/image processing, DOCX and portable-bundle workers/import under its real static build; initial JavaScript is now 314.14 kB. The new suite loads the built extension in Playwright's bundled Chromium persistent context, proves local guide persistence/reload/new-tab/back/forward/dirty guards, image processing and DOCX export under default MV3 CSP, and audits the editor in both themes. A trusted fixture click goes through the actual injected script, captureVisibleTab queue and client compositor to a local v1 HTTP stub. Failed upload retention, recovery download, retry and cancel pass; service-worker-incompatible blob URL recovery was replaced with a data URL, and start/cancel now acknowledge their message channels. Firefox `web-ext lint` has zero errors and two known React DOM `innerHTML` implementation warnings, with no eval warning or CSP relaxation. The full gate also passes the same two existing Next image lint warnings. No owner browser, live service, deployment or PR was used. Next unit: implement the E01/E02 recording foundation and v2 capture contract with privacy/DOM fixture coverage, retaining this native build suite.
+
+- Independent final gate: `pnpm test:a11y` passed all 12 accessibility tests (56 route/state snapshots and axe; the full suite also passes the two component snapshots). The final logs are `test-results/verify-m11-foundation.log` and `test-results/a11y-m11-foundation.log` (ignored). Test servers on 3100/3200 and the isolated extension context closed normally. Only progress/documentation changed after the green runtime tree; the milestone remains in progress.
 
 ## Defaults in use
 

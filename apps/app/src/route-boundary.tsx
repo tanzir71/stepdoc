@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { Button } from '@stepdoc/ui'
+import { appHref } from './app-url'
 
 export class RouteBoundary extends Component<
   { children: ReactNode },
@@ -14,7 +15,7 @@ export class RouteBoundary extends Component<
       <>
         <header className="preview-header">
           <nav aria-label="Guide navigation">
-            <a href="/" data-sd="route-library">
+            <a href={appHref('/')} data-sd="route-library">
               Library
             </a>
           </nav>

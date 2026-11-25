@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import addFormats from 'ajv-formats'
+import { fullFormats } from 'ajv-formats/dist/formats.js'
 import jsonSchema from '../../../docs/v2/guide.schema.json' with { type: 'json' }
 
 export const GUIDE_SCHEMA_ID = 'stepdoc/guide@1' as const
@@ -11,7 +11,9 @@ export const guideJsonSchema = jsonSchema
 // (URNs, UUID versions, time zones and leap seconds). Use the same RFC checks.
 function formattedString(name: 'uri' | 'uuid' | 'date-time') {
   // These three named formats are synchronous string validators in ajv-formats.
-  const format = addFormats.get(name) as
+  // Import validators directly: the package entry also loads Ajv's dynamic
+  // compiler, which is unnecessary here and prohibited by extension CSP.
+  const format = fullFormats[name] as
     | RegExp
     | ((value: string) => boolean)
     | { validate: (value: string) => boolean }

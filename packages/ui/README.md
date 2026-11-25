@@ -18,3 +18,7 @@ assets. The component browser test proves that their unchanged intrinsic masks
 render byte-identical PNGs to the existing shared chevron, grid, list and dot
 silhouettes. CSS supplies the semantic theme color. Screen-level checks also
 verify every visible icon's local source, callsite and effective dimensions.
+
+Assets use explicit Vite `?url` imports so WXT packages the same unmodified SVGs
+instead of rewriting `import.meta.url` to the current extension page. The built
+extension check compares every imported vector's bytes with its original source.

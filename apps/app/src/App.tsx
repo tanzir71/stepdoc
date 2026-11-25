@@ -25,6 +25,7 @@ import { RouteBoundary } from './route-boundary'
 import { CreateDialog } from './dialogs'
 import { humanize, libraryUrl, parseLibrary } from './model'
 import { navigate, useLocation } from './navigation'
+import { appHref, readAppRoute } from './app-url'
 import {
   applyPreferences,
   readPreferences,
@@ -129,14 +130,15 @@ export function App() {
       !(anchor instanceof HTMLAnchorElement) ||
       anchor.download ||
       anchor.target ||
-      anchor.origin !== location.origin ||
+      anchor.protocol !== location.protocol ||
+      anchor.host !== location.host ||
       (anchor.hash &&
         anchor.pathname === location.pathname &&
         anchor.search === location.search)
     )
       return
     event.preventDefault()
-    navigate(anchor.pathname + anchor.search + anchor.hash)
+    navigate(readAppRoute(new URL(anchor.href)) + anchor.hash)
   }
   if (editor?.[1])
     return (
@@ -147,7 +149,7 @@ export function App() {
               <>
                 <header>
                   <nav aria-label="Guide navigation">
-                    <a href="/" data-sd="route-library">
+                    <a href={appHref('/')} data-sd="route-library">
                       Library
                     </a>
                   </nav>
@@ -180,7 +182,11 @@ export function App() {
       </a>
       <aside className="app-sidebar" aria-label="Workspace navigation">
         <div className="side-logo">
-          <a href="/" aria-label="StepDoc library" data-sd="nav-home">
+          <a
+            href={appHref('/')}
+            aria-label="StepDoc library"
+            data-sd="nav-home"
+          >
             <Logo />
           </a>
           <IconButton
@@ -230,7 +236,7 @@ export function App() {
         <nav aria-label="Workspace" className="primary-nav">
           <NavItem
             data-sd="nav-library"
-            href="/"
+            href={appHref('/')}
             active={
               pathname === '/' &&
               !route.collections &&
@@ -244,7 +250,7 @@ export function App() {
           </NavItem>
           <NavItem
             data-sd="nav-collections"
-            href="/?collections=1"
+            href={appHref('/?collections=1')}
             active={
               pathname === '/' &&
               (route.collections || !!route.query.collection)
@@ -256,7 +262,7 @@ export function App() {
           </NavItem>
           <NavItem
             data-sd="nav-drafts"
-            href="/?status=draft"
+            href={appHref('/?status=draft')}
             active={pathname === '/' && route.status === 'draft'}
             icon="record"
             count={state.all.filter((guide) => guide.status === 'draft').length}
@@ -265,7 +271,7 @@ export function App() {
           </NavItem>
           <NavItem
             data-sd="nav-published"
-            href="/?status=published"
+            href={appHref('/?status=published')}
             active={pathname === '/' && route.status === 'published'}
             icon="link"
           >
@@ -273,7 +279,7 @@ export function App() {
           </NavItem>
           <NavItem
             data-sd="nav-archived"
-            href="/?status=archived"
+            href={appHref('/?status=archived')}
             active={pathname === '/' && route.status === 'archived'}
             icon="book"
           >
@@ -287,7 +293,7 @@ export function App() {
               <NavItem
                 data-sd="nav-collection"
                 key={id}
-                href={libraryUrl('', { collection: id })}
+                href={appHref(libraryUrl('', { collection: id }))}
                 active={pathname === '/' && route.query.collection === id}
                 icon="book"
                 count={

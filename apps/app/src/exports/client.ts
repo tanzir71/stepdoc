@@ -9,6 +9,9 @@ import {
 import { ImageProcessor, imageOptions } from '../editor/images'
 import { newId } from '../model'
 import type { ExportFormat } from './model'
+import ExportWorker from './worker?worker'
+import sans from '../../../../packages/ui/assets/fonts/GeistSans.woff2?url'
+import mono from '../../../../packages/ui/assets/fonts/GeistMono.woff2?url'
 import type {
   ExportRequest,
   ExportResult,
@@ -17,16 +20,7 @@ import type {
 } from './worker'
 
 export type { ExportResult, ParsedBundle }
-const fontUrls = {
-  sans: new URL(
-    '../../../../packages/ui/assets/fonts/GeistSans.woff2',
-    import.meta.url,
-  ).href,
-  mono: new URL(
-    '../../../../packages/ui/assets/fonts/GeistMono.woff2',
-    import.meta.url,
-  ).href,
-}
+const fontUrls = { sans, mono }
 let fontData: Promise<{ sans: string; mono: string }> | undefined
 function fonts() {
   return (fontData ??= Promise.all(
@@ -51,9 +45,7 @@ function runWorker<T>(
   signal?: AbortSignal,
 ): Promise<T> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./worker.ts', import.meta.url), {
-      type: 'module',
-    })
+    const worker = new ExportWorker()
     const close = () => {
       clearTimeout(timer)
       signal?.removeEventListener('abort', abort)

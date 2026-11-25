@@ -82,13 +82,19 @@ pnpm dev:legacy
 
 Open <http://localhost:3000>.
 
-### 4. Load the extension
+### 4. Build and verify the extension
 
 ```bash
-pnpm --filter @stepdoc/extension build
+pnpm --filter @stepdoc/extension build -b chrome
+pnpm --filter @stepdoc/extension test:browser
 ```
 
-Then in `chrome://extensions`: enable **Developer mode** → **Load unpacked** → select `apps/extension/dist`. In the extension settings, leave the app URL at `http://localhost:3000` (or your internal deployment URL).
+WXT outputs `.output/chrome-mv3`, `.output/edge-mv3` and `.output/firefox-mv3`
+under `apps/extension`. Automated verification loads the Chrome build in a
+temporary Playwright Chromium profile and lints Firefox; no owner installation
+is needed. The extension's **Open library** link runs the local SPA in a full
+tab. The retained v1 capture controls use the web app URL configured in extension
+settings (default `http://localhost:3000`). See [extension details](apps/extension/README.md).
 
 ## Usage
 

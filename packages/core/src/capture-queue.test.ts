@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CaptureQueue } from './queue'
+import { CaptureQueue } from './capture-queue'
 
 describe('CaptureQueue', () => {
   it('preserves a rapid five-event burst', async () => {
@@ -16,7 +16,12 @@ describe('CaptureQueue', () => {
   })
 
   it('reuses the last frame after throttling', async () => {
-    const capture = vi.fn().mockResolvedValueOnce('one').mockRejectedValueOnce(new Error('MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND'))
+    const capture = vi
+      .fn()
+      .mockResolvedValueOnce('one')
+      .mockRejectedValueOnce(
+        new Error('MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND'),
+      )
     const saved: { frame: string; reused: boolean }[] = []
     const queue = new CaptureQueue<number>(capture, async (result) => {
       saved.push(result)

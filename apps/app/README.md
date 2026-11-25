@@ -1,5 +1,10 @@
 # Browser SPA
 
+The extension builds this same source as its private `app.html` page. Native
+extension links encode the logical route in `?route=...`, preserving reloads,
+new tabs, copied URLs, back/forward and dirty-edit guards without a server rewrite.
+Web-hosted paths retain `/g/:id/edit?step=...` and the existing route behavior.
+
 Run `pnpm dev` from the repository root, then open http://127.0.0.1:3200. No environment file or service is needed. `pnpm dev:legacy` still runs the v1 Next app separately.
 
 Implemented routes:

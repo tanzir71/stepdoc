@@ -1,1 +1,51 @@
-:root{font:14px system-ui;color-scheme:light dark}body{margin:0;background:#111827}.card{width:280px;padding:20px;display:grid;gap:12px;background:#fff;color:#111827}h1{font-size:20px;margin:0}button,input{padding:10px;border-radius:8px;border:1px solid #d1d5db}button{border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer}.secondary{background:#334155}.danger{background:#b91c1c}a{color:#2563eb}label{display:grid;gap:6px}
+@import '@stepdoc/ui/styles.css';
+:root {
+  color-scheme: light;
+}
+.card {
+  min-width: 280px;
+  padding: var(--sd-space-5);
+  display: grid;
+  gap: var(--sd-space-3);
+}
+.card main,
+.card nav {
+  display: grid;
+  gap: var(--sd-space-3);
+}
+h1 {
+  font: var(--sd-type-heading-m);
+  margin: 0;
+}
+button,
+input {
+  padding: var(--sd-space-3);
+  border-radius: var(--sd-radius-md);
+  border: 1px solid var(--sd-border-strong);
+}
+button {
+  border: 0;
+  background: var(--sd-accent-solid);
+  color: var(--sd-text-on-accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+.secondary {
+  background: var(--sd-bg-selected);
+  color: var(--sd-text-primary);
+}
+.danger {
+  background: var(--sd-danger-soft);
+  color: var(--sd-danger-text);
+}
+a {
+  color: var(--sd-accent-text);
+}
+label {
+  display: grid;
+  gap: var(--sd-space-2);
+}
+:focus-visible {
+  outline: 1px solid var(--sd-accent-solid);
+  outline-offset: 2px;
+}

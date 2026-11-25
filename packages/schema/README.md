@@ -21,5 +21,10 @@ The source JSON Schema import uses the standard `type: 'json'` attribute so nati
 ESM tooling and the browser bundler can consume the same module. This changes no
 guide fields, defaults or schema version and needs no data migration.
 
+RFC URI/UUID/date-time checks import the pinned `ajv-formats` validators directly.
+This retains identical format semantics without bundling Ajv's unused dynamic
+compiler into client/extension code, where MV3 CSP prohibits `new Function`.
+The Zod/Ajv parity fixtures remain the verification; no wire format changes.
+
 Run `pnpm --filter @stepdoc/schema test` for Ajv/Zod privacy and migration checks.
 The original shared text/selector regressions now run in `@stepdoc/core`.

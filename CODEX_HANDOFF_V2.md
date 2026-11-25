@@ -201,6 +201,7 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | Hook | Where |
 |---|---|
 | `capture-start` | W02 New capture, E01 record button |
+| `capture-library` | Extension side panel / popup: open the local SPA in a full tab |
 | `library-import` | W02 Import |
 | `library-create`, `library-create-empty`, `guide-create-title`, `guide-create-instruction`, `guide-create-submit`, `guide-create-cancel` | Browser manual-guide creation (`/?create=1`) |
 | `library-search`, `library-search-focus`, `library-status-<filter>`, `library-sort`, `library-view-grid`, `library-view-list`, `library-show-all`, `library-clear`, `library-retry`, `library-results` | Local library search, status, layout, pagination and states |

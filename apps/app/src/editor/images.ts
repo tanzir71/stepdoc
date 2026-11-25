@@ -2,11 +2,10 @@ import type { Guide, Step } from '@stepdoc/schema'
 import type { StorageAdapter } from '@stepdoc/storage'
 import type { FlattenOptions, PreparedCapture } from '@stepdoc/core/canvas'
 import { visualKey } from './model'
+import ImageWorker from './image.worker?worker'
+import fontUrl from '../../../../packages/ui/assets/fonts/GeistSans.woff2?url'
 
-export const editorFont = new URL(
-  '../../../../packages/ui/assets/fonts/GeistSans.woff2',
-  import.meta.url,
-).href
+export const editorFont = fontUrl
 export class ImageProcessor {
   private sequence = 0
   private pending = new Map<
@@ -16,9 +15,7 @@ export class ImageProcessor {
   private worker: Worker | undefined
   private closed = false
   private start() {
-    const worker = new Worker(new URL('./image.worker.ts', import.meta.url), {
-      type: 'module',
-    })
+    const worker = new ImageWorker()
     worker.onmessage = (
       event: MessageEvent<{
         id: number

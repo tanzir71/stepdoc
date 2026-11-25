@@ -1,4 +1,5 @@
 import type { RefObject } from 'react'
+import { appHref } from './app-url'
 import {
   Badge,
   Button,
@@ -28,7 +29,7 @@ function GuideCard({ guide }: { guide: GuideSummary }) {
       <article className="guide-card">
         <a
           className="guide-card-link"
-          href={`/g/${guide.id}`}
+          href={appHref(`/g/${guide.id}`)}
           data-sd="library-guide-open"
         >
           <div className="guide-card-thumb">
@@ -286,11 +287,13 @@ export function Library({
                 {collectionIds.map((id) => (
                   <li key={id}>
                     <a
-                      href={libraryUrl(search, {
-                        collection: id,
-                        collections: null,
-                        status: null,
-                      })}
+                      href={appHref(
+                        libraryUrl(search, {
+                          collection: id,
+                          collections: null,
+                          status: null,
+                        }),
+                      )}
                       data-sd="library-collection-open"
                     >
                       <Icon name="book" />

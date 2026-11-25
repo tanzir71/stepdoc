@@ -1,278 +1,338 @@
+import asset0 from '../assets/418d0.svg?url'
+import asset1 from '../assets/70a3e.svg?url'
+import asset2 from '../assets/8fef2.svg?url'
+import asset3 from '../assets/aad3f.svg?url'
+import asset4 from '../assets/c4590.svg?url'
+import asset5 from '../assets/14a50.svg?url'
+import asset6 from '../assets/67687.svg?url'
+import asset7 from '../assets/8f7e3.svg?url'
+import asset8 from '../assets/e080d.svg?url'
+import asset9 from '../assets/604bc.svg?url'
+import asset10 from '../assets/6f259.svg?url'
+import asset11 from '../assets/3c1b3.svg?url'
+import asset12 from '../assets/ef428.svg?url'
+import asset13 from '../assets/e8d2e.svg?url'
+import asset14 from '../assets/f16e0.svg?url'
+import asset15 from '../assets/a6142.svg?url'
+import asset16 from '../assets/49553.svg?url'
+import asset17 from '../assets/279d7.svg?url'
+import asset18 from '../assets/428a0.svg?url'
+import asset19 from '../assets/e472b.svg?url'
+import asset20 from '../assets/00f64.svg?url'
+import asset21 from '../assets/1fb09.svg?url'
+import asset22 from '../assets/17370.svg?url'
+import asset23 from '../assets/8b397.svg?url'
+import asset24 from '../assets/afed7.svg?url'
+import asset25 from '../assets/0942c.svg?url'
+import asset26 from '../assets/92dec.svg?url'
+import asset27 from '../assets/f66a2.svg?url'
+import asset28 from '../assets/a260d.svg?url'
+import asset29 from '../assets/cd76b.svg?url'
+import asset30 from '../assets/1781e.svg?url'
+import asset31 from '../assets/9bb4b.svg?url'
+import asset32 from '../assets/99260.svg?url'
+import asset33 from '../assets/f95dc.svg?url'
+import asset34 from '../assets/159ac.svg?url'
+import asset35 from '../assets/3c0c1.svg?url'
+import asset36 from '../assets/7f093.svg?url'
+import asset37 from '../assets/56dd8.svg?url'
+import asset38 from '../assets/ed318.svg?url'
+import asset39 from '../assets/7ebc6.svg?url'
+import asset40 from '../assets/8d77c.svg?url'
+import asset41 from '../assets/5e0ed.svg?url'
+import asset42 from '../assets/fec19.svg?url'
+import asset43 from '../assets/a3616.svg?url'
+import asset44 from '../assets/3e6da.svg?url'
+import asset45 from '../assets/2fa39.svg?url'
+import asset46 from '../assets/f80fc.svg?url'
+import asset47 from '../assets/03078.svg?url'
+import asset48 from '../assets/57e1c.svg?url'
+import asset49 from '../assets/1c5d3.svg?url'
+import asset50 from '../assets/a2c42.svg?url'
+import asset51 from '../assets/016d8.svg?url'
+import asset52 from '../assets/5ba71.svg?url'
+import asset53 from '../assets/a08f2.svg?url'
+import asset54 from '../assets/fce33.svg?url'
+import asset55 from '../assets/b126a.svg?url'
+import asset56 from '../assets/0105a.svg?url'
+import asset57 from '../assets/c0302.svg?url'
+import asset58 from '../assets/845c0.svg?url'
+
 export const icons = {
   'export-close': {
-    url: new URL('../assets/418d0.svg', import.meta.url).href,
+    url: asset0,
     width: 16,
     height: 16,
   },
   'export-link': {
-    url: new URL('../assets/70a3e.svg', import.meta.url).href,
+    url: asset1,
     width: 18,
     height: 18,
   },
   'export-copy': {
-    url: new URL('../assets/8fef2.svg', import.meta.url).href,
+    url: asset2,
     width: 14,
     height: 14,
   },
   'export-github': {
-    url: new URL('../assets/aad3f.svg', import.meta.url).href,
+    url: asset3,
     width: 18,
     height: 18,
   },
   'export-cloud': {
-    url: new URL('../assets/c4590.svg', import.meta.url).href,
+    url: asset4,
     width: 18,
     height: 18,
   },
   'export-shield': {
-    url: new URL('../assets/14a50.svg', import.meta.url).href,
+    url: asset5,
     width: 16,
     height: 16,
   },
   'export-download': {
-    url: new URL('../assets/67687.svg', import.meta.url).href,
+    url: asset6,
     width: 16,
     height: 16,
   },
   'editor-chevron-down': {
-    url: new URL('../assets/8f7e3.svg', import.meta.url).href,
+    url: asset7,
     width: 14,
     height: 14,
   },
   'code-small': {
-    url: new URL('../assets/e080d.svg', import.meta.url).href,
+    url: asset8,
     width: 14,
     height: 14,
   },
   'target-button-small': {
-    url: new URL('../assets/604bc.svg', import.meta.url).href,
+    url: asset9,
     width: 14,
     height: 14,
   },
   'check-small': {
-    url: new URL('../assets/6f259.svg', import.meta.url).href,
+    url: asset10,
     width: 14,
     height: 14,
   },
   'pointer-small': {
-    url: new URL('../assets/3c1b3.svg', import.meta.url).href,
+    url: asset11,
     width: 14,
     height: 14,
   },
   'blur-small': {
-    url: new URL('../assets/ef428.svg', import.meta.url).href,
+    url: asset12,
     width: 14,
     height: 14,
   },
   'rectangle-small': {
-    url: new URL('../assets/e8d2e.svg', import.meta.url).href,
+    url: asset13,
     width: 14,
     height: 14,
   },
   eye: {
-    url: new URL('../assets/f16e0.svg', import.meta.url).href,
+    url: asset14,
     width: 14,
     height: 14,
   },
   'target-small': {
-    url: new URL('../assets/a6142.svg', import.meta.url).href,
+    url: asset15,
     width: 14,
     height: 14,
   },
   redo: {
-    url: new URL('../assets/49553.svg', import.meta.url).href,
+    url: asset16,
     width: 16,
     height: 16,
   },
   undo: {
-    url: new URL('../assets/279d7.svg', import.meta.url).href,
+    url: asset17,
     width: 16,
     height: 16,
   },
   pin: {
-    url: new URL('../assets/428a0.svg', import.meta.url).href,
+    url: asset18,
     width: 16,
     height: 16,
   },
   type: {
-    url: new URL('../assets/e472b.svg', import.meta.url).href,
+    url: asset19,
     width: 16,
     height: 16,
   },
   rectangle: {
-    url: new URL('../assets/00f64.svg', import.meta.url).href,
+    url: asset20,
     width: 16,
     height: 16,
   },
   arrow: {
-    url: new URL('../assets/1fb09.svg', import.meta.url).href,
+    url: asset21,
     width: 16,
     height: 16,
   },
   crop: {
-    url: new URL('../assets/17370.svg', import.meta.url).href,
+    url: asset22,
     width: 16,
     height: 16,
   },
   blur: {
-    url: new URL('../assets/8b397.svg', import.meta.url).href,
+    url: asset23,
     width: 16,
     height: 16,
   },
   pointer: {
-    url: new URL('../assets/afed7.svg', import.meta.url).href,
+    url: asset24,
     width: 16,
     height: 16,
   },
   'record-small': {
-    url: new URL('../assets/0942c.svg', import.meta.url).href,
+    url: asset25,
     width: 14,
     height: 14,
   },
   add: {
-    url: new URL('../assets/92dec.svg', import.meta.url).href,
+    url: asset26,
     width: 16,
     height: 16,
   },
   sparkle: {
-    url: new URL('../assets/f66a2.svg', import.meta.url).href,
+    url: asset27,
     width: 14,
     height: 14,
   },
   download: {
-    url: new URL('../assets/a260d.svg', import.meta.url).href,
+    url: asset28,
     width: 16,
     height: 16,
   },
   share: {
-    url: new URL('../assets/cd76b.svg', import.meta.url).href,
+    url: asset29,
     width: 16,
     height: 16,
   },
   target: {
-    url: new URL('../assets/1781e.svg', import.meta.url).href,
+    url: asset30,
     width: 16,
     height: 16,
   },
   history: {
-    url: new URL('../assets/9bb4b.svg', import.meta.url).href,
+    url: asset31,
     width: 14,
     height: 14,
   },
   'chevron-right': {
-    url: new URL('../assets/99260.svg', import.meta.url).href,
+    url: asset32,
     width: 12,
     height: 12,
   },
   columns: {
-    url: new URL('../assets/f95dc.svg', import.meta.url).href,
+    url: asset33,
     width: 16,
     height: 16,
   },
   search: {
-    url: new URL('../assets/159ac.svg', import.meta.url).href,
+    url: asset34,
     width: 14,
     height: 14,
   },
   grid: {
-    url: new URL('../assets/3c0c1.svg', import.meta.url).href,
+    url: asset35,
     width: 16,
     height: 16,
   },
   list: {
-    url: new URL('../assets/7f093.svg', import.meta.url).href,
+    url: asset36,
     width: 16,
     height: 16,
   },
   book: {
-    url: new URL('../assets/56dd8.svg', import.meta.url).href,
+    url: asset37,
     width: 16,
     height: 16,
   },
   record: {
-    url: new URL('../assets/ed318.svg', import.meta.url).href,
+    url: asset38,
     width: 16,
     height: 16,
   },
   link: {
-    url: new URL('../assets/7ebc6.svg', import.meta.url).href,
+    url: asset39,
     width: 16,
     height: 16,
   },
   trash: {
-    url: new URL('../assets/8d77c.svg', import.meta.url).href,
+    url: asset40,
     width: 16,
     height: 16,
   },
   bot: {
-    url: new URL('../assets/5e0ed.svg', import.meta.url).href,
+    url: asset41,
     width: 16,
     height: 16,
   },
   sliders: {
-    url: new URL('../assets/fec19.svg', import.meta.url).href,
+    url: asset42,
     width: 16,
     height: 16,
   },
   upload: {
-    url: new URL('../assets/a3616.svg', import.meta.url).href,
+    url: asset43,
     width: 16,
     height: 16,
   },
   'chevron-down': {
-    url: new URL('../assets/3e6da.svg', import.meta.url).href,
+    url: asset44,
     width: 14,
     height: 14,
   },
   plus: {
-    url: new URL('../assets/2fa39.svg', import.meta.url).href,
+    url: asset45,
     width: 16,
     height: 16,
   },
   'plus-small': {
-    url: new URL('../assets/f80fc.svg', import.meta.url).href,
+    url: asset46,
     width: 14,
     height: 14,
   },
   more: {
-    url: new URL('../assets/03078.svg', import.meta.url).href,
+    url: asset47,
     width: 16,
     height: 16,
   },
   check: {
-    url: new URL('../assets/57e1c.svg', import.meta.url).href,
+    url: asset48,
     width: 12,
     height: 12,
   },
   layers: {
-    url: new URL('../assets/1c5d3.svg', import.meta.url).href,
+    url: asset49,
     width: 12,
     height: 12,
   },
   offline: {
-    url: new URL('../assets/a2c42.svg', import.meta.url).href,
+    url: asset50,
     width: 18,
     height: 18,
   },
   server: {
-    url: new URL('../assets/016d8.svg', import.meta.url).href,
+    url: asset51,
     width: 28,
     height: 28,
   },
   marker: {
-    url: new URL('../assets/5ba71.svg', import.meta.url).href,
+    url: asset52,
     width: 36,
     height: 36,
   },
   dot: {
-    url: new URL('../assets/a08f2.svg', import.meta.url).href,
+    url: asset53,
     width: 6,
     height: 6,
   },
 } as const
 export type IconName = keyof typeof icons
-export const logoMark = new URL('../assets/fce33.svg', import.meta.url).href
-export const logoMarkDark = new URL('../assets/b126a.svg', import.meta.url).href
-export const defaultThumb = new URL('../assets/0105a.svg', import.meta.url).href
-export const toggleOn = new URL('../assets/c0302.svg', import.meta.url).href
-export const toggleOff = new URL('../assets/845c0.svg', import.meta.url).href
+export const logoMark = asset54
+export const logoMarkDark = asset55
+export const defaultThumb = asset56
+export const toggleOn = asset57
+export const toggleOff = asset58

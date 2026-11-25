@@ -15,6 +15,7 @@ import { exportMarkdown } from '@stepdoc/core/export/markdown'
 import type { Guide, Step } from '@stepdoc/schema'
 import { getStorage, changed } from '../repository'
 import { navigate, guardNavigation } from '../navigation'
+import { absoluteAppHref, appHref } from '../app-url'
 import { useActivity } from '../activity'
 import { useBlob } from '../hooks'
 import { StatePanel } from '../library'
@@ -130,7 +131,7 @@ export function Editor({
     <div className="editor-shell">
       <header className="editor-topbar">
         <nav aria-label="Guide navigation">
-          <a href="/" data-sd="editor-library">
+          <a href={appHref('/')} data-sd="editor-library">
             Library
           </a>
         </nav>
@@ -450,15 +451,15 @@ function EditorLoaded({
       </a>
       <header className="editor-topbar">
         <nav className="editor-breadcrumb" aria-label="Guide navigation">
-          <a href="/" data-sd="editor-library" aria-label="Library">
+          <a href={appHref('/')} data-sd="editor-library" aria-label="Library">
             <Logo markOnly size="m" />
           </a>
           <a
-            href={
+            href={appHref(
               guide.collectionId
                 ? `/?collection=${encodeURIComponent(guide.collectionId)}`
-                : '/'
-            }
+                : '/',
+            )}
             data-sd="editor-collection"
           >
             {guide.collectionId ? humanize(guide.collectionId) : 'Library'}
@@ -523,7 +524,7 @@ function EditorLoaded({
           data-sd="editor-copy-link"
           onClick={() => {
             void navigator.clipboard
-              .writeText(`${location.origin}${editorUrl(id, search, {})}`)
+              .writeText(absoluteAppHref(editorUrl(id, search, {})))
               .then(() =>
                 announce(
                   'Local editor link copied. This library stays on this device.',

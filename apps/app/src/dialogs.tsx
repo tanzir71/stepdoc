@@ -5,6 +5,7 @@ import { StorageError } from '@stepdoc/storage'
 import { getStorage, changed } from './repository'
 import { importGuide, libraryUrl, manualGuide, newId } from './model'
 import { navigate } from './navigation'
+import { routeLocation } from './app-url'
 import { useActivity } from './activity'
 import type { ParsedBundle } from './exports/client'
 
@@ -30,10 +31,10 @@ export function CreateDialog({
       onClose={() => {
         setError(null)
         if (
-          location.pathname === '/' &&
-          new URLSearchParams(location.search).get('create') === '1'
+          routeLocation().pathname === '/' &&
+          routeLocation().searchParams.get('create') === '1'
         )
-          navigate(libraryUrl(location.search, { create: null }), true)
+          navigate(libraryUrl(routeLocation().search, { create: null }), true)
       }}
     >
       <form

@@ -33,8 +33,13 @@ test('session API, list, search and 30-step viewer', async ({ page, request }) =
 test('editor autosaves text, adds sections, keyboard navigation and persists', async ({ page, request }) => {
   const id = await seed(request, 3)
   await page.goto(`/guides/${id}/edit`)
+  // The first autosave also compiles the PATCH route in the local dev server.
+  const autosaved = page.waitForResponse(
+    (response) => response.url().endsWith(`/api/guides/${id}`) && response.request().method() === 'PATCH' && response.ok(),
+  )
   await page.getByLabel('Guide title').fill('Edited onboarding')
   await page.getByRole('button', { name: '+ Section header' }).click()
+  await autosaved
   await expect(page.getByText('Saved')).toBeVisible({ timeout: 5000 })
   await page.reload()
   await expect(page.getByLabel('Guide title')).toHaveValue('Edited onboarding')

@@ -1,6 +1,6 @@
 # StepDoc progress
 
-> **External verification still needed:** copy `apps/web/.env.example` to `.env.local`, apply the migration to a real Supabase project, and run the live integration checklist. This workspace has no Supabase credentials/CLI and no system Chrome installation for a real unpacked-extension manual pass, so those two acceptance checks remain human-run items. Automated workarounds are in place: test-store API/E2E coverage, Playwright Chromium, and extension pure-unit tests.
+> **Historical v1 progress.** Active work is tracked in `PROGRESS_V2.md`. The v1 live Supabase and system-Chrome checks below moved to its "Owner later (non-blocking)" list. They do not block v2 milestones; automated local checks replace all human-run acceptance checks under `CODEX_HANDOFF_V2.md` §0.
 
 ## M0 - Scaffold
 
@@ -66,12 +66,12 @@
 
 ## M8 - Refinement
 
-- [ ] Run the first post-M7 audit and regression improvement after live Supabase/Chrome verification
+- [ ] Historical v1 refinement loop; superseded by the ordered v2 milestones and M18+ refinement loop in `PROGRESS_V2.md` (no live verification prerequisite).
 
 ## Backlog
 
-- Run the live Supabase checklist once credentials are available.
-- Run `apps/extension/MANUAL_TEST.md` in system Chrome once Chrome is installed.
+- Live Supabase checklist: moved to `PROGRESS_V2.md` → Owner later (non-blocking).
+- System-Chrome checklist: moved to `PROGRESS_V2.md` → Owner later (non-blocking).
 - Consider replacing remaining raw `<img>` tags with a custom loader or `next/image` if deployment economics allow it.
 - Shadow DOM, iframe, SPA history and infinite-scroll capture adapters.
 - Full Tailwind + shadcn/ui refactor if design-system compliance becomes more important than preserving the current small custom CSS surface.

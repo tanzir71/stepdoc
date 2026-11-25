@@ -2,7 +2,7 @@
 
 > StepDoc is a single-user, self-hosted Chrome extension and Next.js app that turns browser actions into editable step-by-step guides. Screenshots and data live in the user's Supabase project.
 
-Source: https://github.com/tanzir71/scribe
+Source: https://github.com/tanzir71/stepdoc
 Real self-contained HTML export: /demo/
 
 ## Product facts

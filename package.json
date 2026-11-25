@@ -1,1 +1,26 @@
-{"name":"stepdoc","private":true,"packageManager":"pnpm@10.33.2","scripts":{"dev":"pnpm --filter @stepdoc/web dev","build":"pnpm -r build","lint":"pnpm -r lint","typecheck":"pnpm -r typecheck","test":"pnpm -r test","verify":"pnpm lint && pnpm typecheck && pnpm test && pnpm build","format":"prettier --write .","website:guide":"node --no-warnings --experimental-strip-types scripts/generate-demo-guide.ts","website:verify":"node scripts/verify-website.mjs","website:browser":"pnpm --filter @stepdoc/web exec node scripts/verify-public-website.mjs"},"devDependencies":{"prettier":"3.6.2","typescript":"5.9.2"}}
+{
+  "name": "stepdoc",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tanzir71/stepdoc.git"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "pnpm --filter @stepdoc/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "format": "prettier --write .",
+    "website:guide": "node --no-warnings --experimental-strip-types scripts/generate-demo-guide.ts",
+    "website:verify": "node scripts/verify-website.mjs",
+    "website:browser": "pnpm --filter @stepdoc/web exec node scripts/verify-public-website.mjs"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "typescript": "5.9.2"
+  }
+}

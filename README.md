@@ -1,5 +1,9 @@
 # StepDoc
 
+[Source](https://github.com/tanzir71/stepdoc) · [MIT licence](LICENSE)
+
+The `v2` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md). See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence. The setup and product documentation below describe the shipped v1 app until the v2 targets are ready.
+
 [Website](https://stepdoc-guides.vercel.app/) · [Generated HTML guide](https://stepdoc-guides.vercel.app/demo)
 
 > Record a browser workflow once; get an editable, exportable step-by-step guide — like Scribe, but self-hosted in **your** Supabase project.
@@ -96,7 +100,7 @@ Viewer actions: Markdown ZIP, standalone HTML, PDF export, Copy Markdown, Copy r
 | `pnpm build` | Build all workspaces |
 | `pnpm verify` | Lint, strict typecheck, unit tests, Playwright e2e, production builds |
 
-Capture verification steps: `apps/extension/MANUAL_TEST.md`.
+Automated local verification: `pnpm verify` includes Playwright Chromium with the local test-store. The v1 manual checklist is historical; v2 acceptance uses automated checks only. Live installations and deployments are tracked under "Owner later (non-blocking)" in `PROGRESS_V2.md`.
 
 ## Troubleshooting
 

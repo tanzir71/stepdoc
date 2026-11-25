@@ -1,0 +1,489 @@
+openapi: 3.1.0
+info:
+  title: StepDoc Storage API
+  version: 1.0.0
+  description: |
+    One small contract implemented by every server target: PHP + SQLite (shared hosting),
+    Cloudflare Worker + D1 + R2, and Node + Postgres (the v1 Next.js/Supabase app).
+    The static SPA and the browser extension talk only to this API through HttpAdapter.
+    The browser-only mode implements the same operations in IndexedDbAdapter (no HTTP).
+    The server never processes images: the client uploads already-redacted, already-flattened blobs.
+    A shared contract-test suite (tests/contract) runs these paths against every target.
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host: { default: ops.example.com }
+security:
+  - sessionCookie: []
+  - bearerToken: []
+tags:
+  - name: meta
+  - name: auth
+  - name: guides
+  - name: blobs
+  - name: collections
+  - name: publish
+  - name: devices
+  - name: members
+  - name: settings
+paths:
+  /health:
+    get:
+      tags: [meta]
+      security: []
+      summary: Target, version and capabilities (used by the setup host check and Settings → Storage)
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /auth/session:
+    get:
+      tags: [auth]
+      summary: Current member and workspace
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/passkey/options:
+    post:
+      tags: [auth]
+      security: []
+      summary: WebAuthn registration or authentication options
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode: { enum: [register, authenticate] }
+                email: { type: string, format: email }
+      responses:
+        '200': { description: PublicKeyCredential options (JSON-serialised) }
+  /auth/passkey/verify:
+    post:
+      tags: [auth]
+      security: []
+      summary: Verify attestation/assertion and set the session cookie
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /auth/code/request:
+    post:
+      tags: [auth]
+      security: []
+      summary: Email a 6-digit, 10-minute, single-use sign-in code (rate limited per email and IP)
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string, format: email } } } } }
+      responses:
+        '202': { description: accepted (same response whether or not the email exists) }
+  /auth/code/verify:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        content: { application/json: { schema: { type: object, required: [email, code], properties: { email: { type: string }, code: { type: string, pattern: '^[0-9]{6}$' } } } } }
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /auth/recovery:
+    post:
+      tags: [auth]
+      security: []
+      summary: Sign in with a one-time recovery code (then prompt to add a passkey)
+      responses:
+        '200': { description: ok }
+  /auth/logout:
+    post:
+      tags: [auth]
+      responses:
+        '204': { description: signed out }
+  /guides:
+    get:
+      tags: [guides]
+      summary: List guides (Library W02)
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { enum: [draft, published, archived, needs-review, replay-passed] } }
+        - { name: collection, in: query, schema: { type: string } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/GuideSummary' } }
+                  nextCursor: { type: [string, 'null'] }
+    post:
+      tags: [guides]
+      summary: Create a guide (manual or from an import)
+      requestBody:
+        content: { application/json: { schema: { $ref: 'guide.schema.json' } } }
+      responses:
+        '201': { description: created, content: { application/json: { schema: { $ref: 'guide.schema.json' } } } }
+  /sessions:
+    post:
+      tags: [guides]
+      summary: Extension capture upload (v1-compatible). Requires capture:write.
+      description: Steps arrive with blob keys from /guides/{id}/blobs or as inline data URLs (≤ 8 MB each). Returns the new guide and its editor URL.
+      responses:
+        '201':
+          description: created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guide: { $ref: 'guide.schema.json' }
+                  editUrl: { type: string }
+  /guides/{id}:
+    parameters: [ { $ref: '#/components/parameters/GuideId' } ]
+    get:
+      tags: [guides]
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: 'guide.schema.json' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [guides]
+      summary: Save the whole guide. If-Match carries the version; the server writes a new version row.
+      parameters:
+        - { name: If-Match, in: header, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { $ref: 'guide.schema.json' } } }
+      responses:
+        '200': { description: saved, content: { application/json: { schema: { $ref: 'guide.schema.json' } } } }
+        '409': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [guides]
+      responses:
+        '204': { description: moved to trash }
+  /guides/{id}/versions:
+    parameters: [ { $ref: '#/components/parameters/GuideId' } ]
+    get:
+      tags: [guides]
+      summary: Unlimited version history (Inspector → History tab)
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    version: { type: integer }
+                    at: { type: string, format: date-time }
+                    by: { type: string }
+                    summary: { type: string }
+  /guides/{id}/versions/{version}:
+    parameters:
+      - { $ref: '#/components/parameters/GuideId' }
+      - { name: version, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [guides]
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: 'guide.schema.json' } } } }
+  /guides/{id}/blobs:
+    parameters: [ { $ref: '#/components/parameters/GuideId' } ]
+    post:
+      tags: [blobs]
+      summary: Upload a redacted original or a flattened render (image/webp or image/png)
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, stepId, kind]
+              properties:
+                file: { type: string, format: binary }
+                stepId: { type: string }
+                kind: { enum: [original, rendered, thumb] }
+      responses:
+        '201':
+          description: stored
+          content: { application/json: { schema: { type: object, properties: { key: { type: string } } } } }
+        '413': { $ref: '#/components/responses/Error' }
+  /blobs/{key}:
+    get:
+      tags: [blobs]
+      summary: Serve a blob after an access check (or via a signed URL for public guides)
+      parameters: [ { name: key, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: image bytes }
+        '404': { $ref: '#/components/responses/Error' }
+  /collections:
+    get:
+      tags: [collections]
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Collection' } } } } }
+    post:
+      tags: [collections]
+      responses:
+        '201': { description: created }
+  /collections/{id}:
+    parameters: [ { name: id, in: path, required: true, schema: { type: string } } ]
+    patch:
+      tags: [collections]
+      summary: Rename, reorder sections/guides, access settings
+      responses:
+        '200': { description: ok }
+    delete:
+      tags: [collections]
+      responses:
+        '204': { description: deleted }
+  /guides/{id}/publish:
+    parameters: [ { $ref: '#/components/parameters/GuideId' } ]
+    post:
+      tags: [publish]
+      summary: Publish to one or more targets. Fails with 423 while redaction items are open and the policy is enforced.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targets: { type: array, items: { enum: [link, embed, github-pages, cloudflare-pages] } }
+                github:
+                  type: object
+                  properties:
+                    repo: { type: string, example: northwind/ops-guides }
+                    branch: { type: string, default: gh-pages }
+                    includeReplaySpec: { type: boolean, default: false }
+      responses:
+        '200': { description: published, content: { application/json: { schema: { $ref: '#/components/schemas/PublishResult' } } } }
+        '423': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [publish]
+      summary: Revoke the public link immediately (published static sites need a re-publish to remove)
+      responses:
+        '204': { description: revoked }
+  /public/{publicId}:
+    get:
+      tags: [publish]
+      security: []
+      summary: Read-only published guide. Content-negotiates text/markdown and application/json.
+      parameters: [ { name: publicId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json: { schema: { $ref: 'guide.schema.json' } }
+            text/markdown: { schema: { type: string } }
+        '404': { $ref: '#/components/responses/Error' }
+  /pairing/codes:
+    post:
+      tags: [devices]
+      summary: Owner/editor creates a one-use pairing code (TTL 5 min). Shown in W08.
+      responses:
+        '201':
+          description: created
+          content: { application/json: { schema: { type: object, properties: { code: { type: string, example: K7Q-4MX }, expiresAt: { type: string, format: date-time } } } } }
+  /pairing/claim:
+    post:
+      tags: [devices]
+      security: []
+      summary: Extension exchanges a code for a scoped token. CORS allows only registered extension IDs.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, deviceName, extensionId]
+              properties:
+                code: { type: string }
+                deviceName: { type: string }
+                extensionId: { type: string }
+      responses:
+        '201': { description: token (shown once), content: { application/json: { schema: { $ref: '#/components/schemas/IssuedToken' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /devices:
+    get:
+      tags: [devices]
+      summary: Paired extensions, MCP clients and CI tokens
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Device' } } } } }
+  /devices/{id}:
+    delete:
+      tags: [devices]
+      parameters: [ { name: id, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '204': { description: revoked }
+  /tokens:
+    post:
+      tags: [devices]
+      summary: Create an API token for MCP clients or CI (scopes required)
+      requestBody:
+        content: { application/json: { schema: { type: object, properties: { name: { type: string }, scopes: { type: array, items: { $ref: '#/components/schemas/Scope' } } } } } }
+      responses:
+        '201': { description: token (shown once), content: { application/json: { schema: { $ref: '#/components/schemas/IssuedToken' } } } }
+  /members:
+    get:
+      tags: [members]
+      responses:
+        '200': { description: ok }
+    post:
+      tags: [members]
+      summary: Invite by email with a role
+      responses:
+        '201': { description: invited }
+  /members/{id}:
+    parameters: [ { name: id, in: path, required: true, schema: { type: string } } ]
+    patch:
+      tags: [members]
+      summary: Change role (audit-logged)
+      responses:
+        '200': { description: ok }
+    delete:
+      tags: [members]
+      responses:
+        '204': { description: removed }
+  /settings/redaction-policy:
+    get:
+      tags: [settings]
+      responses:
+        '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/RedactionPolicy' } } } }
+    put:
+      tags: [settings]
+      responses:
+        '200': { description: saved }
+  /settings/ai:
+    get:
+      tags: [settings]
+      summary: Provider and whether a key is set (the key itself is never returned)
+      responses:
+        '200': { description: ok }
+    put:
+      tags: [settings]
+      responses:
+        '200': { description: saved }
+  /ai/rewrite:
+    post:
+      tags: [settings]
+      summary: Server-side proxy for BYO-key AI (step rewrite / clean up). Sends DOM context only, never images.
+      responses:
+        '200': { description: suggestions }
+        '409': { description: no provider configured }
+  /audit:
+    get:
+      tags: [settings]
+      responses:
+        '200': { description: ok }
+  /mcp:
+    post:
+      tags: [meta]
+      summary: MCP streamable-HTTP endpoint exposing list_guides, get_guide, create_guide, add_step, update_step, export_guide, publish_guide (bearer token, scope-checked)
+      responses:
+        '200': { description: MCP JSON-RPC response }
+components:
+  securitySchemes:
+    sessionCookie: { type: apiKey, in: cookie, name: sd_session }
+    bearerToken: { type: http, scheme: bearer, description: 'Tokens look like sd_<random>; stored as SHA-256 hashes.' }
+  parameters:
+    GuideId: { name: id, in: path, required: true, schema: { type: string } }
+  responses:
+    Error:
+      description: error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: redaction_open }
+            message: { type: string }
+    Scope:
+      enum: ['capture:write', 'guides:read', 'guides:write', 'publish:write', 'replay:write', 'admin']
+    Health:
+      type: object
+      properties:
+        target: { enum: [php-sqlite, cloudflare, node-postgres] }
+        version: { type: string }
+        schema: { const: stepdoc/guide@1 }
+        capabilities:
+          type: object
+          properties:
+            members: { type: boolean }
+            passkeys: { type: boolean }
+            emailCodes: { type: boolean }
+            publicLinks: { type: boolean }
+            githubPages: { type: boolean }
+            mcp: { type: boolean }
+            maxUploadBytes: { type: integer }
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              status: { enum: [ok, warn, fail] }
+              message: { type: string }
+    Session:
+      type: object
+      properties:
+        member: { type: object, properties: { id: { type: string }, name: { type: string }, email: { type: string }, role: { enum: [owner, editor, viewer] } } }
+        workspace: { type: object, properties: { id: { type: string }, name: { type: string } } }
+    GuideSummary:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        stepCount: { type: integer }
+        status: { enum: [draft, published, archived] }
+        openRedactions: { type: integer }
+        verification: { type: string }
+        appOrigin: { type: string }
+        collectionId: { type: [string, 'null'] }
+        thumb: { type: [string, 'null'] }
+        updatedAt: { type: string, format: date-time }
+    Collection:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        sections: { type: array, items: { type: object, properties: { title: { type: string }, guideIds: { type: array, items: { type: string } } } } }
+        isPublic: { type: boolean }
+    PublishResult:
+      type: object
+      properties:
+        link: { type: [string, 'null'] }
+        embed: { type: [string, 'null'] }
+        github: { type: [object, 'null'], properties: { commit: { type: string }, url: { type: string } } }
+    Device:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { enum: [extension, mcp, ci, token] }
+        name: { type: string }
+        scopes: { type: array, items: { $ref: '#/components/schemas/Scope' } }
+        lastSeenAt: { type: [string, 'null'], format: date-time }
+    IssuedToken:
+      type: object
+      properties:
+        id: { type: string }
+        token: { type: string, description: Shown once. }
+        scopes: { type: array, items: { $ref: '#/components/schemas/Scope' } }
+    RedactionPolicy:
+      type: object
+      properties:
+        enforced: { type: boolean }
+        blockPublishWhenOpen: { type: boolean }
+        detectors:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { enum: [email, phone, card, iban, token, ip, name, custom] }
+              enabled: { type: boolean }
+              pattern: { type: string, description: Only for custom. }
+              label: { type: string }

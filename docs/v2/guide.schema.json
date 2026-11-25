@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stepdoc.dev/schema/guide@1.json",
+  "title": "StepDoc guide (guide@1)",
+  "description": "The single source of truth for a StepDoc guide. Every storage adapter persists this shape, every exporter reads it, and published sites serve it as guide.json. Typed input values are never stored: fill steps reference a variable or a secret by name.",
+  "type": "object",
+  "required": ["schema", "id", "title", "steps", "version", "createdAt", "updatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "stepdoc/guide@1" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,80}$", "description": "Stable slug, also used in published URLs." },
+    "uuid": { "type": "string", "format": "uuid" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "description": { "type": "string", "maxLength": 5000, "default": "" },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin"],
+      "properties": {
+        "name": { "type": "string" },
+        "origin": { "type": "string", "format": "uri" },
+        "version": { "type": "string" }
+      }
+    },
+    "locale": { "type": "string", "default": "en" },
+    "collectionId": { "type": ["string", "null"] },
+    "tags": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "preconditions": { "type": "array", "items": { "type": "string" }, "default": [], "description": "Plain-language requirements, e.g. 'Signed in with the Owner role'." },
+    "variables": { "type": "array", "items": { "$ref": "#/$defs/variable" }, "default": [] },
+    "steps": { "type": "array", "minItems": 1, "maxItems": 500, "items": { "$ref": "#/$defs/step" } },
+    "version": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "published", "archived"], "default": "draft" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "capturedAt": { "type": ["string", "null"], "format": "date-time" },
+    "verification": { "$ref": "#/$defs/verification" },
+    "publish": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "publicId": { "type": ["string", "null"] },
+        "isPublic": { "type": "boolean", "default": false },
+        "targets": { "type": "array", "items": { "enum": ["link", "embed", "github-pages", "cloudflare-pages"] }, "default": [] }
+      }
+    }
+  },
+  "$defs": {
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,40}$" },
+        "kind": { "enum": ["variable", "secret"], "description": "secret values are never stored, exported or displayed; replay reads them from the environment." },
+        "type": { "enum": ["string", "number", "boolean", "enum"], "default": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "example": { "type": "string", "description": "Only allowed when kind = variable." }
+      }
+    },
+    "rect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "type": "number" }, "y": { "type": "number" },
+        "width": { "type": "number", "minimum": 0 }, "height": { "type": "number", "minimum": 0 }
+      }
+    },
+    "locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "value"],
+      "properties": {
+        "strategy": { "enum": ["role", "testId", "label", "placeholder", "text", "altText", "title", "css", "xpath"] },
+        "value": { "type": "string", "description": "For strategy=role this is the ARIA role; the accessible name goes in name." },
+        "name": { "type": "string" },
+        "exact": { "type": "boolean", "default": true },
+        "unique": { "type": "boolean", "description": "True when the locator matched exactly one element at capture time." }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string" },
+        "name": { "type": "string", "description": "Computed accessible name (accname spec)." },
+        "tag": { "type": "string" },
+        "locators": { "type": "array", "items": { "$ref": "#/$defs/locator" }, "description": "Ordered most to least robust. Replay tries them in order." },
+        "frame": { "type": "array", "items": { "type": "string" }, "description": "CSS selectors from top document to the iframe that holds the target." },
+        "shadowPath": { "type": "array", "items": { "type": "string" }, "description": "Host selectors through open shadow roots." },
+        "rect": { "$ref": "#/$defs/rect" }
+      }
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["none", "literal", "variable", "secret"] },
+        "literal": { "type": "string", "description": "Only for non-typed values (select option labels, key names). Never free text the user typed." },
+        "variable": { "type": "string" }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "urlMatches": { "type": "string", "description": "Regex or path prefix." },
+        "visible": { "type": "object", "additionalProperties": false, "properties": { "role": { "type": "string" }, "name": { "type": "string" } } },
+        "hidden": { "type": "object", "additionalProperties": false, "properties": { "role": { "type": "string" }, "name": { "type": "string" } } },
+        "text": { "type": "object", "additionalProperties": false, "properties": { "role": { "type": "string" }, "contains": { "type": "string" } } }
+      }
+    },
+    "annotation": {
+      "type": "object",
+      "required": ["type", "x", "y"],
+      "properties": {
+        "type": { "enum": ["rectangle", "arrow", "text", "pin"] },
+        "x": { "type": "number" }, "y": { "type": "number" },
+        "width": { "type": "number" }, "height": { "type": "number" },
+        "toX": { "type": "number" }, "toY": { "type": "number" },
+        "text": { "type": "string" },
+        "color": { "type": "string", "default": "accent" }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "source", "rect"],
+      "properties": {
+        "kind": { "enum": ["password", "email", "phone", "card", "iban", "token", "ip", "name", "field", "custom"] },
+        "source": { "enum": ["auto", "manual", "policy"] },
+        "rule": { "type": "string" },
+        "rect": { "$ref": "#/$defs/rect" },
+        "status": { "enum": ["applied", "kept", "open"], "default": "applied" }
+      }
+    },
+    "screenshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rendered", "width", "height"],
+      "properties": {
+        "original": { "type": ["string", "null"], "description": "Blob key of the already-redacted capture. Never contains un-redacted pixels." },
+        "rendered": { "type": "string", "description": "Blob key of the flattened image (annotations applied, cropped)." },
+        "width": { "type": "integer" }, "height": { "type": "integer" },
+        "devicePixelRatio": { "type": "number", "default": 1 },
+        "alt": { "type": "string", "description": "Generated from the step target, e.g. 'The Change plan button on the Current plan card'." }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "index", "type", "title"],
+      "properties": {
+        "id": { "type": "string" },
+        "index": { "type": "integer", "minimum": 1 },
+        "type": { "enum": ["action", "navigate", "section", "manual", "assert"] },
+        "action": { "enum": ["click", "dblclick", "fill", "select", "check", "uncheck", "press", "hover", "upload", "navigate", "assert", "wait"] },
+        "title": { "type": "string", "minLength": 1, "description": "The instruction shown to people, e.g. 'Click \"Change plan\"'." },
+        "description": { "type": "string", "default": "" },
+        "url": { "type": ["string", "null"], "description": "Page URL with query string and fragment stripped unless allow-listed." },
+        "target": { "$ref": "#/$defs/target" },
+        "value": { "$ref": "#/$defs/value" },
+        "key": { "type": "string", "description": "For action=press, e.g. 'Enter'." },
+        "expect": { "$ref": "#/$defs/expect" },
+        "screenshot": { "$ref": "#/$defs/screenshot" },
+        "click": { "type": ["object", "null"], "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "radius": { "type": "number", "default": 18 } } },
+        "edits": {
+          "type": "object",
+          "properties": {
+            "crop": { "oneOf": [{ "$ref": "#/$defs/rect" }, { "type": "null" }] },
+            "annotations": { "type": "array", "items": { "$ref": "#/$defs/annotation" } }
+          }
+        },
+        "redactions": { "type": "array", "items": { "$ref": "#/$defs/redaction" }, "default": [] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "lowConfidence": { "type": "boolean", "default": false },
+        "notes": { "type": "string" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["passed", "failed", "not-replayable", "never-run"], "default": "never-run" },
+        "at": { "type": ["string", "null"], "format": "date-time" },
+        "runner": { "type": "string", "description": "e.g. 'github-action/playwright', 'guide-me', 'mcp-agent'." },
+        "failedStep": { "type": ["integer", "null"] }
+      }
+    }
+  }
+}

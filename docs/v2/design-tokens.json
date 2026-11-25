@@ -1,0 +1,301 @@
+{
+  "$description": "StepDoc v2 design tokens, exported from Figma variables (collections Color [Light default, Dark], Space, Radius) and text styles. CSS custom property = --sd-<name with / replaced by ->. Light is :root; dark is [data-theme=dark] and prefers-color-scheme: dark when the user picks 'System'.",
+  "figma": "https://www.figma.com/design/lTCFRrrKJb415s0nSxKE3B/StepDoc---Scribe?node-id=13-665",
+  "rules": [
+    "Screens use semantic tokens only; no raw hex in components.",
+    "No glow effects anywhere. Elevation = surface tint; shadows only for floating layers (menus, dialogs, toolbars): 0 8px 24px rgba(0,0,0,.10) max.",
+    "No italics. Emphasis by weight or colour.",
+    "No strokes on navigation bars. Borders only for focus, selection and dashed drop zones.",
+    "One accent (ember) for primary action, click marker, focus ring. agent/* only on agent-facing affordances.",
+    "Text on accent/solid uses text/on-accent (dark), never white.",
+    "Focus ring: 1px accent/solid + 2px offset, visible on every interactive element."
+  ],
+  "color": {
+    "bg/canvas": {
+      "light": "#f3f3f0",
+      "dark": "#09090a",
+      "css": "--sd-bg-canvas"
+    },
+    "bg/surface": {
+      "light": "#ffffff",
+      "dark": "#111113",
+      "css": "--sd-bg-surface"
+    },
+    "bg/raised": {
+      "light": "#f7f7f4",
+      "dark": "#18181b",
+      "css": "--sd-bg-raised"
+    },
+    "bg/sunken": {
+      "light": "#f0f0ec",
+      "dark": "#0d0d0f",
+      "css": "--sd-bg-sunken"
+    },
+    "bg/hover": {
+      "light": "#eaeae5",
+      "dark": "#1e1e22",
+      "css": "--sd-bg-hover"
+    },
+    "bg/selected": {
+      "light": "#e4e4de",
+      "dark": "#26262b",
+      "css": "--sd-bg-selected"
+    },
+    "bg/overlay": {
+      "light": "#14141466",
+      "dark": "#000000cc",
+      "css": "--sd-bg-overlay"
+    },
+    "border/subtle": {
+      "light": "#e7e6e1",
+      "dark": "#1f1f23",
+      "css": "--sd-border-subtle"
+    },
+    "border/strong": {
+      "light": "#d4d3cd",
+      "dark": "#2e2e34",
+      "css": "--sd-border-strong"
+    },
+    "text/primary": {
+      "light": "#141416",
+      "dark": "#ededef",
+      "css": "--sd-text-primary"
+    },
+    "text/secondary": {
+      "light": "#56565e",
+      "dark": "#a1a1aa",
+      "css": "--sd-text-secondary"
+    },
+    "text/tertiary": {
+      "light": "#73737b",
+      "dark": "#6c6c75",
+      "css": "--sd-text-tertiary"
+    },
+    "text/on-accent": {
+      "light": "#170a04",
+      "dark": "#170a04",
+      "css": "--sd-text-on-accent"
+    },
+    "accent/solid": {
+      "light": "#f2551f",
+      "dark": "#ff6a3d",
+      "css": "--sd-accent-solid"
+    },
+    "accent/hover": {
+      "light": "#da4914",
+      "dark": "#ff825a",
+      "css": "--sd-accent-hover"
+    },
+    "accent/soft": {
+      "light": "#f2551f1a",
+      "dark": "#ff6a3d24",
+      "css": "--sd-accent-soft"
+    },
+    "accent/text": {
+      "light": "#c2410c",
+      "dark": "#ff8d69",
+      "css": "--sd-accent-text"
+    },
+    "agent/solid": {
+      "light": "#3d5bd9",
+      "dark": "#8ea8ff",
+      "css": "--sd-agent-solid"
+    },
+    "agent/soft": {
+      "light": "#3d5bd915",
+      "dark": "#8ea8ff22",
+      "css": "--sd-agent-soft"
+    },
+    "success/solid": {
+      "light": "#15803d",
+      "dark": "#3dd68c",
+      "css": "--sd-success-solid"
+    },
+    "success/soft": {
+      "light": "#15803d17",
+      "dark": "#3dd68c1f",
+      "css": "--sd-success-soft"
+    },
+    "warning/solid": {
+      "light": "#b45309",
+      "dark": "#f5b544",
+      "css": "--sd-warning-solid"
+    },
+    "warning/soft": {
+      "light": "#b4530917",
+      "dark": "#f5b5441f",
+      "css": "--sd-warning-soft"
+    },
+    "danger/solid": {
+      "light": "#dc2626",
+      "dark": "#ff6161",
+      "css": "--sd-danger-solid"
+    },
+    "danger/soft": {
+      "light": "#dc262614",
+      "dark": "#ff61611f",
+      "css": "--sd-danger-soft"
+    },
+    "code/bg": {
+      "light": "#16161a",
+      "dark": "#0c0c0e",
+      "css": "--sd-code-bg"
+    },
+    "code/text": {
+      "light": "#d4d4d8",
+      "dark": "#d4d4d8",
+      "css": "--sd-code-text"
+    },
+    "code/key": {
+      "light": "#ff9e7d",
+      "dark": "#ff9e7d",
+      "css": "--sd-code-key"
+    },
+    "code/string": {
+      "light": "#a6ddb0",
+      "dark": "#a6ddb0",
+      "css": "--sd-code-string"
+    },
+    "code/muted": {
+      "light": "#7a7a82",
+      "dark": "#6c6c75",
+      "css": "--sd-code-muted"
+    }
+  },
+  "space": {
+    "1": 4,
+    "2": 8,
+    "3": 12,
+    "4": 16,
+    "5": 20,
+    "6": 24,
+    "8": 32,
+    "10": 40,
+    "12": 48,
+    "16": 64,
+    "24": 96
+  },
+  "radius": {
+    "sm": 6,
+    "md": 8,
+    "lg": 12,
+    "xl": 16,
+    "full": 999
+  },
+  "font": {
+    "sans": "Geist, ui-sans-serif, system-ui, sans-serif",
+    "mono": "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+    "files": "Self-host Geist and Geist Mono woff2 (SIL OFL) under /assets/fonts; no third-party font requests."
+  },
+  "type": {
+    "display-xl": {
+      "family": "sans",
+      "weight": 600,
+      "size": 68,
+      "line": 72,
+      "tracking": -3.2
+    },
+    "display-l": {
+      "family": "sans",
+      "weight": 600,
+      "size": 48,
+      "line": 52,
+      "tracking": -2.2
+    },
+    "heading-l": {
+      "family": "sans",
+      "weight": 600,
+      "size": 30,
+      "line": 36,
+      "tracking": -1.0
+    },
+    "heading-m": {
+      "family": "sans",
+      "weight": 600,
+      "size": 20,
+      "line": 28,
+      "tracking": -0.4
+    },
+    "heading-s": {
+      "family": "sans",
+      "weight": 600,
+      "size": 16,
+      "line": 24,
+      "tracking": -0.2
+    },
+    "body-l": {
+      "family": "sans",
+      "weight": 400,
+      "size": 17,
+      "line": 28,
+      "tracking": -0.1
+    },
+    "body-m": {
+      "family": "sans",
+      "weight": 400,
+      "size": 14,
+      "line": 22,
+      "tracking": 0
+    },
+    "body-s": {
+      "family": "sans",
+      "weight": 400,
+      "size": 13,
+      "line": 20,
+      "tracking": 0
+    },
+    "label-m": {
+      "family": "sans",
+      "weight": 500,
+      "size": 14,
+      "line": 20,
+      "tracking": -0.1
+    },
+    "label-s": {
+      "family": "sans",
+      "weight": 500,
+      "size": 12,
+      "line": 16,
+      "tracking": 0
+    },
+    "mono-m": {
+      "family": "mono",
+      "weight": 400,
+      "size": 13,
+      "line": 20,
+      "tracking": 0
+    },
+    "mono-s": {
+      "family": "mono",
+      "weight": 400,
+      "size": 12,
+      "line": 18,
+      "tracking": 0
+    },
+    "mono-eyebrow": {
+      "family": "mono",
+      "weight": 500,
+      "size": 11,
+      "line": 16,
+      "tracking": 0.6,
+      "transform": "uppercase"
+    }
+  },
+  "shadow": {
+    "float": "0 8px 24px rgba(0,0,0,0.10)",
+    "dialog": "0 24px 64px rgba(0,0,0,0.10)"
+  },
+  "size": {
+    "control-m": 36,
+    "control-s": 28,
+    "icon-button": 32,
+    "nav-row": 32,
+    "table-row": 52,
+    "sidebar": 248,
+    "settings-nav": 240,
+    "editor-steps": 320,
+    "editor-inspector": 340,
+    "extension-panel": 400,
+    "popup": "360x560"
+  }
+}

@@ -98,6 +98,28 @@ importers:
         specifier: 3.2.4
         version: 3.2.4(@types/node@24.3.0)(jsdom@26.1.0)
 
+  packages/core:
+    dependencies:
+      '@stepdoc/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@types/jsdom':
+        specifier: 21.1.7
+        version: 21.1.7
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      jsdom:
+        specifier: 26.1.0
+        version: 26.1.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.3.0)(jsdom@26.1.0)
+
   packages/schema:
     dependencies:
       ajv-formats:
@@ -122,6 +144,9 @@ importers:
 
   packages/shared:
     dependencies:
+      '@stepdoc/core':
+        specifier: workspace:*
+        version: link:../core
       zod:
         specifier: 4.0.17
         version: 4.0.17

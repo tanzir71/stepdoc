@@ -1,1 +1,1 @@
-import type{NextConfig}from'next';import{resolve}from'node:path';const config:NextConfig={transpilePackages:['@stepdoc/shared'],serverExternalPackages:['sharp'],turbopack:{root:resolve(process.cwd(),'../..')}};export default config
+import type{NextConfig}from'next';import{resolve}from'node:path';const config:NextConfig={transpilePackages:['@stepdoc/shared','@stepdoc/core'],serverExternalPackages:['sharp'],turbopack:{root:resolve(process.cwd(),'../..')}};export default config

@@ -1,5 +1,6 @@
-import type { ElementMeta } from './types'
-export type Description={text:string;lowConfidence:boolean}
-export function sanitizeLabel(value?:string):string|undefined { if(!value)return; const clean=value.replace(/\s+/g,' ').trim(); if(!clean||!/[\p{L}\p{N}]/u.test(clean))return; return clean.length>40?`${clean.slice(0,39).trimEnd()}…`:clean }
-export function resolveLabel(m:ElementMeta):string|undefined { return [m.label,m.ariaLabel,m.innerText,m.placeholder,m.alt,m.title,m.name,m.role].map(sanitizeLabel).find(Boolean) }
-export function describeStep(m:ElementMeta):Description { const label=resolveLabel(m); if(m.event==='navigation'){const u=new URL(m.url);const p=u.pathname==='/'?'':u.pathname.length>48?`${u.pathname.slice(0,47)}…`:u.pathname;return{text:`Go to ${u.hostname}${p}`,lowConfidence:false}} if(m.event==='submit')return{text:'Press Enter to submit',lowConfidence:false}; if(m.event==='input')return{text:`Fill in the "${label??'text'}" field`,lowConfidence:!label}; if(m.event==='select')return{text:`Select "${sanitizeLabel(m.optionLabel)??'an option'}" from the "${label??'dropdown'}" dropdown`,lowConfidence:!label}; if(['checkbox','radio'].includes(m.inputType??''))return{text:`${m.inputType==='checkbox'?'Check':'Select'} "${label??'option'}"`,lowConfidence:!label}; return label?{text:`Click "${label}"`,lowConfidence:false}:{text:'Click here',lowConfidence:true} }
+export {
+  describeStep,
+  resolveLabel,
+  sanitizeLabel,
+  type Description,
+} from '@stepdoc/core/describe-step'

@@ -4,7 +4,7 @@
 
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
-| M9 | In progress | 2026-11-25 | Repository setup and guide@1 schema/migration complete; core next | — |
+| M9 | In progress | 2026-11-25 | Schema/migration and core text/locator ranking complete; redaction next | — |
 | M10 | Not started | — | SPA + browser-only mode | — |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
@@ -21,7 +21,7 @@
   - [x] guide@1 types, zod and Ajv fixture validation.
   - [x] v1→guide@1 migration and v1 Playwright fixture tests, with a schema version note.
 - [ ] `@stepdoc/core`: describe-step (from shared), locator ranking, redaction detectors (unit tests incl. Luhn, mod-97, token entropy), flatten via OffscreenCanvas (worker-safe), exporters MD/HTML/guide.json/Playwright/SKILL.md/JSON-LD with snapshot tests.
-  - [ ] Step text and locator ranking.
+  - [x] Step text and locator ranking.
   - [ ] Redaction detectors including Luhn, mod-97 and token entropy.
   - [ ] Worker-safe client flattening via OffscreenCanvas.
   - [ ] MD, HTML, guide.json, Playwright, SKILL.md and JSON-LD exporters with snapshots.
@@ -96,6 +96,8 @@
 - Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (lint: zero errors, two existing image warnings; strict typecheck; 56 unit tests; 8 Playwright Chromium e2e tests against the local test-store; shared, extension and Next production builds). `pnpm website:verify`, repository metadata/JSON parse checks and `git diff --check` passed. No old repository URLs or workflow files found. M9 remains in progress; no milestone tag yet.
 - 2026-11-25 — M9 schema: added `@stepdoc/schema` version `0.1.0`, guide@1 Zod schemas and inferred types, the source JSON Schema export, minimal/full fixtures and Ajv 2020-12 parity tests. Both validators enforce the privacy rules above, and agree on RFC formats, Unicode text limits and integer semantics. Added a deterministic v1 row migration that preserves IDs, order, instructions, timestamps, public IDs, click geometry and image edit layers; maps targets and manual redactions; declares fill variables/secrets without reading `.value`; strips URL credentials/query/fragment and discards signed image URLs. Image migrations require client-supplied dimensions and existing flattened blobs for edited screenshots. Extracted the existing onboarding fixture so browser tests and migration tests share the same v1 input. Next unit: core step text and locator ranking.
 - Verification: final `pnpm verify` passed (169 unit tests, including 113 schema/migration tests; 8 Playwright Chromium e2e tests; strict typecheck; all workspace builds; zero lint errors and the same two existing image warnings). Migration checks cover 1/2/3/10/30/50-step v1 fixtures, manual images/layers, ordering, public identity, unsafe URLs, malformed rows and a throwing `.value` access guard. `git diff --check` passed. M9 remains open for core work; no milestone tag yet.
+- 2026-11-25 — M9 core text/locators: added `@stepdoc/core` with the ported v1 text/selector functions and guide@1 instruction generation. Fill/upload values are not read; editable input/textarea innerText is ignored when generating text; Unicode labels truncate without splitting surrogate pairs; unsupported navigation URLs produce a flagged fallback and valid URL text omits credentials/query/fragment. Locator ranking normalizes/deduplicates copies, prefers measured uniqueness and exact semantic matches, drops zero matches or malformed selectors, preserves unverified flags and exposes a fragile-locator assessment. CSS fallbacks now escape leading digits/control characters, avoid duplicate IDs/test IDs, disambiguate repeated names and work within iframe documents/open shadow roots. The v1 shared text/selector exports forward to core, so existing consumers exercise the port; Next explicitly transpiles core. Shared schema removal remains the final M9 cleanup item. Next unit: redaction detectors including Luhn, mod-97, token entropy, IP/MAC and custom rules.
+- Verification: `pnpm install --frozen-lockfile` and `pnpm verify` passed (243 unit tests, including 74 new core tests and all 40 original shared regressions; 8 Playwright Chromium e2e tests; strict typecheck; all workspace builds; zero lint errors and the two existing image warnings). Tests exercise real DOM selector matching, duplicates, iframe/shadow scoping, resolver counts/failures, missing labels/options/keys, and throwing input-value access guards. `git diff --check` passed. M9 remains open for detectors, client flattening, exporters and shared cleanup; no milestone tag yet.
 
 ## Defaults in use
 

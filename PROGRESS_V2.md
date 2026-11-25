@@ -5,7 +5,7 @@
 | Milestone | Status | Date | Summary | Commit |
 |---|---|---|---|---|
 | M9 | Complete | 2026-11-25 | Schema, migration, core, exporters; shared package retired | 787d285 (`v2-m9`) |
-| M10 | Complete | 2026-11-26 | Native SPA/storage, editor, client exports; visual and accessibility gates passed | — |
+| M10 | Complete | 2026-11-26 | Native SPA/storage, editor, client exports; visual and accessibility gates passed | 752b69b (`v2-m10`) |
 | M11 | Not started | — | Extension v2 | — |
 | M12 | Not started | — | PHP + SQLite target | — |
 | M13 | Not started | — | Cloudflare target | — |

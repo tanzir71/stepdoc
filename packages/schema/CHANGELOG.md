@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11's input-order correction emits an existing reference-only fill step on the
+first trusted edit and coalesces the remaining typing run. Result observations
+are bounded by subsequent actions, and stale frame guesses are ignored.
+Toggle/file actions use their existing action/value fields. No guide or private transport fields,
+API endpoints, database layout, defaults or identifiers change; no migration or
+package/schema version bump is needed.
+
 M11 adds `@stepdoc/schema/capture-destination`: strict private destination,
 save/recent commands and metadata-only save receipts. Extension preferences
 optionally retain a destination; reviews optionally retain that binding, pending

@@ -11,11 +11,11 @@
   - paragraph: Select adjacent steps to merge, or delete selected steps. Alt+Up/Down reorders the focused row.
   - list:
     - listitem:
-      - 'checkbox "Select step 1: Click \"Open settings\""'
-      - text: 01 Click "Open settings" click · button
+      - 'checkbox "Select step 1: Fill in the \"Email\" field"'
+      - text: 01 Fill in the "Email" field fill · secret
     - listitem:
-      - 'checkbox "Select step 2: Fill in the \"Email\" field"'
-      - text: 02 Fill in the "Email" field fill · secret
+      - 'checkbox "Select step 2: Click \"Open settings\""'
+      - text: 02 Click "Open settings" click · button
   - button "Merge selected" [disabled]
   - button "Delete" [disabled]
 - contentinfo:

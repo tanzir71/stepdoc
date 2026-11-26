@@ -403,6 +403,11 @@ try {
     await panel.getByRole('textbox', { name: 'Guide title' }).fill(title)
     const value = await state()
     assert.equal(value.captureReview.destination.kind, 'server')
+    assert.deepEqual(
+      value.capturedSteps.map((step) => step.action),
+      ['fill', 'click'],
+      'A typed field precedes its subsequent pointer action',
+    )
     assert(!JSON.stringify(value).includes('PRIVATE_TYPED_NEVER_CAPTURED'))
     assert(!JSON.stringify(value).includes('PRIVATE_QUERY'))
     assert(value.capturedSteps.some((step) => step.value?.kind === 'secret'))

@@ -282,6 +282,9 @@ export function startBackground() {
     | undefined
   let writes = Promise.resolve()
   const expectations = new Map<string, NonNullable<Step['expect']>>()
+  let expectationOwner:
+    | { sessionId: string; id: string; frameId: number }
+    | undefined
   const mutate = <T>(operation: () => Promise<T>) => {
     const next = writes.then(operation)
     writes = next.then(
@@ -909,6 +912,7 @@ export function startBackground() {
           manualCounts.clear()
           privacyEpoch++
           lastNavigation = undefined
+          expectationOwner = undefined
           await browser.storage.local.set({
             recording: false,
             steps: [],
@@ -1360,6 +1364,17 @@ export function startBackground() {
         }
         if (message.type === 'EXPECTATION') {
           const expectation = expectationSchema.parse(message.expect)
+          // Frame renderers can deliver an old observation after another action
+          // has already caused its UI. Such a guess cannot own that result.
+          if (
+            !expectationOwner ||
+            expectationOwner.sessionId !== message.sessionId ||
+            expectationOwner.id !== message.id ||
+            expectationOwner.frameId !== (sender.frameId ?? 0)
+          ) {
+            respond({ ok: true })
+            return
+          }
           await mutate(async () => {
             const latest = await browser.storage.local.get<LegacyStorage>([
               'captureSessionId',
@@ -1384,6 +1399,11 @@ export function startBackground() {
           return
         }
         const event = localCaptureSchema.parse(message.event)
+        expectationOwner = {
+          sessionId: message.sessionId,
+          id: event.step.id,
+          frameId: sender.frameId ?? 0,
+        }
         await queue.enqueue({
           event,
           sessionId: message.sessionId,

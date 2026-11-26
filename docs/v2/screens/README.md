@@ -273,6 +273,11 @@ after a Chrome build. Normal runs compare trees and write ignored evidence PNGs.
 
 ## M11 paired capture destinations
 
+The M11 input-order correction refreshes the six review/failure captures and
+trees below: the real fixture's email fill now precedes its button click.
+Layout, tokens, original assets and dimensions are unchanged. The same native
+geometry/painted-chevron/axe checks still run; this is a capture-data correction.
+
 `m11-destination-*.png` records eight native control states from the built Chrome
 extension. Fresh full contexts/screenshots for E01 (`26:5543`), E04 (`27:6690`)
 and E06 (`27:6897`) supply the reference. The E01/E04 panel is 400×900; E06's

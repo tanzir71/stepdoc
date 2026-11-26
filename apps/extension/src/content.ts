@@ -20,6 +20,25 @@ import {
 } from './capture-event'
 import type { Step } from '@stepdoc/schema'
 
+const nonFillInputs = new Set([
+  'button',
+  'checkbox',
+  'file',
+  'hidden',
+  'image',
+  'radio',
+  'reset',
+  'submit',
+])
+function toggleControl(element: Element): HTMLInputElement | undefined {
+  const control =
+    element.localName === 'input' ? element : element.closest('label')?.control
+  return control?.localName === 'input' &&
+    /^(checkbox|radio)$/i.test(control.getAttribute('type') ?? '')
+    ? (control as HTMLInputElement)
+    : undefined
+}
+
 export function startContent() {
   const listeners: (() => void)[] = []
   const installListeners = () => listeners.forEach((install) => install())
@@ -78,7 +97,16 @@ export function startContent() {
   let sessionId = ''
   let pillView: unknown
   let previousUrl = ''
-  const touched = new WeakSet<Element>()
+  let editedInputs = new WeakSet<Element>()
+  let observation:
+    | { element: Element; kind: Step['action']; finish: () => void }
+    | undefined
+  // A script's click can cause browser-generated change events. Require a
+  // trusted pointer/Space activation and trusted click before recording a toggle.
+  let toggleActivations = new WeakMap<
+    Element,
+    { clicked: boolean; point?: { x: number; y: number } }
+  >()
   const ui = new BlurControls(document, () => {
     void setBlurMode(false)
   })
@@ -95,6 +123,9 @@ export function startContent() {
     pill.update(pillView, !blurMode)
   }
   const setBlurMode = async (on: boolean) => {
+    observation = undefined
+    editedInputs = new WeakSet()
+    toggleActivations = new WeakMap()
     const capturedSession = sessionId
     const request = ++modeRequest
     pendingMode = request
@@ -149,6 +180,11 @@ export function startContent() {
     paused = false,
     view?: unknown,
   ) => {
+    if (nonce !== sessionId || !active || mode !== blurMode) {
+      observation = undefined
+      editedInputs = new WeakSet()
+      toggleActivations = new WeakMap()
+    }
     if (nonce !== sessionId || (!active && !paused)) {
       tracker.manual.clear()
       blurBusy = false
@@ -184,6 +220,14 @@ export function startContent() {
     click?: { x: number; y: number },
     key?: string,
   ) => {
+    // Observe a previous action's result before the new action can change it.
+    finishObservation()
+    // A fill run begins at its first trusted input, before a later pointer event
+    // can blur it (including into another frame). Other actions end that run.
+    if (kind !== 'fill') {
+      editedInputs = new WeakSet()
+      toggleActivations = new WeakMap()
+    }
     try {
       const scope = element.getRootNode() as Document | ShadowRoot
       const observationUrl = () =>
@@ -192,29 +236,45 @@ export function startContent() {
       const event = captureEvent(element, kind, click, key)
       const capturedSession = sessionId
       void send(event)
-      setTimeout(() => {
-        if (sessionId !== capturedSession || !recording) return
-        try {
-          const expect = guessExpectation(
-            before,
-            observePage(document, scope, observationUrl()),
-          )
-          if (expect)
-            void browser.runtime
-              .sendMessage({
-                type: 'EXPECTATION',
-                sessionId,
-                id: event.step.id,
-                expect,
-              })
-              .catch(() => fail(capturedSession))
-        } catch {
-          fail()
-        }
-      }, 200)
+      const sample = {
+        element,
+        kind,
+        finish: () => {
+          if (sessionId !== capturedSession || !recording) return
+          try {
+            const expect = guessExpectation(
+              before,
+              observePage(document, scope, observationUrl()),
+            )
+            if (expect)
+              void browser.runtime
+                .sendMessage({
+                  type: 'EXPECTATION',
+                  sessionId,
+                  id: event.step.id,
+                  expect,
+                })
+                .catch(() => fail(capturedSession))
+          } catch {
+            fail()
+          }
+        },
+      }
+      observation = sample
+      // Typing can continue after 200ms. A fill is observed at its run boundary,
+      // rather than guessing validation from an intermediate character.
+      if (kind !== 'fill')
+        setTimeout(() => {
+          if (observation === sample) finishObservation()
+        }, 200)
     } catch {
       fail()
     }
+  }
+  function finishObservation() {
+    const sample = observation
+    observation = undefined
+    sample?.finish()
   }
   const elementOf = (event: Event): Element | undefined => {
     const node = event.composedPath()[0]
@@ -318,14 +378,18 @@ export function startContent() {
         element.closest(
           'button,a,input,select,textarea,[role="button"],[role="checkbox"],[role="radio"]',
         ) ?? element
-      const type = actionable.getAttribute('type')
-      const kind =
-        type === 'checkbox' || type === 'radio'
-          ? (actionable as HTMLInputElement).checked && type === 'checkbox'
-            ? 'uncheck'
-            : 'check'
-          : 'click'
-      action(actionable, kind, { x: event.clientX, y: event.clientY })
+      const control = toggleControl(element)
+      // The trusted change event records the resulting state once, including
+      // keyboard toggles and label clicks. A cancelled pointer does not toggle.
+      if (control) {
+        editedInputs = new WeakSet()
+        toggleActivations.set(control, {
+          clicked: false,
+          point: { x: event.clientX, y: event.clientY },
+        })
+        return
+      }
+      action(actionable, 'click', { x: event.clientX, y: event.clientY })
     },
     true,
   )
@@ -340,17 +404,21 @@ export function startContent() {
         event.isTrusted &&
         element &&
         !isCaptureUi(element) &&
-        editable(element)
-      )
-        touched.add(element)
+        editable(element) &&
+        !(
+          element.localName === 'input' &&
+          nonFillInputs.has(
+            (element.getAttribute('type') ?? 'text').toLowerCase(),
+          )
+        ) &&
+        !editedInputs.has(element)
+      ) {
+        editedInputs.add(element)
+        action(element, 'fill')
+      }
     },
     true,
   )
-  const commit = (element: Element) => {
-    if (!touched.has(element)) return
-    touched.delete(element)
-    action(element, element.getAttribute('type') === 'file' ? 'upload' : 'fill')
-  }
   listen(
     'focusout',
     (event) => {
@@ -363,8 +431,11 @@ export function startContent() {
         element &&
         !isCaptureUi(element) &&
         editable(element)
-      )
-        commit(element)
+      ) {
+        editedInputs.delete(element)
+        if (observation?.element === element && observation.kind === 'fill')
+          finishObservation()
+      }
     },
     true,
   )
@@ -382,7 +453,17 @@ export function startContent() {
       )
         return
       if (element.localName === 'select') action(element, 'select')
-      if (element.getAttribute('type') === 'file') action(element, 'upload')
+      if (element.localName === 'input') {
+        const type = (element.getAttribute('type') ?? 'text').toLowerCase()
+        if (type === 'file') action(element, 'upload')
+        const activation = toggleActivations.get(element)
+        if ((type === 'checkbox' || type === 'radio') && activation?.clicked)
+          action(
+            element,
+            (element as HTMLInputElement).checked ? 'check' : 'uncheck',
+            activation.point,
+          )
+      }
     },
     true,
   )
@@ -406,6 +487,7 @@ export function startContent() {
         return
       }
       if (!recording || !event.isTrusted || !element) return
+      toggleActivations = new WeakMap()
       if (
         (event.code === 'KeyB' || event.key.toLowerCase() === 'b') &&
         event.altKey &&
@@ -442,8 +524,10 @@ export function startContent() {
         }
         return
       }
+      const control = toggleControl(element)
+      if (event.key === ' ' && control)
+        toggleActivations.set(control, { clicked: false })
       if (recording && event.isTrusted && event.key === 'Enter' && element) {
-        commit(element)
         action(element, 'press', undefined, 'Enter')
       }
     },
@@ -474,6 +558,15 @@ export function startContent() {
     ) {
       event.preventDefault()
       event.stopImmediatePropagation()
+      return
+    }
+    if (!recording || !element || isCaptureUi(element)) return
+    const control = toggleControl(element)
+    if (!control) return
+    if (!event.isTrusted) toggleActivations.delete(control)
+    else {
+      const activation = toggleActivations.get(control)
+      if (activation) activation.clicked = true
     }
   })
   listen('pointermove', (event) => {
@@ -508,6 +601,7 @@ export function startContent() {
       const url = localDocumentUrl(document)
       if (!url) throw new CaptureMetadataError('invalid_url')
       if (url !== previousUrl) {
+        finishObservation()
         previousUrl = url
         void send(captureNavigation())
       }

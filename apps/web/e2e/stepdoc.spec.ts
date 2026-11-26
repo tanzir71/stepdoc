@@ -99,8 +99,7 @@ test('manual image upload opens canvas tools and edits survive autosave', async 
   const chooser = page.waitForEvent('filechooser')
   await page.getByRole('button', { name: 'Upload image' }).click()
   const file = await chooser
-  // This is the first request to the image route; dev compilation can outlast
-  // the locator timeout. Check the completed upload before expecting its UI.
+  // Check the completed upload before expecting its editor UI.
   const uploaded = page.waitForResponse(response => response.url().includes(`/api/guides/${id}/steps/`) && response.url().endsWith('/image') && response.request().method() === 'POST')
   await file.setFiles({
     name: 'shot.png',

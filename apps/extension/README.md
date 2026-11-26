@@ -59,7 +59,23 @@ editable descendant. Uniqueness is measured in the actual document/shadow root.
 Steps use secret/variable references, select labels or key names; page URLs omit
 credentials, queries and fragments. Cross-origin frame and open-shadow paths,
 source-pixel click coordinates and scoped dialog/heading/SPA expectations are
-retained in `capturedSteps`. The current server upload stays in the v1 format.
+retained in `capturedSteps`. Legacy upload retains its v1 projection; local and
+paired capture saves use guide@1.
+
+A fill is emitted at the first trusted input event, before a later pointer can
+blur the field into another document/frame. Further input in that run is
+coalesced; focus-out, a subsequent action, Enter, pause/session changes and
+privacy-mode transitions rearm capture. A focused edit is retained by Stop &
+review without needing a blur. Values and edited text are never read. Checkboxes
+and radios record one resulting check/uncheck on change after a native
+pointer/Space activation and trusted click, retaining pointer markers and
+ignoring cancelled or script-triggered toggles. File changes remain upload
+references, without a duplicate fill or any file contents/name.
+
+Result observations finish before the next action can alter the page. Fill
+results are observed at an edit boundary, avoiding guesses from intermediate
+typing. The background rejects late guesses from superseded actions/frames, so
+a later button's dialog cannot become the earlier fill's replay expectation.
 
 Only the selected recording tab can enqueue trusted actions. Fresh mandatory
 field/frame masks (including opaque custom hosts) are collected before and after each native screenshot, and
@@ -75,6 +91,16 @@ status and badge. Tests exercise actual committed inputs, native keyboard
 selection/Enter, shadow/frame clicks, SPA state, stored references, field pixels
 and failure gating. A separate native core test installs throwing value-getter
 proxies in the collector's execution world.
+
+`verify-input-order.mjs` loads the real extension against two local origins.
+It covers typing bursts and action/focus/Enter boundaries, textarea and
+contenteditable, open shadow roots and same-/cross-origin frame transitions,
+pointer/label/Space toggles, cancelled/synthetic input, native file selection,
+pause/session reset, causal dialog/late-frame expectations, unblurred Stop and
+native local save/JSON export. Throwing
+value/edited-text getters run in all three actual extension content worlds.
+The paired-destination suite also asserts fill-before-click order through its
+capture/server-save flow. Both are part of `pnpm verify`.
 
 The frame broker uses `webNavigation` frame/document IDs and isolated-world
 snapshots, including frames in open shadow roots. Same-origin children report

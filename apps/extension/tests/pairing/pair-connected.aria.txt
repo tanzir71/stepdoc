@@ -1,0 +1,24 @@
+- banner:
+  - text: stepdoc
+  - link "Settings":
+    - /url: options.html
+- main:
+  - region "Server paired":
+    - heading "Server paired" [level=1]
+    - paragraph: Captures currently stay in this browser. Your server connection is saved for the paired workspace.
+    - heading "Connected server" [level=2]
+    - paragraph: <server>/api/v1/
+    - text: Connection checked
+    - paragraph: "Scopes: capture:write, guides:read"
+    - button "Check connection"
+    - button "Pair again"
+    - button "Forget connection on this browser"
+    - link "Devices & tokens on the server":
+      - /url: <server>/settings/devices
+    - button "Use local storage"
+  - status: Connection checked.
+- contentinfo:
+  - navigation "Pairing":
+    - button "Back to capture"
+- complementary "Pairing activity":
+  - group: Activity log

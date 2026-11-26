@@ -256,8 +256,11 @@ try {
   await app.goForward()
   await expect(app.locator('[data-sd="step-title"]')).toBeVisible()
   assert.equal(app.url(), editorUrl)
-  await app.clock.install()
-  await app.clock.pauseAt(await app.evaluate(() => Date.now() + 1000))
+  // Freeze before editing, with one fixed epoch rather than a one-second CDP
+  // round-trip race. The advance happens while the editor has no dirty draft.
+  const editClock = Date.now()
+  await app.clock.install({ time: editClock - 60_000 })
+  await app.clock.pauseAt(editClock)
   await app.locator('[data-sd="step-title"]').fill('Unsaved extension edit')
   await app.goBack()
   await expect(
@@ -593,19 +596,34 @@ try {
     'Raw one-pixel field stripes reached stored capture image',
   )
   await fixture.reload()
-  await expect
-    .poll(async () =>
-      worker.evaluate(
-        async (url) =>
-          (
-            await chrome.storage.local.get('capturedSteps')
-          ).capturedSteps.filter(
-            (step) => step.action === 'navigate' && step.url === url,
-          ).length,
-        `${base}/next`,
-      ),
-    )
-    .toBe(2)
+  const reloadState = () =>
+    worker.evaluate(async (url) => {
+      const state = await chrome.storage.local.get([
+        'capturedSteps',
+        'captureError',
+        'recording',
+        'captureReview',
+      ])
+      return {
+        count: (state.capturedSteps ?? []).filter(
+          (step) => step.action === 'navigate' && step.url === url,
+        ).length,
+        error: state.captureError,
+        recording: state.recording,
+        phase: state.captureReview?.phase,
+      }
+    }, `${base}/next`)
+  try {
+    await expect
+      .poll(async () => {
+        const state = await reloadState()
+        return state.error ?? state.count
+      })
+      .toBe(2)
+  } catch (error) {
+    console.log('Reload capture diagnostic', await reloadState())
+    throw error
+  }
   const reloadedSteps = await worker.evaluate(
     async () => (await chrome.storage.local.get('capturedSteps')).capturedSteps,
   )

@@ -21,6 +21,7 @@ import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
 import { CaptureTime } from './capture-time'
+import { PairingPanel } from './pairing-panel'
 import {
   applyPreferences,
   preferenceKey,
@@ -90,6 +91,9 @@ function CapturePanel() {
   const latest = useRef(state)
   const refreshNumber = useRef(0)
   const [ready, setReady] = useState(false)
+  const [pairView, setPairView] = useState(
+    new URL(location.href).searchParams.get('view') === 'pair',
+  )
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ text: string; phase: string } | null>(
     null,
@@ -161,11 +165,13 @@ function CapturePanel() {
       'view',
       state.guideMe
         ? 'guide-me'
-        : reviewing
-          ? 'review'
-          : recording
-            ? phase
-            : 'idle',
+        : pairView && phase === 'idle'
+          ? 'pair'
+          : reviewing
+            ? 'review'
+            : recording
+              ? phase
+              : 'idle',
     )
     if (state.guideMe) {
       url.searchParams.set(
@@ -178,7 +184,7 @@ function CapturePanel() {
       url.searchParams.delete('guide')
     }
     history.replaceState(null, '', url)
-  }, [phase, state.guideMe?.index, state.guideMe?.guideId])
+  }, [phase, pairView, state.guideMe?.index, state.guideMe?.guideId])
   useEffect(() => {
     setTitle(review?.title ?? '')
     setSelected([])
@@ -267,6 +273,20 @@ function CapturePanel() {
   const canMerge =
     positions.length > 1 && positions.every((at, i) => at === positions[0]! + i)
   if (state.guideMe) return <GuidePanel run={state.guideMe} />
+  const openPair = () => {
+    if (compact)
+      void browser.tabs.create({
+        url: browser.runtime.getURL('/popup.html') + '?surface=tab&view=pair',
+      })
+    else setPairView(true)
+  }
+  if (ready && pairView && phase === 'idle')
+    return (
+      <PairingPanel
+        fullTab={popup && !compact}
+        onExit={() => setPairView(false)}
+      />
+    )
   return (
     <div
       className="capture-panel"
@@ -311,6 +331,16 @@ function CapturePanel() {
               <div className="capture-destination">
                 <span>Save captures to</span>
                 <span>This browser</span>
+                <Button
+                  kind="ghost"
+                  size="s"
+                  icon="popup-pair"
+                  data-sd="capture-pair"
+                  disabled={phase !== 'idle' || disabled}
+                  onClick={openPair}
+                >
+                  Pair server
+                </Button>
               </div>
             ) : null}
             <div className="capture-start-card">
@@ -750,15 +780,11 @@ function CapturePanel() {
                 size="s"
                 icon="popup-pair"
                 data-sd="capture-pair"
-                disabled
-                aria-describedby="popup-pair-help"
+                disabled={phase !== 'idle' || disabled}
+                onClick={openPair}
               >
                 Pair server
               </Button>
-              <span id="popup-pair-help" className="sd-sr-only">
-                Server pairing is not available yet. Captures stay in this
-                browser.
-              </span>
             </>
           ) : (
             <a href="app.html" target="_blank" data-sd="capture-library">

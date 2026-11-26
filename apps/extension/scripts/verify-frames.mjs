@@ -103,6 +103,35 @@ try {
     ['#blank', 'Blank action', ['#blank']],
     ['#opaque', 'Opaque action', ['#opaque']],
   ]
+  // Force a browser graph replacement during post-camera collection. The first
+  // candidate is deliberately undecodable: reusing it after retrying only the
+  // metadata would fail. Success requires a second, fully fresh native capture.
+  await worker.evaluate(() => {
+    const frames = chrome.webNavigation.getAllFrames.bind(chrome.webNavigation)
+    const camera = chrome.tabs.captureVisibleTab.bind(chrome.tabs)
+    const proof = { cameras: 0, postReads: 0, changed: false }
+    globalThis.frameRetryProof = proof
+    globalThis.restoreFrameRetry = () => {
+      chrome.webNavigation.getAllFrames = frames
+      chrome.tabs.captureVisibleTab = camera
+    }
+    chrome.tabs.captureVisibleTab = async (...args) => {
+      const raw = await camera(...args)
+      proof.cameras++
+      return proof.cameras === 1 ? 'data:image/png;base64,AA==' : raw
+    }
+    chrome.webNavigation.getAllFrames = async (...args) => {
+      const current = await frames(...args)
+      if (proof.cameras && ++proof.postReads === 2) {
+        proof.changed = true
+        return current.map((frame) => ({
+          ...frame,
+          documentId: 'fixture-replacement',
+        }))
+      }
+      return current
+    }
+  })
   for (const [selector, name, chain] of actions) {
     const count = (await state()).steps.length
     await page
@@ -119,6 +148,25 @@ try {
       )
       .toBe(count + 1)
     assert.deepEqual((await state()).capturedSteps.at(-1).target.frame, chain)
+    if (count === 0) {
+      const proof = await worker.evaluate(() => globalThis.frameRetryProof)
+      assert.equal(
+        proof.changed,
+        true,
+        'The post-camera graph replacement occurred',
+      )
+      assert.equal(
+        proof.cameras,
+        2,
+        'A changed graph discards the first raw candidate',
+      )
+      assert.notEqual(
+        (await state()).capturedSteps.at(-1).lowConfidence,
+        true,
+        'The retry used fresh processed pixels',
+      )
+      await worker.evaluate(() => globalThis.restoreFrameRetry())
+    }
     console.log(`Verified frame action: ${selector}`)
   }
   await page

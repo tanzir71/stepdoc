@@ -206,8 +206,8 @@ foreground for their controls, matching the visibility of the actual side panel.
 The 360×560 popup uses the compact E06 header, 44px record control, two preference
 switches, two actual recent guides and 28px library/pair actions. It retains the
 original record/file/grid/link vectors, logo, toggle images and badge dot at their
-native dimensions. Pair server remains disabled with an accessible explanation
-until E05 pairing is implemented. The activity log and status remain accessible.
+native dimensions. Pair server opens E05 in a private full tab. The activity log
+and status remain accessible.
 Capture panels use the shared app's saved Light/Dark/System preference and react
 to changes from another native workspace tab or the system theme.
 
@@ -228,3 +228,47 @@ keyboard preferences, close/reopen during capture, library/editor links, rejecte
 source/stale/phase commands, failed review launch/retry, Escape and native saving.
 The same renderer supplies light/dark reference captures and narrow axe coverage.
 Firefox remains build plus `web-ext lint`; no owner testing or signing is required.
+
+## Private server pairing (E05)
+
+`?view=pair` implements the original 400×900 E05 form with six labelled code
+fields, whole-code paste, keyboard navigation, cancellation and local-mode exit.
+E01 opens it in the panel; E06 opens `/popup.html?surface=tab&view=pair`.
+It checks anonymous Storage API health, claims the one-use code for the actual
+extension origin and accepts exactly `capture:write, guides:read`.
+
+The background stores one schema-validated credential in extension-origin
+IndexedDB (`stepdoc-connections-v1`, record version 1). Tokens never enter
+`chrome.storage`, control/content state, guide data, exports, URLs or logs.
+Content scripts' IndexedDB belongs to the host page, as described in the
+[Chrome storage documentation](https://developer.chrome.com/docs/extensions/develop/concepts/storage-and-cookies).
+The native fixture proves that boundary with the actual content execution world.
+Public connection metadata is explicitly projected; private commands require an
+extension-page sender, and UI broadcasts reject content-page senders. This is
+browser origin isolation, not client-side encryption or forensic erasure.
+
+Reload retains the connection. Check connection uses a fresh private bearer and
+retains credentials on revoked/unavailable errors so the user can pair again.
+Forget removes the local credential after a native confirmation; revocation is
+performed on the server's Devices & tokens page. It leaves local guides intact.
+Generation checks prevent stale windows from replacing/forgetting a newer record;
+cancellation aborts HTTP and guards the final transaction against late responses.
+Pairing and capture/review/walkthrough transitions exclude each other. Corrupt
+records can be forgotten without allowing recovery to overwrite a valid record.
+
+`verify-pairing.mjs` loads the real production extension against a local HTTP
+fixture. It checks geometry/original painted vectors, light/dark/narrow/dialog
+aria and axe, paste/keyboard, private persistence, content-world authorization,
+cookie/referrer-free requests, cancellation, stale generations, recovery and
+popup/full-tab navigation. Captures still save locally: scoped server capture
+upload, destination selection and paired editor integration remain M11 work.
+
+## Frame graph transitions
+
+A browser document/iframe replacement during metadata collection has a private
+typed error. Capture retries up to three entire before/image/after attempts and
+discards the failed candidate each time. The first attempt's activation identity
+is retained across retries. Missing or invalid masks and repeated changes still
+stop capture; no partial scene or raw image is reused. The native frame suite
+forces a post-camera graph change with an undecodable first candidate and proves
+that a second fresh native result is processed with the correct masked pixels.

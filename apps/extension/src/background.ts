@@ -10,13 +10,21 @@ import {
   capturePillViewSchema,
   FRAME_PROBE,
 } from '@stepdoc/schema/capture'
-import { FrameBroker, type FrameScene } from './frame-broker'
+import {
+  FrameBroker,
+  FrameSceneChangedError,
+  withStableFrameScene,
+  type FrameScene,
+} from './frame-broker'
 import { contextualStep, legacyMeta } from './capture-context'
 import { GuideController } from './guide-controller'
 import type { GuideRun } from './guide-run'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
 import { startClock, stopClock } from './capture-clock'
+import { pairingCommandSchema } from '@stepdoc/schema/pairing'
+import { PairingController } from './pairing-controller'
+import { IndexedDbConnectionVault } from './connection-vault'
 import {
   capturePreferencesSchema,
   editReview,
@@ -101,6 +109,33 @@ export function startBackground() {
   let privacyEpoch = 0
   let producerStopped = false
   let commands = Promise.resolve()
+  let privateRunning = false
+  let legacyStarting = 0
+  const pairing = new PairingController({
+    vault: new IndexedDbConnectionVault(),
+    extensionId: new URL(browser.runtime.getURL('/')).host,
+    deviceName: `StepDoc ${import.meta.env.BROWSER}`,
+    canChange: async () => {
+      if (privateRunning || legacyStarting) return false
+      const state = await browser.storage.local.get<LegacyStorage>([
+        'recording',
+        'captureReview',
+        'guideMe',
+      ])
+      return (
+        !privateRunning &&
+        !legacyStarting &&
+        !state.recording &&
+        ['idle', undefined].includes(state.captureReview?.phase) &&
+        (!state.guideMe || state.guideMe.phase === 'complete')
+      )
+    },
+    changed: async (state) => {
+      try {
+        await browser.runtime.sendMessage({ type: 'PAIR_STATE', state })
+      } catch {}
+    },
+  })
   const recovered = browser.storage.local
     .get<LegacyStorage>(['captureReview'])
     .then(async ({ captureReview }) => {
@@ -173,9 +208,10 @@ export function startBackground() {
     )
     return next
   }
-  const takeFrame = async (
+  const takeFrameAttempt = async (
     pending: Omit<Pending, 'event' | 'frameId'>,
-    warming = false,
+    warming: boolean,
+    activation: { epoch?: number },
   ): Promise<ProcessedFrame> => {
     const framePrivacyEpoch = privacyEpoch
     const wait = 550 - (Date.now() - lastCapture)
@@ -190,15 +226,19 @@ export function startBackground() {
     )
       throw new Error('Capture ended')
     const tab = await browser.tabs.get(pending.tabId)
-    const activation = activationEpochs.get(pending.windowId) ?? 0
-    if (!tab.active) {
+    activation.epoch ??= activationEpochs.get(pending.windowId) ?? 0
+    if (
+      !tab.active ||
+      activation.epoch !== (activationEpochs.get(pending.windowId) ?? 0)
+    ) {
       await abort(pending.sessionId, 'tab_changed')
       throw new Error('Selected tab changed')
     }
     const collect = async () => {
       try {
         return await broker.collect(pending.tabId)
-      } catch {
+      } catch (error) {
+        if (error instanceof FrameSceneChangedError) throw error
         await abort(pending.sessionId)
         throw new Error('Masks unavailable')
       }
@@ -213,7 +253,7 @@ export function startBackground() {
       const afterTab = await browser.tabs.get(pending.tabId)
       if (
         !afterTab.active ||
-        activation !== (activationEpochs.get(pending.windowId) ?? 0)
+        activation.epoch !== (activationEpochs.get(pending.windowId) ?? 0)
       ) {
         await abort(pending.sessionId, 'tab_changed')
         throw new Error('Selected tab changed')
@@ -244,6 +284,22 @@ export function startBackground() {
       }
     } finally {
       await broker.release(pending.tabId)
+    }
+  }
+  const takeFrame = async (
+    pending: Omit<Pending, 'event' | 'frameId'>,
+    warming = false,
+  ): Promise<ProcessedFrame> => {
+    // Establish activation at the first attempt's tab check and retain it across retries.
+    const activation: { epoch?: number } = {}
+    try {
+      return await withStableFrameScene(() =>
+        takeFrameAttempt(pending, warming, activation),
+      )
+    } catch (error) {
+      if (error instanceof FrameSceneChangedError)
+        await abort(pending.sessionId)
+      throw error
     }
   }
   const queue = new CaptureQueue<Pending, ProcessedFrame>(
@@ -473,6 +529,27 @@ export function startBackground() {
     const ownControls =
       sender.id === browser.runtime.id &&
       !!sender.url?.startsWith(browser.runtime.getURL(''))
+    if (
+      [
+        'PAIR_STATUS',
+        'PAIR_CONNECT',
+        'PAIR_TEST',
+        'PAIR_CANCEL',
+        'PAIR_FORGET',
+      ].includes(message.type)
+    ) {
+      const command = pairingCommandSchema.safeParse(message)
+      if (!ownControls || !command.success) {
+        respond({ ok: false, error: 'forbidden' })
+        return
+      }
+      void pairing
+        .handle(command.data)
+        .then(respond, () =>
+          respond({ ok: false, error: 'storage_unavailable' }),
+        )
+      return true
+    }
     const privateCommands = [
       'START_CAPTURE',
       'PAUSE_CAPTURE',
@@ -557,6 +634,7 @@ export function startBackground() {
         }
       }
       if (message.type === 'GUIDE_START') {
+        if (pairing.busy) throw new Error('Pairing active')
         if (typeof message.id !== 'string') throw new Error('Invalid guide')
         const run = await guide.start(message.id)
         respond({ ok: true, runId: run.runId })
@@ -596,6 +674,7 @@ export function startBackground() {
         await openReview(true)
         respond({ ok: true })
       } else if (message.type === 'START' || message.type === 'START_CAPTURE') {
+        if (pairing.busy) throw new Error('Pairing active')
         const walkthrough = await guide.state()
         if (walkthrough && walkthrough.phase !== 'complete')
           throw new Error('Walkthrough active')
@@ -1073,8 +1152,27 @@ export function startBackground() {
           ]),
         )
     }
-    if (privateCommands.includes(message.type)) {
-      const next = commands.then(run)
+    if (message.type === 'START') {
+      if (!ownControls) {
+        respond({ ok: false, error: 'Capture operation failed' })
+        return
+      }
+      // Keep v1 cancellation/restart scheduling while excluding pairing during start.
+      legacyStarting++
+      void run()
+        .finally(() => {
+          legacyStarting--
+        })
+        .catch(() => respond({ ok: false, error: 'Capture operation failed' }))
+    } else if (privateCommands.includes(message.type)) {
+      const next = commands.then(async () => {
+        privateRunning = true
+        try {
+          await run()
+        } finally {
+          privateRunning = false
+        }
+      })
       commands = next.then(
         () => {},
         () => {},

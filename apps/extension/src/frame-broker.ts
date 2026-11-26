@@ -32,6 +32,25 @@ export interface FrameScene {
   masks: Redaction[]
 }
 const failure = () => new Error('Frame metadata unavailable')
+export class FrameSceneChangedError extends Error {
+  constructor() {
+    super('Frame metadata unavailable')
+    this.name = 'FrameSceneChangedError'
+  }
+}
+/** Retry the whole before/image/after operation, never a partial scene or raw image. */
+export async function withStableFrameScene<T>(
+  capture: () => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await capture()
+    } catch (error) {
+      if (!(error instanceof FrameSceneChangedError) || attempt === 3)
+        throw error
+    }
+  }
+}
 const policy = (rect: Rect, rule: string): Redaction => ({
   kind: 'field',
   source: 'policy',
@@ -199,7 +218,7 @@ export class FrameBroker {
               documentId,
             })),
         )
-      if (graph(frames) !== graph(current)) throw failure()
+      if (graph(frames) !== graph(current)) throw new FrameSceneChangedError()
       const contexts = new Map<string, FrameContext>()
       const frameIds = new Map<string, number>()
       const masks: Redaction[] = []

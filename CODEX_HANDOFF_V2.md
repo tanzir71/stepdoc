@@ -205,7 +205,7 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `capture-smart-blur`, `capture-agent-context`, `capture-settings`, `capture-recent`, `capture-library` | Local capture preferences, settings, recent guides and native library |
 | `capture-pause`, `capture-review`, `capture-title`, `capture-select-step` | Pause/resume, Stop & review, review title and step selection; Alt+Up/Down reorders selected-focus rows |
 | `capture-pill`, `capture-pill-pause`, `capture-pill-resume`, `capture-pill-stop`, `capture-pill-open-review`, `capture-time` | E02 open-shadow recorder controls, retained review retry and active-time clock; no source-page URL changes |
-| `capture-open-review`, `capture-pair` | E06 retained review → `/popup.html?surface=tab&view=review`; Pair server remains unavailable until E05 pairing is implemented |
+| `capture-open-review`, `capture-pair` | E06 retained review → `/popup.html?surface=tab&view=review`; E01 Pair server opens `?view=pair`, E06 opens `/popup.html?surface=tab&view=pair` |
 | `capture-merge`, `capture-delete`, `capture-discard`, `capture-confirm`, `capture-confirm-cancel`, `capture-keep-local`, `capture-retry` | Adjacent manual merge, delete, discard confirmation, local-only save and retained v1 upload retry |
 | `capture-library` | Extension side panel / popup: open the local SPA in a full tab |
 | `capture-blur`, `capture-blur-controls`, `capture-blur-done` | Side panel/popup Alt+B picker, open-shadow privacy toolbar and Done; focus + Enter/Space adds an element, Esc exits |
@@ -235,6 +235,10 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `setup-continue` | W01 |
 | `redaction-continue` | W04 |
 | `pair-submit` / `capture-save` | E05 / E04 |
+| `pair-server`, `pair-code-1` … `pair-code-6`, `pair-form` | E05 server address, six labelled code fields with paste/keyboard navigation and claim form |
+| `pair-cancel`, `pair-status`, `pair-test`, `pair-another` | Cancel request, live safe status, check stored connection and repair pairing |
+| `pair-local`, `pair-back`, `pair-devices`, `pair-retry` | Local capture navigation, server Devices & tokens link and private-store retry |
+| `pair-forget`, `pair-forget-cancel`, `pair-forget-confirm` | Native local-credential removal dialog; server revocation remains on the server |
 | `step-<n>-text`, `step-<n>-target`, `export-<format>`, `publish-<target>` | patterns |
 
 ## 11. Design system

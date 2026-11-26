@@ -128,7 +128,9 @@ JSON is limited to 64 MB by default (`maxJsonBytes` may lower that budget).
 Declared and streamed byte counts, UTF-8, MIME and schema are checked before a
 response leaves the adapter. Timeouts default to 15 seconds and are configurable
 up to two minutes. `close()` aborts outstanding requests, including body reads or
-credential lookup. Safe status codes distinguish revoked/forbidden credentials,
+credential lookup. An optional caller `signal` also aborts a pairing exchange or
+adapter request, including already-aborted signals; listeners are removed when
+each operation settles. Safe status codes distinguish revoked/forbidden credentials,
 conflicts, rate limiting, upload size and redaction policy; server/native error
 text is never returned. Writes are never automatically retried. `readOnly`
 prevents client writes; server authorization remains authoritative.
@@ -137,8 +139,9 @@ prevents client writes; server authorization remains authoritative.
 explicit code/device/extension fields to `/pairing/claim`. It returns a one-time
 credential only when the response has exactly `capture:write` and `guides:read`.
 It does not persist that credential, implement server-side hashing/revocation or
-grant generic guide-write permission. E05 UI, scoped capture upload, destination
-selection and paired editor integration remain M11 work; no public endpoint has
+grant generic guide-write permission. The extension now owns E05 and its private
+credential vault. Scoped capture upload, destination selection and paired editor
+integration remain M11 work; no public endpoint has
 been added or changed by this client implementation.
 
 `pnpm --filter @stepdoc/storage test` includes HTTP unit checks and a real Chromium

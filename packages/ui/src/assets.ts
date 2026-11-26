@@ -68,6 +68,10 @@ import popupRecord from '../assets/3713a.svg?url'
 import popupFile from '../assets/f738b.svg?url'
 import popupLibrary from '../assets/679cd.svg?url'
 import popupPair from '../assets/d334a.svg?url'
+import pairLink from '../assets/8560c.svg?url'
+import pairMonitor from '../assets/9524a.svg?url'
+import pairLocal from '../assets/35cf5.svg?url'
+import pairLock from '../assets/fd2b5.svg?url'
 import guideCheck from '../assets/0e7f2.svg?url&no-inline'
 import guideCompleted from '../assets/3e359.svg?url'
 import guideTarget from '../assets/a323f.svg?url'
@@ -76,6 +80,10 @@ import pillPause from '../assets/36d61.svg?url&no-inline'
 import pillStop from '../assets/cf8f1.svg?url&no-inline'
 
 export const icons = {
+  'pair-link': { url: pairLink, width: 16, height: 16 },
+  'pair-monitor': { url: pairMonitor, width: 18, height: 18 },
+  'pair-local': { url: pairLocal, width: 14, height: 14 },
+  'pair-lock': { url: pairLock, width: 14, height: 14 },
   'pill-dot': { url: pillDot, width: 8, height: 8 },
   'pill-pause': { url: pillPause, width: 16, height: 16 },
   'pill-stop': { url: pillStop, width: 16, height: 16 },

@@ -3,6 +3,8 @@ import type { FrameSnapshot, LocalCapture } from '@stepdoc/schema/capture'
 import { FRAME_PROBE, CAPTURE_TRANSPORT } from '@stepdoc/schema/capture'
 import {
   FrameBroker,
+  FrameSceneChangedError,
+  withStableFrameScene,
   type BrowserFrame,
   type FrameTransport,
 } from './frame-broker'
@@ -246,9 +248,38 @@ describe('authenticated frame collection', () => {
       ++reads === 1
         ? f.frames
         : f.frames.map((frame) => ({ ...frame, documentId: 'replaced' }))
-    await expect(f.broker.collect(1)).rejects.toThrow(
-      'Frame metadata unavailable',
+    await expect(f.broker.collect(1)).rejects.toBeInstanceOf(
+      FrameSceneChangedError,
     )
+  })
+  it('restarts the entire operation after a changed graph without returning its first candidate', async () => {
+    let calls = 0
+    const result = await withStableFrameScene(async () => {
+      if (++calls === 1) throw new FrameSceneChangedError()
+      return { processed: true, candidate: calls }
+    })
+    expect(result).toEqual({ processed: true, candidate: 2 })
+  })
+  it('does not retry missing or invalid metadata', async () => {
+    let calls = 0
+    const error = new Error('Frame metadata unavailable')
+    await expect(
+      withStableFrameScene(async () => {
+        calls++
+        throw error
+      }),
+    ).rejects.toBe(error)
+    expect(calls).toBe(1)
+  })
+  it('bounds repeated graph changes to three complete attempts', async () => {
+    let calls = 0
+    await expect(
+      withStableFrameScene(async () => {
+        calls++
+        throw new FrameSceneChangedError()
+      }),
+    ).rejects.toBeInstanceOf(FrameSceneChangedError)
+    expect(calls).toBe(3)
   })
   it('treats rotated/negative-scale and animated contexts as opaque', async () => {
     const f = fixture()

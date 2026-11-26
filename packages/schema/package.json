@@ -11,6 +11,7 @@
     "./capture": "./src/capture.ts",
     "./guide-me": "./src/guide-me.ts",
     "./storage-api": "./src/storage-api.ts",
+    "./pairing": "./src/pairing.ts",
     "./migrations/v1-to-guide1": "./migrations/v1-to-guide1.ts"
   },
   "scripts": {

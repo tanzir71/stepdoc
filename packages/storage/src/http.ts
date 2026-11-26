@@ -31,6 +31,7 @@ import { MAX_BLOB_BYTES, validateBlob } from './raster'
 
 export const MAX_API_JSON_BYTES = 64 * 1024 * 1024
 export interface HttpRequestOptions {
+  signal?: AbortSignal
   fetch?: typeof globalThis.fetch
   timeoutMs?: number
   maxJsonBytes?: number
@@ -161,6 +162,7 @@ async function bytes(
 }
 
 class HttpClient {
+  #external?: AbortSignal
   #base: string
   #fetch: typeof fetch
   #auth: HttpAuth | { kind: 'anonymous' } | undefined
@@ -194,6 +196,15 @@ class HttpClient {
     )
       throw new StorageError('invalid_options')
     this.#fetch = fetcher.bind(globalThis)
+    if (
+      options.signal !== undefined &&
+      (!options.signal ||
+        typeof options.signal.aborted !== 'boolean' ||
+        typeof options.signal.addEventListener !== 'function' ||
+        typeof options.signal.removeEventListener !== 'function')
+    )
+      throw new StorageError('invalid_options')
+    this.#external = options.signal
     this.#auth =
       auth.kind === 'bearer'
         ? { kind: 'bearer', token: auth.token }
@@ -220,6 +231,9 @@ class HttpClient {
       controller.signal.addEventListener('abort', rejectAbort, { once: true })
     })
     const timer = setTimeout(() => controller.abort(), this.#timeout)
+    const stop = () => controller.abort()
+    this.#external?.addEventListener('abort', stop, { once: true })
+    if (this.#external?.aborted) controller.abort()
     try {
       return await Promise.race([work(controller.signal), aborted])
     } catch (error) {
@@ -228,6 +242,7 @@ class HttpClient {
       throw new StorageError('storage_unavailable')
     } finally {
       clearTimeout(timer)
+      this.#external?.removeEventListener('abort', stop)
       controller.signal.removeEventListener('abort', rejectAbort)
       this.#pending.delete(controller)
     }

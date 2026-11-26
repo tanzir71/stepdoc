@@ -214,7 +214,7 @@ Native popup screenshots independently prove every visible asset paints.
 
 The recent titles come from guides created through the actual local app. The
 fixture uses a generic integration-key title in place of the fictional Ledgerly
-example. Pair server is visibly disabled until E05 pairing is implemented. The
+example. Pair server now opens the private full-tab E05 pairing flow. The
 accessible activity log is a functional addition; secondary text tokens provide
 AA contrast. The browser supplies the popup's external floating frame/shadow.
 
@@ -232,3 +232,23 @@ Only the numeric timer text is canonicalized. Run `STEPDOC_UPDATE_SCREENS=1` wit
 the PNGs/trees. Normal verification compares trees and writes ignored PNGs.
 The fixture also proves capture across popup closure/reopen and the full-tab
 review → native save → editor reload path; Firefox is build/lint only, per §0.
+
+## M11 E05 pairing
+
+`m11-pair-light.png` and `m11-pair-dark.png` are native extension-page captures at
+400×900, compared with E05 (`27:6826`). The fresh full Figma context supplies the
+unchanged original pair/monitor/lock vectors; logo/settings reuse exact existing
+assets. Tests assert the 52px header, heading at (16,76), 44×52 code cells at y268,
+36px action at y338, 368×132 local card at (16,430) and 368×64 notice at (16,580).
+All six visible asset instances have original dimensions and painted pixels.
+
+The native focus ring, AA secondary notice text, Back/activity footer, connected
+status/check/repair actions and Forget dialog are functional adaptations. E05
+keeps its original form copy. Connection status accurately says captures remain
+local until the scoped upload/destination unit is implemented. No fictional
+third-party app is built. Five committed aria trees cover form, narrow, connected,
+revoked and dialog states (form is shared across themes); axe runs in both themes
+and at 320px. Dynamic local server origins are canonicalized in trees only.
+Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-pairing.mjs`
+after a Chrome build. Ordinary verification compares trees and writes ignored
+screenshots. The real HTTP/vault/source-world checks run in both modes.

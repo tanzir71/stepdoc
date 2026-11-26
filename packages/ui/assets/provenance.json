@@ -1080,6 +1080,42 @@
           "name": "E06 Pair server, original 14px link icon"
         }
       ]
+    },
+    {
+      "file": "8560c.svg",
+      "slots": [
+        {
+          "node": "I27:6868;12:434",
+          "name": "E05 pair action"
+        }
+      ]
+    },
+    {
+      "file": "9524a.svg",
+      "slots": [
+        {
+          "node": "27:6880",
+          "name": "E05 browser storage card"
+        }
+      ]
+    },
+    {
+      "file": "35cf5.svg",
+      "slots": [
+        {
+          "node": "I27:6886;12:449",
+          "name": "E05 local storage action"
+        }
+      ]
+    },
+    {
+      "file": "fd2b5.svg",
+      "slots": [
+        {
+          "node": "27:6893",
+          "name": "E05 scoped-token notice"
+        }
+      ]
     }
   ]
 }

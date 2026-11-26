@@ -563,6 +563,20 @@ describe('sanitized failures, bounds and lifecycle', () => {
 })
 
 describe('pairing-code exchange', () => {
+  it('accepts an external cancellation signal without forwarding a code after abort', async () => {
+    const f = fixture(() => new Promise(() => {})),
+      controller = new AbortController()
+    const pending = claimPairing('https://host.example', claim, {
+      fetch: f.fetcher,
+      signal: controller.signal,
+    })
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ code: 'storage_unavailable' })
+    expect(f.calls.length).toBeLessThanOrEqual(1)
+    expect(f.calls.every((call) => call.url.pathname.endsWith('/health'))).toBe(
+      true,
+    )
+  })
   it('validates health and exchanges only the explicit anonymous fields', async () => {
     const f = fixture(() =>
       json({ ...issued, privateMetadata: 'not returned' }, 201),

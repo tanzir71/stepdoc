@@ -35,3 +35,8 @@ The Zod/Ajv parity fixtures remain the verification; no wire format changes.
 
 Run `pnpm --filter @stepdoc/schema test` for Ajv/Zod privacy and migration checks.
 The original shared text/selector regressions now run in `@stepdoc/core`.
+
+`@stepdoc/schema/pairing` owns the strict private extension pairing protocol,
+public metadata projection and version-1 private connection record. It is
+separate from guide@1 and the public HTTP contract. Only the vault record has a
+token; public state and commands do not accept unexpected credential fields.

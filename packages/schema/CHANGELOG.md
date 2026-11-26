@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds `@stepdoc/schema/pairing`: strict private command/public-state DTOs and
+the version-1 extension connection record. Only the private record contains a
+credential; public state explicitly omits it. The new extension-origin IndexedDB
+database starts at version 1 and is separate from guide storage. No guide@1
+fields/defaults, public endpoint or guide database layout changes, so no guide
+migration, identifier change or package version bump is needed.
+
 M11 adds `@stepdoc/schema/storage-api` client projections of the existing Storage
 API v1 health, summary/page, history, blob-key and pairing/token responses. Request
 pairing fields are bounded and explicit; unknown response metadata is discarded.

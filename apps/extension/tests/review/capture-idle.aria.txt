@@ -5,6 +5,7 @@
     - /url: options.html
 - main:
   - text: Save captures to This browser
+  - button "Pair server"
   - button "Start capture"
   - heading "Start capture" [level=2]
   - paragraph: Records clicks, selects, navigation and page structure. Typed values are never recorded.

@@ -1,0 +1,30 @@
+- banner:
+  - text: stepdoc
+  - link "Settings":
+    - /url: options.html
+- main:
+  - heading "Connect to a StepDoc server" [level=1]
+  - paragraph: Paste your server address and the code from Settings → Devices & tokens.
+  - text: Server address
+  - textbox "Server address": https://ops.northwind.example
+  - group "Pairing code":
+    - text: Pairing code
+    - textbox "Pairing code character 1": K
+    - textbox "Pairing code character 2": "7"
+    - textbox "Pairing code character 3": Q
+    - textbox "Pairing code character 4": "4"
+    - textbox "Pairing code character 5": M
+    - textbox "Pairing code character 6": X
+  - button "Pair this browser"
+  - region "Keep everything in this browser":
+    - heading "Keep everything in this browser" [level=2]
+    - paragraph: No server and no account. Export a .stepdoc bundle or pair later — local guides move with you.
+    - button "Use local storage"
+  - complementary "Connection privacy":
+    - paragraph: Stores one scoped token (capture:write, guides:read). Revoke it any time from the server.
+  - status: Ready to pair
+- contentinfo:
+  - navigation "Pairing":
+    - button "Back to capture"
+- complementary "Pairing activity":
+  - group: Activity log

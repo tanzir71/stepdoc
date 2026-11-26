@@ -1,0 +1,169 @@
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
+import { mkdir, mkdtemp } from 'node:fs/promises'
+import { createServer } from 'node:net'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { issuedTokenSchema } from '@stepdoc/schema/storage-api'
+import {
+  dependencies,
+  phpRoot,
+  phpRuntime,
+} from '../../servers/php/scripts/php.mjs'
+
+const workspace = fileURLToPath(new URL('../../', import.meta.url))
+export async function phpFixture() {
+  const runtime = phpRuntime()
+  await dependencies(runtime)
+  await mkdir(join(workspace, 'test-results'), { recursive: true })
+  const dataDir = await mkdtemp(join(workspace, 'test-results/php-contract-'))
+  const env = {
+    ...process.env,
+    STEPDOC_DATA_DIR: dataDir,
+    STEPDOC_API_PATH: '/tools/api/v1',
+    STEPDOC_PAGE_SIZE: '3',
+    STEPDOC_MAX_UPLOAD_BYTES: '4096',
+  }
+  const cli = (command: string, input: object): unknown =>
+    JSON.parse(
+      execFileSync(
+        runtime.binary,
+        [...runtime.args, join(phpRoot, 'bin/stepdoc.php'), command],
+        {
+          input: JSON.stringify(input),
+          encoding: 'utf8',
+          env,
+          windowsHide: true,
+        },
+      ),
+    ) as unknown
+  const first = cli('workspace:create', { name: 'Contract workspace A' }) as {
+    id: string
+  }
+  const second = cli('workspace:create', { name: 'Contract workspace B' }) as {
+    id: string
+  }
+  const issue = (workspaceId: string, scopes: string[], origin?: string) =>
+    issuedTokenSchema.parse(
+      cli('token:issue', {
+        workspaceId,
+        name: 'Contract device',
+        scopes,
+        origin,
+      }),
+    )
+  const owner = issue(first.id, ['admin'])
+  const other = issue(second.id, ['admin'])
+  const reader = issue(first.id, ['guides:read'])
+  const capture = issue(first.id, ['capture:write', 'guides:read'])
+  const extensionOrigin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop'
+  const extension = issue(
+    first.id,
+    ['guides:read', 'guides:write'],
+    extensionOrigin,
+  )
+  const children: ChildProcess[] = []
+  async function start() {
+    const listener = createServer()
+    await new Promise<void>((resolve) =>
+      listener.listen(0, '127.0.0.1', resolve),
+    )
+    const address = listener.address()
+    if (!address || typeof address === 'string')
+      throw new Error('Missing fixture port')
+    await new Promise<void>((resolve, reject) =>
+      listener.close((error) => (error ? reject(error) : resolve())),
+    )
+    const origin = `http://127.0.0.1:${address.port}`
+    const child = spawn(
+      runtime.binary,
+      [
+        ...runtime.args,
+        '-S',
+        `127.0.0.1:${address.port}`,
+        '-t',
+        join(phpRoot, 'public'),
+        join(phpRoot, 'router.php'),
+      ],
+      {
+        env: { ...env, STEPDOC_ORIGIN: origin },
+        stdio: ['ignore', 'ignore', 'pipe'],
+        windowsHide: true,
+      },
+    )
+    children.push(child)
+    let ended = false
+    child.once('exit', () => {
+      ended = true
+    })
+    child.once('error', () => {
+      ended = true
+    })
+    // Drain PHP's local access log without logging requests, headers or fixture tokens.
+    child.stderr?.resume()
+    const api = `${origin}/tools/api/v1/`
+    const deadline = Date.now() + 15000
+    while (Date.now() < deadline) {
+      if (ended) throw new Error('PHP fixture exited during startup')
+      try {
+        const response = await fetch(api + 'health', {
+          signal: AbortSignal.timeout(500),
+        })
+        if (response.ok) return { api, origin, child }
+        await response.body?.cancel()
+      } catch {}
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+    child.kill()
+    throw new Error('PHP fixture did not become healthy')
+  }
+  const stop = async (child: ChildProcess) => {
+    if (child.exitCode !== null || child.signalCode !== null) return
+    await new Promise<void>((resolve) => {
+      child.once('exit', () => resolve())
+      child.kill()
+    })
+  }
+  try {
+    const server = await start()
+    const peer = await start()
+    return {
+      server,
+      peer,
+      dataDir,
+      workspaceId: first.id,
+      owner,
+      other,
+      reader,
+      capture,
+      extension,
+      extensionOrigin,
+      maxUploadBytes: 4096,
+      revoke: (id: string) => cli('token:revoke', { id }),
+      issue: (scopes: string[]) => issue(first.id, scopes),
+      restart: async () => {
+        await stop(server.child)
+        Object.assign(server, await start())
+      },
+      inspect: (sql: string): unknown =>
+        JSON.parse(
+          execFileSync(
+            runtime.binary,
+            [
+              ...runtime.args,
+              '-r',
+              '$db=require $argv[1];echo json_encode($db->execute($argv[2])->fetchAll());',
+              join(phpRoot, 'bootstrap.php'),
+              sql,
+            ],
+            { env, encoding: 'utf8', windowsHide: true },
+          ),
+        ) as unknown,
+      close: async () => {
+        await Promise.all(children.map(stop))
+      },
+    }
+  } catch (error) {
+    await Promise.all(children.map(stop))
+    throw error
+  }
+}

@@ -297,6 +297,30 @@ importers:
         specifier: 5.9.2
         version: 5.9.2
 
+  servers/php:
+    devDependencies:
+      '@stepdoc/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+
+  tests/contract:
+    devDependencies:
+      '@stepdoc/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@stepdoc/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
+      '@types/node':
+        specifier: 24.3.0
+        version: 24.3.0
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      vitest:
+        specifier: 3.2.4
+        version: 3.2.4(@types/node@24.3.0)(jiti@2.7.0)(jsdom@26.1.0)
+
 packages:
 
   '@1natsu/wait-element@5.0.0':

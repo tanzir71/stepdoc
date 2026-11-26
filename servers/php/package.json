@@ -1,0 +1,15 @@
+{
+  "name": "@stepdoc/php",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node scripts/php.mjs lint",
+    "typecheck": "node scripts/php.mjs lint",
+    "test": "node ../../tests/contract/run.mjs --target=php",
+    "build": "node scripts/php.mjs lint",
+    "setup": "node scripts/php.mjs install"
+  },
+  "devDependencies": {
+    "@stepdoc/schema": "workspace:*"
+  }
+}

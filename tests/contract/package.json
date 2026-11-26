@@ -1,0 +1,17 @@
+{
+  "name": "@stepdoc/contract",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@stepdoc/schema": "workspace:*",
+    "@stepdoc/storage": "workspace:*",
+    "@types/node": "24.3.0",
+    "typescript": "5.9.2",
+    "vitest": "3.2.4"
+  }
+}

@@ -11,3 +11,5 @@ playwright-report
 .output
 
 .vercel
+servers/php/vendor/
+servers/php/data/

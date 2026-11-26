@@ -6,6 +6,8 @@ import { stepSchema, expectationSchema, type Step } from '@stepdoc/schema'
 import {
   localCaptureSchema,
   redactionChangeSchema,
+  capturePillControlSchema,
+  capturePillViewSchema,
   FRAME_PROBE,
 } from '@stepdoc/schema/capture'
 import { FrameBroker, type FrameScene } from './frame-broker'
@@ -14,6 +16,7 @@ import { GuideController } from './guide-controller'
 import type { GuideRun } from './guide-run'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
+import { startClock, stopClock } from './capture-clock'
 import {
   capturePreferencesSchema,
   editReview,
@@ -68,6 +71,26 @@ const safeUrl = (raw: string) => {
   url.hash = ''
   return url.href
 }
+const pillView = (state: LegacyStorage, tabId?: number) => {
+  if (tabId !== state.captureTabId || !state.captureSessionId) return null
+  const view = capturePillViewSchema.safeParse({
+    sessionId: state.captureSessionId,
+    phase:
+      state.captureReview?.phase ?? (state.recording ? 'recording' : 'idle'),
+    count: state.steps?.length ?? 0,
+    clock: state.captureReview?.clock,
+  })
+  return view.success ? view.data : null
+}
+const openReview = () =>
+  browser.tabs.create({
+    url:
+      browser.runtime.getURL(
+        import.meta.env.BROWSER === 'firefox'
+          ? '/popup.html'
+          : '/sidepanel.html',
+      ) + '?view=review',
+  })
 export function startBackground() {
   if (import.meta.env.BROWSER !== 'firefox')
     void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -89,6 +112,7 @@ export function startBackground() {
           captureReview: {
             ...captureReview,
             phase: phase === 'pausing' ? 'paused' : 'review',
+            clock: stopClock(captureReview?.clock),
           },
         })
     })
@@ -113,6 +137,21 @@ export function startBackground() {
   const guideRecovered = guide.recover()
   browser.tabs.onRemoved.addListener((tabId) => {
     void guide.closed(tabId).catch(() => {})
+    void recovered
+      .then(async () => {
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'recording',
+          'captureTabId',
+          'captureSessionId',
+          'captureReview',
+        ])
+        if (
+          tabId === state.captureTabId &&
+          (state.recording || state.captureReview?.phase === 'paused')
+        )
+          await abort(state.captureSessionId!, 'tab_changed')
+      })
+      .catch(() => {})
   })
   const activationEpochs = new Map<number, number>()
   browser.tabs.onActivated.addListener(({ windowId }) =>
@@ -233,6 +272,11 @@ export function startBackground() {
           await browser.storage.local.set({
             recording: false,
             captureError: 'Capture stopped at the 500-step guide limit.',
+            captureReview: {
+              ...state.captureReview,
+              phase: 'review',
+              clock: stopClock(state.captureReview?.clock),
+            },
           })
           await broadcast()
           return
@@ -247,6 +291,11 @@ export function startBackground() {
             recording: false,
             captureError:
               'Capture stopped because the frame context was unavailable.',
+            captureReview: {
+              ...state.captureReview,
+              phase: 'review',
+              clock: stopClock(state.captureReview?.clock),
+            },
           })
           await broadcast()
           return
@@ -321,7 +370,7 @@ export function startBackground() {
             },
           ],
         })
-        await updateBadge()
+        await broadcast()
       }),
   )
   async function updateBadge() {
@@ -370,6 +419,7 @@ export function startBackground() {
             sessionId: state.captureSessionId,
             blurMode: !!state.captureBlurMode,
             manualCount: state.captureManualCount ?? 0,
+            capturePill: pillView(state, tab.id!),
           }),
         ),
     )
@@ -389,6 +439,10 @@ export function startBackground() {
           ...(await browser.storage.local.get<LegacyStorage>('captureReview'))
             .captureReview,
           phase: 'review',
+          clock: stopClock(
+            (await browser.storage.local.get<LegacyStorage>('captureReview'))
+              .captureReview?.clock,
+          ),
         },
         captureError:
           reason === 'tab_changed'
@@ -428,13 +482,48 @@ export function startBackground() {
       'SHORTCUT',
       'GUIDE_START',
       'GUIDE_CLEAR',
+      'CAPTURE_PILL_CONTROL',
     ]
     const run = async () => {
       await recovered
       await guideRecovered
+      let fromPill = false
       if (privateCommands.includes(message.type)) {
-        if (!ownControls && message.type !== 'SHORTCUT')
+        if (
+          !ownControls &&
+          !['SHORTCUT', 'CAPTURE_PILL_CONTROL'].includes(message.type)
+        )
           throw new Error('Invalid controls')
+        if (message.type === 'CAPTURE_PILL_CONTROL') {
+          const command = capturePillControlSchema.parse(message)
+          const state = await browser.storage.local.get<LegacyStorage>([
+            'captureTabId',
+            'captureSessionId',
+            'captureReview',
+          ])
+          if (
+            sender.frameId !== 0 ||
+            sender.tab?.id !== state.captureTabId ||
+            command.sessionId !== state.captureSessionId
+          )
+            throw new Error('Invalid recording controls')
+          if (command.action === 'open-review') {
+            if (state.captureReview?.phase !== 'review')
+              throw new Error('Review unavailable')
+            await openReview()
+            respond({ ok: true })
+            return
+          }
+          fromPill = true
+          message = {
+            type: {
+              pause: 'PAUSE_CAPTURE',
+              resume: 'RESUME_CAPTURE',
+              stop: 'STOP_REVIEW',
+            }[command.action],
+            sessionId: command.sessionId,
+          }
+        }
         if (message.type === 'SHORTCUT') {
           const tab =
             sender.tab?.id === undefined
@@ -544,6 +633,7 @@ export function startBackground() {
                 previous.captureReview?.preferences ??
                 capturePreferencesSchema.parse({}),
               startedAt: new Date().toISOString(),
+              clock: stopClock(),
             },
           })
         })
@@ -577,7 +667,11 @@ export function startBackground() {
             await browser.storage.local.get<LegacyStorage>('captureReview')
           await browser.storage.local.set({
             recording: true,
-            captureReview: { ...captureReview, phase: 'recording' },
+            captureReview: {
+              ...captureReview,
+              phase: 'recording',
+              clock: startClock(),
+            },
           })
         })
         await broadcast()
@@ -663,7 +757,11 @@ export function startBackground() {
           producerStopped = false
           await browser.storage.local.set({
             recording: true,
-            captureReview: { ...review, phase: 'recording' },
+            captureReview: {
+              ...review,
+              phase: 'recording',
+              clock: startClock(review.clock),
+            },
           })
         } else {
           if (!state.recording && review.phase !== 'paused')
@@ -673,6 +771,7 @@ export function startBackground() {
             captureReview: {
               ...review,
               phase: message.type === 'PAUSE_CAPTURE' ? 'pausing' : 'stopping',
+              clock: stopClock(review.clock),
             },
             captureBlurMode: false,
           })
@@ -697,6 +796,7 @@ export function startBackground() {
           queue.clear()
         }
         await broadcast()
+        if (fromPill && message.type === 'STOP_REVIEW') await openReview()
         respond({ ok: true })
       } else if (
         message.type === 'EDIT_REVIEW' ||
@@ -938,6 +1038,7 @@ export function startBackground() {
             state.captureReview?.phase ?? '',
           ),
           stepCount: state.steps?.length ?? 0,
+          capturePill: pillView(state, sender.tab?.id),
         })
       } else if (message.type === 'GET_STATE')
         respond(

@@ -1,3 +1,4 @@
+import { extensionWorker } from './extension-worker.mjs'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -37,8 +38,7 @@ try {
       `--load-extension=${dir}`,
     ],
   })
-  let [worker] = context.serviceWorkers()
-  worker ??= await context.waitForEvent('serviceworker')
+  const worker = await extensionWorker(context)
   const workerUrl = new URL(worker.url()),
     origin = `${workerUrl.protocol}//${workerUrl.host}`
   const failures = []
@@ -189,7 +189,13 @@ try {
       ),
       `No horizontal overflow: ${name}`,
     )
-    const aria = await panel.locator('.capture-panel').ariaSnapshot()
+    let aria = await panel.locator('.capture-panel').ariaSnapshot()
+    const timer = panel.locator('[data-sd="capture-time"]')
+    if (await timer.count()) {
+      await expect(timer).toHaveText(/^\d{2,}(?::\d{2}){1,2}$/)
+      const elapsed = await timer.textContent()
+      aria = aria.replaceAll(elapsed, '<elapsed>')
+    }
     const path = new URL(`${name}.aria.txt`, snapshots)
     if (update) await writeFile(path, `${aria}\n`)
     else

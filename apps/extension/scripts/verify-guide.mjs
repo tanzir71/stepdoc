@@ -1,3 +1,4 @@
+import { extensionWorker } from './extension-worker.mjs'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -69,8 +70,7 @@ try {
       `--load-extension=${dir}`,
     ],
   })
-  let [worker] = context.serviceWorkers()
-  worker ??= await context.waitForEvent('serviceworker')
+  const worker = await extensionWorker(context)
   const workerUrl = new URL(worker.url()),
     origin = `${workerUrl.protocol}//${workerUrl.host}`
   const errors = [],
@@ -138,10 +138,24 @@ try {
       .poll(async () => (await state())?.target.reason, { timeout: 30_000 })
       .toBe('matched')
   const control = async (action) => {
+    await panel.bringToFront()
     const hook = action === 'dismiss' || action === 'stop' ? 'close' : action
-    await controlFrame
-      .locator(`[data-sd="guide-me-${hook}"]`)
-      .click({ noWaitAfter: action === 'dismiss' })
+    try {
+      await controlFrame
+        .locator(`[data-sd="guide-me-${hook}"]`)
+        .click({ noWaitAfter: action === 'dismiss' })
+    } catch (error) {
+      const run = await state()
+      console.log('Guide controls diagnostic', {
+        action,
+        phase: run?.phase,
+        index: run?.index,
+        frames: panel.frames().map((frame) => frame.url()),
+        headings: await panel.getByRole('heading').allTextContents(),
+        errors,
+      })
+      throw error
+    }
     // Closing the selected live tab can make Chromium speculate about a pending
     // navigation in the panel iframe. Verify the actual command result instead.
     if (action === 'dismiss') await expect.poll(state).toBeUndefined()
@@ -571,6 +585,7 @@ try {
   await expect.poll(async () => (await state()).phase).toBe('complete')
   assert.deepEqual((await state()).report.status, 'passed')
   assert.equal((await state()).report.runner, 'guide-me')
+  await app.bringToFront()
   assert(
     !JSON.stringify(await state()).includes('PRIVATE_TYPED_GUIDE_PASSWORD'),
   )
@@ -717,6 +732,7 @@ try {
   })
   page = await start()
   await waitIndex(0)
+  await app.bringToFront()
   await app.locator('[data-sd="editor-guide-details"]').click()
   await app
     .locator('[data-sd="editor-guide-title"]')
@@ -730,6 +746,7 @@ try {
     .waitFor()
   await control('confirm')
   await expect.poll(async () => (await state()).phase).toBe('conflict')
+  await app.bringToFront()
   await app.reload()
   await expect(app.locator('[data-sd="editor-guide-details"]')).toHaveText(
     'Newer editor revision',

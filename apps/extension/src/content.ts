@@ -10,6 +10,7 @@ import {
 } from '@stepdoc/core/capture'
 import { BlurControls } from './blur-controls'
 import { GuideContent } from './guide-content'
+import { RecordingControls } from './recording-controls'
 import { FRAME_PROBE, frameProbeSchema } from '@stepdoc/schema/capture'
 import {
   captureEvent,
@@ -75,18 +76,24 @@ export function startContent() {
   let modeRequest = 0
   let pendingMode: number | undefined
   let sessionId = ''
+  let pillView: unknown
   let previousUrl = ''
   const touched = new WeakSet<Element>()
   const ui = new BlurControls(document, () => {
     void setBlurMode(false)
   })
-  const updateUi = () =>
+  const pill = new RecordingControls(document, (command) =>
+    browser.runtime.sendMessage(command),
+  )
+  const updateUi = () => {
     ui.update(
       recording && blurMode,
       manualCount,
       blurBusy,
       window === window.top,
     )
+    pill.update(pillView, !blurMode)
+  }
   const setBlurMode = async (on: boolean) => {
     const capturedSession = sessionId
     const request = ++modeRequest
@@ -140,6 +147,7 @@ export function startContent() {
     mode: boolean,
     count: number,
     paused = false,
+    view?: unknown,
   ) => {
     if (nonce !== sessionId || (!active && !paused)) {
       tracker.manual.clear()
@@ -150,6 +158,7 @@ export function startContent() {
     sessionId = nonce
     blurMode = active && (pendingMode !== undefined || mode)
     manualCount = count
+    pillView = view
     updateUi()
   }
   const fail = (failedSession = sessionId) => {
@@ -224,7 +233,7 @@ export function startContent() {
             throw new Error()
           armedNonce = message.nonce
           armedUntil = Date.now() + 2_000
-          await ui.suspend()
+          await Promise.all([ui.suspend(), pill.suspend()])
           respond(
             tracker.snapshot(
               message.nonce,
@@ -240,6 +249,7 @@ export function startContent() {
     }
     if (message.type === 'FRAME_RELEASE') {
       ui.release()
+      pill.release()
       respond({ ok: true })
       return
     }
@@ -265,6 +275,7 @@ export function startContent() {
         !!message.blurMode,
         message.manualCount ?? 0,
         !!message.paused,
+        message.capturePill,
       )
       previousUrl = localDocumentUrl(document) ?? ''
       respond({ ok: true })
@@ -286,6 +297,7 @@ export function startContent() {
         !!state.captureBlurMode,
         state.captureManualCount ?? 0,
         !!state.paused,
+        state.capturePill,
       )
       previousUrl = localDocumentUrl(document) ?? ''
     })
@@ -385,8 +397,7 @@ export function startContent() {
         !event.ctrlKey &&
         !event.metaKey &&
         event.code === 'KeyS' &&
-        element &&
-        !isCaptureUi(element)
+        element
       ) {
         event.preventDefault()
         event.stopImmediatePropagation()

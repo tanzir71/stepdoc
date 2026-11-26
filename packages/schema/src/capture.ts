@@ -3,6 +3,38 @@ import { rectSchema, redactionSchema, stepSchema } from './guide'
 
 // Ephemeral extension transport, not guide data or the public Storage API.
 export const CAPTURE_TRANSPORT = 'stepdoc/capture@1' as const
+export const captureClockSchema = z.strictObject({
+  elapsedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  runningSince: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER)
+    .nullable(),
+})
+export type CaptureClock = z.output<typeof captureClockSchema>
+export const capturePillControlSchema = z.strictObject({
+  type: z.literal('CAPTURE_PILL_CONTROL'),
+  sessionId: z.string().uuid(),
+  action: z.enum(['pause', 'resume', 'stop', 'open-review']),
+})
+export type CapturePillControl = z.output<typeof capturePillControlSchema>
+export const capturePillViewSchema = z.strictObject({
+  sessionId: z.string().uuid(),
+  phase: z.enum([
+    'starting',
+    'recording',
+    'pausing',
+    'paused',
+    'stopping',
+    'review',
+    'saving',
+    'idle',
+  ]),
+  count: z.number().int().min(0).max(500),
+  clock: captureClockSchema.optional(),
+})
+export type CapturePillView = z.output<typeof capturePillViewSchema>
 export const capturePreferencesSchema = z.strictObject({
   smartBlur: z.boolean().default(true),
   agentContext: z.boolean().default(true),

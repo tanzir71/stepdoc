@@ -10,7 +10,13 @@ export default defineConfig({
     host_permissions: ['<all_urls>'],
     web_accessible_resources: [
       {
-        resources: ['assets/418d0-*.svg', 'assets/0e7f2-*.svg'],
+        resources: [
+          'assets/418d0-*.svg',
+          'assets/0e7f2-*.svg',
+          'assets/f9a9e-*.svg',
+          'assets/36d61-*.svg',
+          'assets/cf8f1-*.svg',
+        ],
         matches: ['<all_urls>'],
       },
     ],

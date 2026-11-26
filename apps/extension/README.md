@@ -2,8 +2,8 @@
 
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
 The local E01/E02/E04 capture/review path and E03 Guide Me use shared React,
-tokens, original Figma vectors and bundled Geist. Pairing, voice, cleanup,
-the recording pill/timer and complete fallback evidence remain M11 work.
+tokens, original Figma vectors and bundled Geist. E02 includes its recording
+pill/timer. Pairing, voice, cleanup and complete fallback evidence remain M11 work.
 The recorder now also retains guide@1 event metadata. The local library and editor run the actual shared SPA,
 with native `IndexedDbAdapter` storage, at the private extension `app.html` page.
 The **Open library** link opens it in a full tab.
@@ -154,7 +154,7 @@ extension against two local origins with strict CSP. It covers trusted input,
 select/key/click, open roots, same/cross-origin frame geometry, stale/forged
 matches, missing/manual/skip/back, local report failure/retry, editor conflicts,
 frame-first starts, Escape, narrow geometry, aria/axe and original-icon pixels.
-Only the tooltip's two original SVG files are web-accessible; app pages, chunks,
+The tooltip's two original SVG files use the public glyph allowlist; app pages, chunks,
 fonts and stored guides remain private. WXT keeps their source names/hashes in
 content bundles; no inline vector reconstruction or relaxed CSP is used.
 
@@ -163,3 +163,39 @@ active across older state broadcasts, and turning it off waits for the backgroun
 acknowledgement. The native blur test holds both a real camera result and the
 background mode write, selects a new mask before that write completes, and proves
 that the accepted screenshot is retried with the added mask.
+
+## Recording pill and timer (E02)
+
+The open-shadow in-page pill uses the original E02 dot/pause/stop vectors and
+shared controls, fonts and tokens. Live counts reflect accepted processed steps.
+Pause/Resume uses the same producer/queue transitions as the panel. Stop opens
+the native review controls in a private extension tab (the popup entrypoint for
+Firefox); a failed tab launch retains the draft and offers Open review retry.
+Only trusted control clicks and the selected top-frame/session can issue pill
+commands. Alt+Shift+S also works with keyboard focus inside the pill.
+
+The panel header shows active recording time. A parallel labelled timer in the
+pill's accessibility tree exposes the same duration without changing the E02
+visual layout or announcing every tick. The clock persists active segments at
+start/pause/resume/stop/error transitions, including background restarts and page
+reloads; there are no per-second storage writes. Pauses and camera/queue draining
+do not count. Old in-progress captures with no clock show `--:--` rather than a
+fabricated history. Neither clock metadata nor pill commands enter guide JSON.
+
+Both in-page control hosts are privately marked before insertion and hidden
+before native camera collection, then restored on release. Their DOM and timer
+mutations do not change capture metadata or privacy geometry. Alt+B temporarily
+replaces the recorder pill with the picker, preserving room for each toolbar.
+The public asset list contains just the two Guide Me and three recording glyphs;
+private app resources, fonts and guide data remain private.
+
+`verify-recording.mjs` exercises trusted source-page controls, counts, clock ticks
+without writes, pause/reload/resume/reset, rejected forged controls, keyboard and
+narrow layouts, strict-CSP original glyph pixels, omission of UI from stored
+pixels and retained review launch/retry. Native capture uses an actual 1040×856
+window; responsive emulation runs after camera checks. The reference timer uses
+a fixed Date.now only inside the private renderer, leaving source and background
+clocks real. Every loaded-extension script activates its newly announced service
+worker through an actual private-page message, then waits for real Chrome API
+bindings before accessing it. Private panel/editor proxy tabs are brought to the
+foreground for their controls, matching the visibility of the actual side panel.

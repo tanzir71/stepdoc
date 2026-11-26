@@ -1,0 +1,4 @@
+- complementary "Recording controls":
+  - status: Recording · 3 steps
+  - button "Pause recording"
+  - button "Stop and review"

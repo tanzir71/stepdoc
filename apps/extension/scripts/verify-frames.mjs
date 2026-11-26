@@ -1,3 +1,4 @@
+import { extensionWorker } from './extension-worker.mjs'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -59,8 +60,7 @@ try {
       `--load-extension=${extensionDir}`,
     ],
   })
-  let [worker] = context.serviceWorkers()
-  worker ??= await context.waitForEvent('serviceworker')
+  const worker = await extensionWorker(context)
   const url = new URL(worker.url()),
     origin = `${url.protocol}//${url.host}`
   const panel = await context.newPage()

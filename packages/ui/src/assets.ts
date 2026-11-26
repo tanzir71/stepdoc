@@ -70,8 +70,14 @@ import popupLibrary from '../assets/679cd.svg?url'
 import guideCheck from '../assets/0e7f2.svg?url&no-inline'
 import guideCompleted from '../assets/3e359.svg?url'
 import guideTarget from '../assets/a323f.svg?url'
+import pillDot from '../assets/f9a9e.svg?url&no-inline'
+import pillPause from '../assets/36d61.svg?url&no-inline'
+import pillStop from '../assets/cf8f1.svg?url&no-inline'
 
 export const icons = {
+  'pill-dot': { url: pillDot, width: 8, height: 8 },
+  'pill-pause': { url: pillPause, width: 16, height: 16 },
+  'pill-stop': { url: pillStop, width: 16, height: 16 },
   'guide-check': { url: guideCheck, width: 14, height: 14 },
   'guide-completed': { url: guideCompleted, width: 16, height: 16 },
   'guide-target': { url: guideTarget, width: 16, height: 16 },

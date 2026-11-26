@@ -20,6 +20,7 @@ import type { LegacyStorage } from './background'
 import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
+import { CaptureTime } from './capture-time'
 
 function Confirm({
   title,
@@ -248,9 +249,11 @@ function CapturePanel() {
         <h1 className="sd-sr-only">StepDoc</h1>
         <Logo />
         <Badge
+          className={recording ? 'capture-recording-badge' : undefined}
           tone={phase === 'recording' ? 'danger' : 'neutral'}
-          dot={phase === 'recording'}
+          dot={false}
         >
+          {phase === 'recording' ? <Icon name="pill-dot" /> : null}
           {phase === 'recording'
             ? 'REC'
             : phase === 'paused'
@@ -258,6 +261,7 @@ function CapturePanel() {
               : reviewing
                 ? 'Stopped'
                 : 'Local'}
+          {recording ? <CaptureTime clock={review?.clock} /> : null}
         </Badge>
         <a
           href="options.html"

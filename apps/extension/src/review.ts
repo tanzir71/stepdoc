@@ -3,6 +3,7 @@ import {
   reviewEditSchema,
   type ReviewEdit,
   type CapturePreferences,
+  type CaptureClock,
 } from '@stepdoc/schema/capture'
 export {
   capturePreferencesSchema,
@@ -32,6 +33,7 @@ export interface ReviewState {
   revision?: number
   preferences?: CapturePreferences
   startedAt?: string
+  clock?: CaptureClock
   savedId?: string
 }
 export interface CaptureDraft {

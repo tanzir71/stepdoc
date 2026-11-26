@@ -1,6 +1,7 @@
 - banner:
   - heading "StepDoc" [level=1]
   - text: stepdoc Paused
+  - timer "Active recording time": <elapsed>
   - link "Settings":
     - /url: options.html
 - main:

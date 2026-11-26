@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11's recording pill adds bounded private control/view DTOs and an optional
+extension review-state clock (`elapsedMs`, `runningSince`). It records active
+segments at state transitions only, excluding pause, startup and queue draining.
+Older in-progress captures without a clock display an unavailable time until a
+new segment starts. This metadata is never part of guide@1 or its exports.
+No guide fields/defaults, identifier, public API or database layout changes;
+no guide-data migration or version bump is needed.
+
 M11 Guide Me adds the private `@stepdoc/schema/guide-me` message projection and
 populates the existing `verification` object with runner `guide-me`. New local
 captures retain their sanitized parent URL in the existing `preconditions`

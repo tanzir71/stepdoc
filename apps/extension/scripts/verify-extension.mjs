@@ -1,3 +1,4 @@
+import { extensionWorker } from './extension-worker.mjs'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -21,11 +22,17 @@ for (const target of ['chrome', 'edge', 'firefox']) {
     manifest.web_accessible_resources,
     [
       {
-        resources: ['assets/418d0-*.svg', 'assets/0e7f2-*.svg'],
+        resources: [
+          'assets/418d0-*.svg',
+          'assets/0e7f2-*.svg',
+          'assets/f9a9e-*.svg',
+          'assets/36d61-*.svg',
+          'assets/cf8f1-*.svg',
+        ],
         matches: ['<all_urls>'],
       },
     ],
-    'Only the two original walkthrough icons may be public; app resources remain private',
+    'Only the five original walkthrough/pill glyphs may be public; app resources remain private',
   )
   assert.equal(manifest.content_scripts[0].run_at, 'document_start')
   if (target === 'firefox') {
@@ -159,8 +166,7 @@ try {
   context.on('page', (page) =>
     page.on('pageerror', (error) => failures.push(error.message)),
   )
-  let [worker] = context.serviceWorkers()
-  worker ??= await context.waitForEvent('serviceworker')
+  const worker = await extensionWorker(context)
   const workerUrl = new URL(worker.url())
   const origin = `${workerUrl.protocol}//${workerUrl.host}`
   assert(

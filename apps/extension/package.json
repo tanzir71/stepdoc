@@ -9,7 +9,7 @@
     "lint": "wxt prepare && tsc --noEmit",
     "typecheck": "wxt prepare && tsc --noEmit",
     "test": "vitest run && pnpm test:browser",
-    "test:browser": "pnpm build:all && web-ext lint --source-dir .output/firefox-mv3 && node scripts/verify-extension.mjs && node scripts/verify-frames.mjs && node scripts/verify-blur.mjs && node scripts/verify-review.mjs && node scripts/verify-guide.mjs"
+    "test:browser": "pnpm build:all && web-ext lint --source-dir .output/firefox-mv3 && node scripts/verify-extension.mjs && node scripts/verify-frames.mjs && node scripts/verify-blur.mjs && node scripts/verify-review.mjs && node scripts/verify-guide.mjs && node scripts/verify-recording.mjs"
   },
   "dependencies": {
     "@stepdoc/core": "workspace:*",

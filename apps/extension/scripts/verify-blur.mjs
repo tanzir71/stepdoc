@@ -1,3 +1,4 @@
+import { extensionWorker } from './extension-worker.mjs'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -63,8 +64,7 @@ try {
     viewport: { width: 1440, height: 900 },
     args: [`--disable-extensions-except=${dir}`, `--load-extension=${dir}`],
   })
-  let [worker] = context.serviceWorkers()
-  worker ??= await context.waitForEvent('serviceworker')
+  const worker = await extensionWorker(context)
   const url = new URL(worker.url()),
     origin = `${url.protocol}//${url.host}`
   const panel = await context.newPage()
@@ -90,6 +90,7 @@ try {
         'captureError',
         'captureBlurMode',
         'captureManualCount',
+        'captureReview',
       ]),
     )
   const start = () =>
@@ -463,6 +464,11 @@ try {
   await expect
     .poll(async () => (await state()).captureError)
     .toMatch(/metadata or privacy masks/)
+  assert.equal(
+    (await state()).captureReview.clock.runningSince,
+    null,
+    'A failed capture freezes active time',
+  )
   assert(
     await worker.evaluate(() => globalThis.blurCameraFailed),
     'Camera failure injection did not run',

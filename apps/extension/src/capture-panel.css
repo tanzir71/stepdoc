@@ -23,6 +23,12 @@ body {
 .capture-header .sd-logo {
   margin-right: auto;
 }
+.capture-recording-badge {
+  font: var(--sd-type-mono-s);
+}
+.capture-recording-badge .sd-icon {
+  color: var(--sd-danger-solid);
+}
 .capture-settings {
   display: grid;
   place-items: center;

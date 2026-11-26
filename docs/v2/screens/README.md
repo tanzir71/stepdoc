@@ -127,7 +127,7 @@ contrast; the Smart Blur notice keeps a green shield and a readable text token.
 Main lists scroll inside the panel while all rows remain in the accessibility
 tree. Footer status, activity log, native confirmations and discard are functional
 additions. Paired destinations/E05, voice narration, cleanup suggestions, the
-in-page recording pill/timer and complete fallback evidence remain open in M11;
+complete fallback evidence remain open in M11; the E02 pill/timer is documented below;
 no fictional host, voice switch or cleanup result is presented as connected.
 
 After a Chrome build, regenerate the five evidence captures and aria snapshots:
@@ -165,7 +165,7 @@ The live page is captured at the reference's 1040×856 size. PNG dimensions and
 per-icon painted pixels reject blank captures and CSP-blocked glyphs. The isolated
 software-rendered window has enough native surface for the reference viewport;
 bottom-mask and clear-cutout pixel assertions reject compositor clipping. Only the
-two tooltip vectors are public resources; original bytes are checked in all three
+two tooltip vectors belong to the small public glyph allowlist; original bytes are checked in all three
 browser builds. Light/dark panel, narrow overlay and missing-target aria/axe run
 alongside trusted interaction, privacy and real local write-back tests.
 
@@ -173,3 +173,30 @@ After a Chrome build, set `STEPDOC_UPDATE_SCREENS=1` and run
 `pnpm --filter @stepdoc/extension exec node scripts/verify-guide.mjs` to regenerate
 these captures and the committed `tests/guide/*.aria.txt` snapshots. Normal
 verification writes only ignored evidence PNGs and compares the committed trees.
+
+## E02 recording pill and timer
+
+Reference: Figma E02 `26:6061`, pill `26:6696`. The real native pill is 48px tall,
+with 14px/8px horizontal padding, 10px gaps, Geist Label/S, the original 8px red
+dot and two original 16px glyphs in shared 32px IconButtons. It floats at 16px,
+centred within the available live page; this adapts the mock's fixed x=370 to
+variable viewport/count widths. Original glyphs use their native dimensions.
+The dark surface uses tokens. Icon colours use the existing dark secondary-text
+token for readable controls; the dot retains the light recording-red token.
+Resume text and the retained Open review error action are functional additions.
+
+`m11-recording-pill.png` captures the accepted three-step state;
+`m11-recording-timer.png` captures the actual 400px header at `REC 00:41`. The
+private renderer's clock is fixed only for that header reference. Background
+clock transitions and the live page remain real, and tests assert ticking,
+paused-time exclusion, reload, resume and new-session reset without per-second
+storage writes. The existing recording/paused panel references and aria trees
+include the new timer. Aria snapshots canonicalize its elapsed text after checking
+its numeric format; focused native assertions test the actual changing value.
+
+The loaded recording suite checks aria/axe for recording, paused, narrow and
+review-launch-error states, exact glyph geometry and painted pixels under strict
+page CSP, and clear fixture pixels beneath where the pill would have appeared in
+the stored screenshot. Use `STEPDOC_UPDATE_SCREENS=1` with
+`node apps/extension/scripts/verify-recording.mjs` after a Chrome build to regenerate
+its reference PNGs/trees; normal runs write only ignored evidence PNGs.

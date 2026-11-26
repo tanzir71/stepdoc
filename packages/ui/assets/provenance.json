@@ -1024,6 +1024,37 @@
           "name": "Guide Me original icon"
         }
       ]
+    },
+    {
+      "file": "f9a9e.svg",
+      "slots": [
+        {
+          "node": "26:6696",
+          "name": "Original recording pill f9a9e.svg"
+        },
+        {
+          "node": "26:6227",
+          "name": "Recording badge dot"
+        }
+      ]
+    },
+    {
+      "file": "36d61.svg",
+      "slots": [
+        {
+          "node": "26:6696",
+          "name": "Original recording pill 36d61.svg"
+        }
+      ]
+    },
+    {
+      "file": "cf8f1.svg",
+      "slots": [
+        {
+          "node": "26:6696",
+          "name": "Original recording pill cf8f1.svg"
+        }
+      ]
     }
   ]
 }

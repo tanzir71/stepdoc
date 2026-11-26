@@ -5,8 +5,8 @@ operations used by the SPA and extension. Names/shapes follow Storage API v1 in
 `docs/v2/storage-api.openapi.yaml`: HTTP adapters map `saveGuide`'s `ifMatch` to the
 required header, and library results use `GuideSummary`/`nextCursor`. Auth,
 collaboration and publishing extend this interface in their milestones. This
-package currently ships the browser adapter; HTTP and static adapters come with
-their server/publishing targets.
+package ships the browser adapter and the HTTP client. The static adapter comes
+with the publishing target. Actual server implementations remain separate work.
 
 ```ts
 import { IndexedDbAdapter } from '@stepdoc/storage'
@@ -87,3 +87,64 @@ corruption detection, soft deletion and schema-upgrade connection closure. No
 external service is contacted. Native API references:
 [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system),
 [IndexedDB transaction lifetime](https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction).
+
+## HTTP client and pairing transport
+
+Import `HttpAdapter`, `claimPairing` and `storageApiUrl` from
+`@stepdoc/storage/http`. This separate entrypoint keeps unused network validators
+and transport code out of the browser-only SPA. `HttpAdapter.open(server, options)`
+accepts a server root, a subdirectory installation or its explicit `/api/v1` URL.
+It validates the public `/health` response before obtaining any credentials.
+Remote URLs require HTTPS; HTTP is accepted for localhost/loopback fixtures.
+URL credentials, query strings and fragments are rejected with a fixed error.
+
+The default authentication mode uses the server's session cookie. Extension/API
+clients provide `{ auth: { kind: 'bearer', token: loadPrivateCredential } }` instead.
+That callback runs for each authenticated request, supporting rotation/revocation
+without a cached token in the adapter. Health and pairing requests are anonymous;
+bearer requests omit cookies. Every request rejects redirects, disables caching
+and sends no referrer. The embedding app owns private credential storage; the
+adapter never persists credentials or exposes them through serialization.
+
+All current `StorageAdapter` operations use their existing API paths. Library
+filters/cursors are URL-encoded (`collection: null` uses an empty collection
+parameter). Creates send version one, and saves require the document version to
+match `ifMatch`, send `If-Match`, and validate the returned next revision. Guides,
+summaries, history and blob keys are validated and copied; mismatched identities,
+duplicate rows and a repeated cursor fail safely. History has no arbitrary row
+limit. A remote 409 carries only a sanitized conflict code; callers reload the
+current guide instead of guessing a version from an error message.
+
+`putBlob` sends only `file`, `stepId` and `kind` in native multipart form data,
+with a neutral filename. Callers must supply already-redacted/flattened pixels.
+PNG/WebP signatures, advertised upload capacity and the 64 MB client raster limit
+are checked without image decoding. Downloaded keys remain opaque encoded path
+components at the selected API, including keys containing slashes. Downloads
+validate MIME/signature and stay within the raster budget. HTTP supplies no
+checksum field, so this does not claim the IndexedDB backend's persisted SHA-256
+integrity guarantee or an atomic transaction across create/blob/save requests.
+
+JSON is limited to 64 MB by default (`maxJsonBytes` may lower that budget).
+Declared and streamed byte counts, UTF-8, MIME and schema are checked before a
+response leaves the adapter. Timeouts default to 15 seconds and are configurable
+up to two minutes. `close()` aborts outstanding requests, including body reads or
+credential lookup. Safe status codes distinguish revoked/forbidden credentials,
+conflicts, rate limiting, upload size and redaction policy; server/native error
+text is never returned. Writes are never automatically retried. `readOnly`
+prevents client writes; server authorization remains authoritative.
+
+`claimPairing` checks the public health contract, then anonymously posts the
+explicit code/device/extension fields to `/pairing/claim`. It returns a one-time
+credential only when the response has exactly `capture:write` and `guides:read`.
+It does not persist that credential, implement server-side hashing/revocation or
+grant generic guide-write permission. E05 UI, scoped capture upload, destination
+selection and paired editor integration remain M11 work; no public endpoint has
+been added or changed by this client implementation.
+
+`pnpm --filter @stepdoc/storage test` includes HTTP unit checks and a real Chromium
+client fixture on two local HTTP origins. It exercises CORS preflights, actual
+cookie/bearer isolation, multipart raster round trips, concurrent `If-Match`
+saves/history, anonymous one-use pairing, redirect rejection, abort/close and a
+module worker under a CSP without eval. Fixture servers persist bytes only and
+are local stand-ins, not implementations of the PHP/Worker/Node targets or the
+future cross-target contract suite. Existing IndexedDB/OPFS checks still run.

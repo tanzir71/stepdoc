@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds `@stepdoc/schema/storage-api` client projections of the existing Storage
+API v1 health, summary/page, history, blob-key and pairing/token responses. Request
+pairing fields are bounded and explicit; unknown response metadata is discarded.
+Guide responses still use the unchanged guide@1 validator. No persisted guide
+fields/defaults, public endpoint, schema identifier or database layout changes;
+no data migration or version bump is needed.
+
 M11's E06 popup reuses existing capture preferences, clocks, review drafts and
 guide@1 saves. Its private review-open command checks the current session and
 review phase, adding no persisted fields, public endpoints or defaults. No

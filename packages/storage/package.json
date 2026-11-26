@@ -7,13 +7,14 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./indexeddb": "./src/indexeddb.ts"
+    "./indexeddb": "./src/indexeddb.ts",
+    "./http": "./src/http.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run && node tests/browser.verify.mjs"
+    "test": "vitest run && node tests/browser.verify.mjs && node tests/http-browser.verify.mjs"
   },
   "dependencies": { "@stepdoc/schema": "workspace:*" },
   "devDependencies": {

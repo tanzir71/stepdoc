@@ -70,6 +70,12 @@ export type StorageErrorCode =
   | 'corrupt_data'
   | 'blocked'
   | 'closed'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'rate_limited'
+  | 'upload_too_large'
+  | 'redaction_open'
+  | 'invalid_pairing'
 
 /** Only safe, fixed messages and numeric conflict metadata cross the adapter boundary. */
 export class StorageError extends Error {

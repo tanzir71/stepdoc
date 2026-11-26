@@ -48,6 +48,7 @@ for (const target of ['chrome', 'edge', 'firefox']) {
     file.replaceAll('\\', '/'),
   )
   assert(files.includes('app.html'))
+  assert(files.includes('popup.html'), 'The private fallback page is missing')
   assert(
     !files.some((file) => /fixtures|e2e|\.test\./.test(file)),
     'Test source packaged',

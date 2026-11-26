@@ -3,7 +3,8 @@
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
 The local E01/E02/E04 capture/review path and E03 Guide Me use shared React,
 tokens, original Figma vectors and bundled Geist. E02 includes its recording
-pill/timer. Pairing, voice, cleanup and complete fallback evidence remain M11 work.
+pill/timer, and E06 has its native local popup flow. Pairing, voice and cleanup
+remain M11 work.
 The recorder now also retains guide@1 event metadata. The local library and editor run the actual shared SPA,
 with native `IndexedDbAdapter` storage, at the private extension `app.html` page.
 The **Open library** link opens it in a full tab.
@@ -120,8 +121,8 @@ choice. Native tests hold the real camera while adding a mask to prove retry/ord
 then force failure to prove upload blocking. A third loaded-extension suite also
 checks strict page CSP, keyboard/pointer/cross-frame picking, no target activation,
 stored text/manual pixels, wide/narrow axe and an exact aria snapshot, session
-reset and actual text-collector limits. The complete E01–E06 recording/review,
-pairing and reviewed local saving flows remain open.
+reset and actual text-collector limits. Local recording/review/saving, Guide Me
+and popup flows are covered below; paired destinations remain M11 work.
 
 ## Guide Me (E03)
 
@@ -199,3 +200,31 @@ clocks real. Every loaded-extension script activates its newly announced service
 worker through an actual private-page message, then waits for real Chrome API
 bindings before accessing it. Private panel/editor proxy tabs are brought to the
 foreground for their controls, matching the visibility of the actual side panel.
+
+## Popup fallback (E06)
+
+The 360×560 popup uses the compact E06 header, 44px record control, two preference
+switches, two actual recent guides and 28px library/pair actions. It retains the
+original record/file/grid/link vectors, logo, toggle images and badge dot at their
+native dimensions. Pair server remains disabled with an accessible explanation
+until E05 pairing is implemented. The activity log and status remain accessible.
+Capture panels use the shared app's saved Light/Dark/System preference and react
+to changes from another native workspace tab or the system theme.
+
+Recording lives in the background, so closing the popup does not stop capture.
+Reopening reflects the same session, processed steps, clock and pause state.
+Stop opens `/popup.html?surface=tab&view=review` in a full tab; review launch failure
+retains the draft with an Open review action. The private open command requires
+the current session and review phase. Source pages cannot invoke it. Editing and
+saving use the existing native review/import flow and open the shared editor.
+
+The private fallback page ships in all three builds. Chrome/Edge still have no
+default action popup and retain their side panel; Firefox's manifest selects the
+popup. `verify-popup.mjs` assigns that unchanged private page to the action only
+inside its isolated Chromium test profile, then opens a real native action popup.
+Those targets are outside Playwright's tab inventory, so the fixture attaches with
+CDP and drives native input. It checks actual painted pixels, AX trees/axe,
+keyboard preferences, close/reopen during capture, library/editor links, rejected
+source/stale/phase commands, failed review launch/retry, Escape and native saving.
+The same renderer supplies light/dark reference captures and narrow axe coverage.
+Firefox remains build plus `web-ext lint`; no owner testing or signing is required.

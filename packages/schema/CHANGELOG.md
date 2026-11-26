@@ -5,6 +5,11 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11's E06 popup reuses existing capture preferences, clocks, review drafts and
+guide@1 saves. Its private review-open command checks the current session and
+review phase, adding no persisted fields, public endpoints or defaults. No
+guide-data migration, identifier change or version bump is needed.
+
 M11's recording pill adds bounded private control/view DTOs and an optional
 extension review-state clock (`elapsedMs`, `runningSince`). It records active
 segments at state transitions only, excluding pause, startup and queue draining.

@@ -200,3 +200,35 @@ page CSP, and clear fixture pixels beneath where the pill would have appeared in
 the stored screenshot. Use `STEPDOC_UPDATE_SCREENS=1` with
 `node apps/extension/scripts/verify-recording.mjs` after a Chrome build to regenerate
 its reference PNGs/trees; normal runs write only ignored evidence PNGs.
+
+## E06 popup fallback
+
+Reference: Figma `27:6897`, the 360×560 popup itself. Its Figma screenshot includes
+40px of presentation space around the frame; that surrounding background is not
+product UI. `m11-popup-light.png` and `m11-popup-dark.png` render the real private
+popup entrypoint at the frame dimensions. Native geometry asserts the 48px
+header, start card at (14,62) sized 332×72, 44px record control at (28,76), Recent
+at y=210 and library action at y=330. Switches stay 32×18; the original logo,
+record/file/grid/link glyphs and badge dot retain their intrinsic dimensions.
+Native popup screenshots independently prove every visible asset paints.
+
+The recent titles come from guides created through the actual local app. The
+fixture uses a generic integration-key title in place of the fictional Ledgerly
+example. Pair server is visibly disabled until E05 pairing is implemented. The
+accessible activity log is a functional addition; secondary text tokens provide
+AA contrast. The browser supplies the popup's external floating frame/shadow.
+
+`verify-popup.mjs` opens a real Chromium extension-action popup using this common
+production page. Native popups are not ordinary Playwright tabs: CDP attaches to
+the announced target for trusted input, full accessibility trees, axe, geometry
+and asset pixels. The OS/browser may constrain the native viewport below 560px;
+the popup remains scrollable. Reference captures use the same renderer in a
+360×560 private tab, followed by 320px overflow/axe checks. Light/Dark/System are
+read from the real shared preference store, including native media changes.
+
+Four committed native AX trees cover idle, recording, paused and retained review.
+Only the numeric timer text is canonicalized. Run `STEPDOC_UPDATE_SCREENS=1` with
+`node apps/extension/scripts/verify-popup.mjs` after a Chrome build to regenerate
+the PNGs/trees. Normal verification compares trees and writes ignored PNGs.
+The fixture also proves capture across popup closure/reopen and the full-tab
+review → native save → editor reload path; Firefox is build/lint only, per §0.

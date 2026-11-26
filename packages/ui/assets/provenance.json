@@ -976,6 +976,10 @@
         {
           "node": "27:6897",
           "name": "Original Figma capture vector"
+        },
+        {
+          "node": "27:6912",
+          "name": "E06 start icon"
         }
       ],
       "file": "3713a.svg"
@@ -985,6 +989,14 @@
         {
           "node": "27:6897",
           "name": "Original Figma capture vector"
+        },
+        {
+          "node": "27:6929",
+          "name": "E06 recent guide icon"
+        },
+        {
+          "node": "27:6934",
+          "name": "E06 second recent guide icon"
         }
       ],
       "file": "f738b.svg"
@@ -994,6 +1006,10 @@
         {
           "node": "27:6897",
           "name": "Original Figma capture vector"
+        },
+        {
+          "node": "I27:6939;12:449",
+          "name": "E06 library button"
         }
       ],
       "file": "679cd.svg"
@@ -1053,6 +1069,15 @@
         {
           "node": "26:6696",
           "name": "Original recording pill cf8f1.svg"
+        }
+      ]
+    },
+    {
+      "file": "d334a.svg",
+      "slots": [
+        {
+          "node": "I27:6947;12:459",
+          "name": "E06 Pair server, original 14px link icon"
         }
       ]
     }

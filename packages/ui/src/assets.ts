@@ -67,6 +67,7 @@ import captureNext from '../assets/d1faf.svg?url'
 import popupRecord from '../assets/3713a.svg?url'
 import popupFile from '../assets/f738b.svg?url'
 import popupLibrary from '../assets/679cd.svg?url'
+import popupPair from '../assets/d334a.svg?url'
 import guideCheck from '../assets/0e7f2.svg?url&no-inline'
 import guideCompleted from '../assets/3e359.svg?url'
 import guideTarget from '../assets/a323f.svg?url'
@@ -91,6 +92,7 @@ export const icons = {
   'popup-record': { url: popupRecord, width: 20, height: 20 },
   'popup-file': { url: popupFile, width: 14, height: 14 },
   'popup-library': { url: popupLibrary, width: 14, height: 14 },
+  'popup-pair': { url: popupPair, width: 14, height: 14 },
   'export-close': {
     url: asset0,
     width: 16,

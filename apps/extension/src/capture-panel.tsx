@@ -21,6 +21,16 @@ import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
 import { CaptureTime } from './capture-time'
+import {
+  applyPreferences,
+  preferenceKey,
+  readPreferences,
+} from '../../app/src/preferences'
+
+const popup = location.pathname.endsWith('popup.html')
+const compact =
+  popup && new URL(location.href).searchParams.get('surface') !== 'tab'
+document.body.dataset.captureSurface = compact ? 'popup' : 'tab'
 
 function Confirm({
   title,
@@ -62,7 +72,20 @@ function Confirm({
   )
 }
 function CapturePanel() {
-  const compact = location.pathname.endsWith('popup.html')
+  useEffect(() => {
+    const media = matchMedia('(prefers-color-scheme: dark)')
+    const update = () => applyPreferences(readPreferences())
+    const stored = (event: StorageEvent) => {
+      if (event.key === preferenceKey || event.key === null) update()
+    }
+    update()
+    window.addEventListener('storage', stored)
+    media.addEventListener('change', update)
+    return () => {
+      window.removeEventListener('storage', stored)
+      media.removeEventListener('change', update)
+    }
+  }, [])
   const [state, setState] = useState<LegacyStorage>({})
   const latest = useRef(state)
   const refreshNumber = useRef(0)
@@ -114,7 +137,7 @@ function CapturePanel() {
     let storage: IndexedDbAdapter | undefined
     try {
       storage = await IndexedDbAdapter.open()
-      setRecent((await storage.listGuides()).items.slice(0, 3))
+      setRecent((await storage.listGuides()).items.slice(0, compact ? 2 : 3))
     } catch {
       announce('Recent captures are unavailable. Open the library to retry.')
     } finally {
@@ -185,6 +208,7 @@ function CapturePanel() {
     setBusy(true)
     try {
       await invoke(type, extra)
+      if (compact && type === 'STOP_REVIEW') await invoke('OPEN_CAPTURE_REVIEW')
       announce(message)
     } catch {
       announce(
@@ -244,14 +268,19 @@ function CapturePanel() {
     positions.length > 1 && positions.every((at, i) => at === positions[0]! + i)
   if (state.guideMe) return <GuidePanel run={state.guideMe} />
   return (
-    <div className="capture-panel" data-compact={compact}>
+    <div
+      className="capture-panel"
+      data-compact={compact}
+      data-full-tab={popup && !compact}
+      data-phase={phase}
+    >
       <header className="capture-header">
         <h1 className="sd-sr-only">StepDoc</h1>
         <Logo />
         <Badge
           className={recording ? 'capture-recording-badge' : undefined}
           tone={phase === 'recording' ? 'danger' : 'neutral'}
-          dot={false}
+          dot={compact && phase === 'idle'}
         >
           {phase === 'recording' ? <Icon name="pill-dot" /> : null}
           {phase === 'recording'
@@ -263,15 +292,17 @@ function CapturePanel() {
                 : 'Local'}
           {recording ? <CaptureTime clock={review?.clock} /> : null}
         </Badge>
-        <a
-          href="options.html"
-          target="_blank"
-          className="capture-settings"
-          aria-label="Settings"
-          data-sd="capture-settings"
-        >
-          <Icon name="sliders" />
-        </a>
+        {!compact ? (
+          <a
+            href="options.html"
+            target="_blank"
+            className="capture-settings"
+            aria-label="Settings"
+            data-sd="capture-settings"
+          >
+            <Icon name="sliders" />
+          </a>
+        ) : null}
       </header>
       <main id="capture-main" className="capture-main">
         {phase === 'idle' || phase === 'starting' ? (
@@ -303,11 +334,15 @@ function CapturePanel() {
                     Typed values are never recorded.
                   </p>
                 ) : null}
-                <div className="capture-shortcut">
-                  <Kbd>Alt</Kbd>
-                  <Kbd>Shift</Kbd>
-                  <Kbd>S</Kbd>
-                </div>
+                {compact ? (
+                  <p className="capture-popup-shortcut">Alt + Shift + S</p>
+                ) : (
+                  <div className="capture-shortcut">
+                    <Kbd>Alt</Kbd>
+                    <Kbd>Shift</Kbd>
+                    <Kbd>S</Kbd>
+                  </div>
+                )}
               </div>
             </div>
             <section className="capture-options" aria-label="Capture options">
@@ -339,9 +374,11 @@ function CapturePanel() {
                 <div>
                   <h3>
                     Agent context{' '}
-                    <Badge tone="agent" dot={false}>
-                      Agent
-                    </Badge>
+                    {!compact ? (
+                      <Badge tone="agent" dot={false}>
+                        Agent
+                      </Badge>
+                    ) : null}
                   </h3>
                   {!compact ? (
                     <p>
@@ -367,7 +404,9 @@ function CapturePanel() {
             </section>
             <section className="capture-recent" aria-labelledby="recent-title">
               <div className="capture-section-label">
-                <h2 id="recent-title">Recent captures</h2>
+                <h2 id="recent-title">
+                  {compact ? 'Recent' : 'Recent captures'}
+                </h2>
               </div>
               {recent.length ? (
                 recent.map((guide, index) => (
@@ -378,13 +417,17 @@ function CapturePanel() {
                     href={`app.html?route=${encodeURIComponent(`/g/${guide.id}/edit`)}`}
                     target="_blank"
                   >
-                    <span className="capture-number">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
+                    {!compact ? (
+                      <span className="capture-number">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                    ) : null}
                     <Icon name="popup-file" />
                     <span>
                       {guide.title}
-                      <small>{guide.stepCount} steps · this browser</small>
+                      {!compact ? (
+                        <small>{guide.stepCount} steps · this browser</small>
+                      ) : null}
                     </span>
                   </a>
                 ))
@@ -467,7 +510,18 @@ function CapturePanel() {
             </Button>
           </>
         ) : null}
-        {reviewing ? (
+        {reviewing && compact ? (
+          <section
+            className="capture-popup-review"
+            aria-labelledby="popup-review-heading"
+          >
+            <h2 id="popup-review-heading">Review your capture</h2>
+            <p>{review?.title}</p>
+            <p>{steps.length} captured steps retained in this browser.</p>
+            <p>Review, edit and save in a full tab.</p>
+          </section>
+        ) : null}
+        {reviewing && !compact ? (
           <>
             <Input
               label="Guide title"
@@ -618,7 +672,22 @@ function CapturePanel() {
             </Button>
           </div>
         ) : null}
-        {reviewing ? (
+        {reviewing && compact ? (
+          <Button
+            data-sd="capture-open-review"
+            disabled={disabled}
+            icon="capture-next"
+            onClick={() =>
+              void command(
+                'OPEN_CAPTURE_REVIEW',
+                'Opened review in a full tab.',
+              )
+            }
+          >
+            Open review in a tab
+          </Button>
+        ) : null}
+        {reviewing && !compact ? (
           <>
             <div className="capture-destination">
               <span>Save to</span>
@@ -647,15 +716,56 @@ function CapturePanel() {
         <p
           id="status"
           role="status"
-          className={state.captureError ? 'capture-error' : 'capture-hint'}
+          className={
+            state.captureError
+              ? 'capture-error'
+              : compact && phase === 'idle' && !notice
+                ? 'sd-sr-only'
+                : 'capture-hint'
+          }
         >
           {status}
         </p>
         <nav aria-label="StepDoc">
-          <a href="app.html" target="_blank" data-sd="capture-library">
-            <Icon name="popup-library" />
-            Open library
-          </a>
+          {compact ? (
+            <>
+              <Button
+                kind="secondary"
+                size="s"
+                icon="popup-library"
+                data-sd="capture-library"
+                disabled={recording || transition || busy}
+                onClick={() => {
+                  void browser.tabs
+                    .create({ url: browser.runtime.getURL('/app.html') })
+                    .catch(() =>
+                      announce('The library could not open. Retry opening it.'),
+                    )
+                }}
+              >
+                Open library
+              </Button>
+              <Button
+                kind="ghost"
+                size="s"
+                icon="popup-pair"
+                data-sd="capture-pair"
+                disabled
+                aria-describedby="popup-pair-help"
+              >
+                Pair server
+              </Button>
+              <span id="popup-pair-help" className="sd-sr-only">
+                Server pairing is not available yet. Captures stay in this
+                browser.
+              </span>
+            </>
+          ) : (
+            <a href="app.html" target="_blank" data-sd="capture-library">
+              <Icon name="popup-library" />
+              Open library
+            </a>
+          )}
           {phase !== 'idle' ? (
             <Button
               kind="ghost"
@@ -681,8 +791,8 @@ function CapturePanel() {
         ) : null}
         {compact ? (
           <p className="capture-hint">
-            No side panel here: popup starts and stops capture; editor opens
-            full tab.
+            No side panel here: the popup starts and stops capture; the editor
+            opens in a full tab.
           </p>
         ) : null}
       </footer>

@@ -82,14 +82,17 @@ const pillView = (state: LegacyStorage, tabId?: number) => {
   })
   return view.success ? view.data : null
 }
-const openReview = () =>
+const openReview = (fullTab = false) =>
   browser.tabs.create({
     url:
       browser.runtime.getURL(
-        import.meta.env.BROWSER === 'firefox'
+        fullTab || import.meta.env.BROWSER === 'firefox'
           ? '/popup.html'
           : '/sidepanel.html',
-      ) + '?view=review',
+      ) +
+      (fullTab || import.meta.env.BROWSER === 'firefox'
+        ? '?surface=tab&view=review'
+        : '?view=review'),
   })
 export function startBackground() {
   if (import.meta.env.BROWSER !== 'firefox')
@@ -483,6 +486,7 @@ export function startBackground() {
       'GUIDE_START',
       'GUIDE_CLEAR',
       'CAPTURE_PILL_CONTROL',
+      'OPEN_CAPTURE_REVIEW',
     ]
     const run = async () => {
       await recovered
@@ -577,6 +581,19 @@ export function startBackground() {
             (message.runId === run.runId && message.sequence === run.sequence))
         )
           await guide.refresh(run.tabId)
+        respond({ ok: true })
+      } else if (message.type === 'OPEN_CAPTURE_REVIEW') {
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'captureSessionId',
+          'captureReview',
+        ])
+        if (
+          !state.captureSessionId ||
+          message.sessionId !== state.captureSessionId ||
+          state.captureReview?.phase !== 'review'
+        )
+          throw new Error('Review unavailable')
+        await openReview(true)
         respond({ ok: true })
       } else if (message.type === 'START' || message.type === 'START_CAPTURE') {
         const walkthrough = await guide.state()

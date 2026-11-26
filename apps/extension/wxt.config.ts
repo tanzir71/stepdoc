@@ -39,6 +39,12 @@ export default defineConfig({
     build: { assetsInlineLimit: 0 },
   }),
   hooks: {
+    'build:manifestGenerated'(wxt, manifest) {
+      // Keep the same private fallback entrypoint in every build. Chrome/Edge
+      // still open their side panel; Firefox uses the action popup.
+      if (wxt.config.browser !== 'firefox' && manifest.action)
+        delete manifest.action.default_popup
+    },
     'vite:build:extendConfig'(entrypoints, config) {
       if (
         !entrypoints.some((entrypoint) => entrypoint.type === 'content-script')

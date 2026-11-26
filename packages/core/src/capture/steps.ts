@@ -1,4 +1,10 @@
-import { stepSchema, type Step, type Value, type Rect } from '@stepdoc/schema'
+import {
+  stepSchema,
+  type Step,
+  type Value,
+  type Rect,
+  type Redaction,
+} from '@stepdoc/schema'
 import { describeGuideStep } from '../describe-step'
 import {
   captureTarget,
@@ -17,6 +23,8 @@ export interface CaptureOptions {
   index: number
   click?: { x: number; y: number }
   key?: string
+  frame?: string[]
+  url?: string | null
 }
 export function viewportPoint(
   window: Window,
@@ -46,7 +54,7 @@ export function captureStep(
   action: NonNullable<Step['action']>,
   options: CaptureOptions,
 ): Step {
-  const target = captureTarget(element)
+  const target = captureTarget(element, options.frame)
   let value: Value | undefined
   if (action === 'fill' || action === 'upload') {
     const type = element.getAttribute('type') ?? ''
@@ -73,7 +81,12 @@ export function captureStep(
     type: 'action',
     action,
     target,
-    url: documentUrl(element.ownerDocument),
+    url:
+      options.url === null
+        ? null
+        : options.url !== undefined
+          ? captureUrl(options.url)
+          : documentUrl(element.ownerDocument),
     ...(value && { value }),
     ...(options.key && { key: options.key }),
     title: 'Captured action',
@@ -110,22 +123,27 @@ export function navigationStep(
   return { ...step, title: describeGuideStep(step).text }
 }
 export interface PageObservation {
-  url: string
+  url: string | null
   visible: { role: string; name: string }[]
 }
 export function observePage(
   document: Document,
   scope: Document | ShadowRoot = document,
+  suppliedUrl?: string | null,
 ): PageObservation {
   // guide@1 urlMatches is evaluated against the top-level page by replay.
   // Visible assertions remain scoped to the action's own frame/shadow context.
   let page = document
   try {
-    page = document.defaultView?.top?.document ?? document
+    if (suppliedUrl === undefined)
+      page = document.defaultView?.top?.document ?? document
   } catch {
     throw new CaptureMetadataError('frame_unavailable')
   }
-  const result: PageObservation = { url: documentUrl(page), visible: [] }
+  const result: PageObservation = {
+    url: suppliedUrl !== undefined ? suppliedUrl : documentUrl(page),
+    visible: [],
+  }
   const visit = (root: Document | ShadowRoot) => {
     const dom = new CaptureDom(root)
     for (const element of dom.originals) {
@@ -154,7 +172,8 @@ export function guessExpectation(
   before: PageObservation,
   after: PageObservation,
 ): Step['expect'] {
-  if (after.url !== before.url) return { urlMatches: after.url }
+  if (after.url !== null && before.url !== null && after.url !== before.url)
+    return { urlMatches: after.url }
   const previous = new Set(before.visible.map((item) => JSON.stringify(item)))
   const added = after.visible.filter(
     (item) => !previous.has(JSON.stringify(item)),
@@ -169,9 +188,43 @@ export function guessExpectation(
 /** Mandatory masks for all fields, including ordinary typed text. Traversal never
  * reads their text/value. Cross-origin frames are fully masked until their own
  * content-script context can supply more precise client masks. */
-export function fieldMasks(document: Document): Rect[] {
-  const result: Rect[] = []
+export function fieldRedactions(
+  document: Document,
+  includeFrames = true,
+): Redaction[] {
+  const result: Redaction[] = []
   let count = 0
+  const add = (item: Redaction) => {
+    if (item.rect.width <= 0 || item.rect.height <= 0) return
+    result.push(item)
+    if (result.length > 12_000) throw new CaptureMetadataError('dom_limit')
+  }
+  const effects = new WeakMap<Element, boolean>()
+  const paintOverflow = (element: Element) => {
+    const pending: Element[] = []
+    let node: Element | null = element,
+      unsafe = false
+    while (node) {
+      if (effects.has(node)) {
+        unsafe = effects.get(node)!
+        break
+      }
+      pending.push(node)
+      const style = document.defaultView!.getComputedStyle(node)
+      if (
+        (style.filter && style.filter !== 'none') ||
+        (style.textShadow && style.textShadow !== 'none')
+      ) {
+        unsafe = true
+        break
+      }
+      const root = node.getRootNode()
+      node =
+        node.parentElement ?? (root instanceof ShadowRoot ? root.host : null)
+    }
+    for (const item of pending) effects.set(item, unsafe)
+    return unsafe
+  }
   const visit = (
     root: Document | ShadowRoot,
     ox: number,
@@ -191,20 +244,78 @@ export function fieldMasks(document: Document): Rect[] {
         height: rect.height * sy,
       }
       if (
-        element.matches('iframe,frame') ||
+        (editable(element) || element.matches('iframe,frame')) &&
+        paintOverflow(element)
+      )
+        add({
+          kind: 'field',
+          source: 'policy',
+          rule: 'paint-overflow',
+          rect: {
+            x: 0,
+            y: 0,
+            width: document.defaultView!.innerWidth,
+            height: document.defaultView!.innerHeight,
+          },
+          status: 'applied',
+        })
+      if (
+        (includeFrames && element.matches('iframe,frame')) ||
         (element.localName.includes('-') && !element.shadowRoot)
       ) {
         // Cover the whole frame: contents and form geometry can change independently
         // of the parent snapshot, including in a cross-origin browsing context.
         // Opaque custom hosts may contain a closed shadow root with typed fields.
-        if (box.width > 0 && box.height > 0) result.push(box)
+        add({
+          kind: 'field',
+          source: 'policy',
+          rule: element.matches('iframe,frame')
+            ? 'frame-unavailable'
+            : 'opaque-host',
+          rect: box,
+          status: 'applied',
+        })
       } else if (
         editable(element) &&
         !element.matches(
           'input[type="button"],input[type="submit"],input[type="reset"],input[type="checkbox"],input[type="radio"],input[type="hidden"]',
         )
       ) {
-        if (box.width > 0 && box.height > 0) result.push(box)
+        add({
+          kind: 'field',
+          source: 'auto',
+          rule: 'form-value',
+          rect: box,
+          status: 'applied',
+        })
+        // Bounding boxes alone miss overflowing editable text. Range reads
+        // geometry without reading, copying or detecting its characters.
+        if (
+          element.matches(
+            '[contenteditable]:not([contenteditable="false"]),[role="textbox"],[role="searchbox"]',
+          )
+        ) {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          for (const rect of range.getClientRects()) {
+            if (
+              ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)
+            )
+              throw new CaptureMetadataError('invalid_geometry')
+            add({
+              kind: 'field',
+              source: 'auto',
+              rule: 'form-value',
+              rect: {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+              },
+              status: 'applied',
+            })
+          }
+        }
       }
       if (element.shadowRoot)
         visit(element.shadowRoot, ox, oy, sx, sy, depth + 1)
@@ -217,4 +328,7 @@ export function fieldMasks(document: Document): Rect[] {
     throw new CaptureMetadataError('dom_failure')
   }
   return result
+}
+export function fieldMasks(document: Document): Rect[] {
+  return fieldRedactions(document).map((item) => item.rect)
 }

@@ -270,6 +270,62 @@ try {
       getterReads.count === 0,
       'No original value getter was read via proxy',
     )
+    const tracker = new c.FrameTracker(document, c.captureId())
+    const scene = tracker.snapshot(c.captureId())
+    check(
+      scene.children.some(
+        (child) => child.selector === '#frame' && child.precise,
+      ),
+      'Frame tracker has a unique data-free frame path',
+    )
+    check(
+      scene.masks.every((mask) => mask.rule !== 'frame-unavailable'),
+      'Broker collector omits blanket frame masks',
+    )
+    const nativeFrame = document.getElementById('frame')
+    nativeFrame.style.scale = '-1'
+    check(
+      tracker
+        .snapshot(c.captureId())
+        .children.find((child) => child.selector === '#frame').precise ===
+        false,
+      'Independent CSS negative scale is opaque',
+    )
+    nativeFrame.style.scale = 'none'
+    const overflow = document.createElement('div')
+    overflow.contentEditable = 'true'
+    overflow.style.cssText = 'width:20px;white-space:nowrap'
+    overflow.textContent = 'PRIVATE_EDITABLE_OVERFLOW'
+    document.body.append(overflow)
+    const range = document.createRange()
+    range.selectNodeContents(overflow)
+    const textRect = range.getBoundingClientRect()
+    check(
+      textRect.width > overflow.getBoundingClientRect().width &&
+        c
+          .fieldRedactions(document, false)
+          .some(
+            (mask) =>
+              mask.rect.x <= textRect.x &&
+              mask.rect.x + mask.rect.width >= textRect.right,
+          ),
+      'Editable overflow Range geometry is covered',
+    )
+    overflow.style.filter = 'blur(2px)'
+    check(
+      c
+        .fieldRedactions(document, false)
+        .some(
+          (mask) =>
+            mask.rule === 'paint-overflow' && mask.rect.width === innerWidth,
+        ),
+      'Unsafe paint effects cover the viewport',
+    )
+    check(
+      getterReads.count === 0,
+      'Frame and Range geometry never read original field values',
+    )
+    overflow.remove()
     const text = JSON.stringify(captured)
     for (const secret of [
       'typed-email-private',
@@ -294,7 +350,7 @@ try {
     }
     return { checks }
   })
-  assert.equal(result.checks, 34)
+  assert.equal(result.checks, 40)
   assert.deepEqual(nonLocal, [])
   console.log(
     `Native DOM capture verified in Chromium: ${result.checks} checks, value-getter proxy, editable omission, roles/names/unique locators, DPR/frame/shadow geometry, SPA expectations, mandatory field masks and zero external requests.`,

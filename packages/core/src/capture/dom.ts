@@ -281,7 +281,7 @@ export class CaptureDom {
         return false
     }
   }
-  target(element: Element): Target {
+  target(element: Element, frame?: string[]): Target {
     const role = this.role(element),
       rawName = this.name(element),
       name = safeMetadata(rawName)
@@ -322,7 +322,7 @@ export class CaptureDom {
       locators,
       rect: rectOf(element),
       shadowPath: shadowPath(element),
-      frame: frameChain(element.ownerDocument.defaultView!),
+      frame: frame ?? frameChain(element.ownerDocument.defaultView!),
     }
   }
 }
@@ -348,11 +348,11 @@ export function frameChain(window: Window): string[] {
   }
   return result
 }
-export function captureTarget(element: Element): Target {
+export function captureTarget(element: Element, frame?: string[]): Target {
   try {
     return new CaptureDom(
       element.getRootNode() as Document | ShadowRoot,
-    ).target(element)
+    ).target(element, frame)
   } catch (error) {
     if (error instanceof CaptureMetadataError) throw error
     throw new CaptureMetadataError('dom_failure')

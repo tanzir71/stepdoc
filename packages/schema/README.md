@@ -5,6 +5,13 @@ schema ID/URL and source JSON Schema (`docs/v2/guide.schema.json`). The Zod/Ajv
 fixture suite proves contract parity. Typed fill input is represented only by
 variable/secret references; secret examples and fill literals are rejected.
 
+`@stepdoc/schema/capture` validates private `stepdoc/capture@1` extension messages,
+including local events, browser-frame snapshots and nonce-only identity probes.
+These bounded DTOs carry no field values and are separate from persisted guides
+and Storage API v1. Hidden frames can report zero-sized viewports; visible local
+events require positive dimensions. The package changelog records why this needs
+no guide migration.
+
 `@stepdoc/schema/migrations/v1-to-guide1` migrates v1 database rows. It uses a narrow
 row projection to discard capture-only/unknown fields, never reads stored input
 values, and requires client-supplied image dimensions/already-flattened images.

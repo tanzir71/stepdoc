@@ -1,4 +1,30 @@
-import { flattenImage } from '@stepdoc/core/canvas'
+import { flattenImage, captureRectToPixels } from '@stepdoc/core/canvas'
+import type { Redaction } from '@stepdoc/schema'
+
+export async function compositeFrame(
+  dataUrl: string,
+  masks: Redaction[],
+  dpr: number,
+) {
+  if (!/^data:image\/(png|webp|jpeg);base64,/i.test(dataUrl))
+    throw new Error('Invalid capture image')
+  const input = await (await fetch(dataUrl)).blob()
+  const image = await flattenImage(input, {
+    sensitiveRects: masks.map((item) => item.rect),
+    devicePixelRatio: dpr,
+  })
+  const redactions: Redaction[] = []
+  for (const mask of masks) {
+    const rect = captureRectToPixels(mask.rect, dpr, image.width, image.height)
+    if (rect) redactions.push({ ...mask, rect, status: 'applied' })
+  }
+  return {
+    dataUrl: await blobToDataUrl(image.blob),
+    width: image.width,
+    height: image.height,
+    redactions,
+  }
+}
 
 export async function composite(
   dataUrl: string,

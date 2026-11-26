@@ -2,71 +2,28 @@ import {
   captureStep,
   navigationStep,
   documentUrl,
-  viewportPoint,
+  localDocumentUrl,
+  captureId,
 } from '@stepdoc/core/capture'
 import type { Step } from '@stepdoc/schema'
-import type { ElementMeta } from '@stepdoc/schema/legacy-v1'
-import { legacyInputType } from './legacy-capture'
+import type { LocalCapture } from '@stepdoc/schema/capture'
+import { localCaptureSchema, CAPTURE_TRANSPORT } from '@stepdoc/schema/capture'
 
-export interface CapturedEvent {
-  documentId: string
-  step: Step
-  meta: ElementMeta
-  topUrl: string
-  devicePixelRatio: number
-  viewport: { width: number; height: number }
-}
+export type CapturedEvent = LocalCapture
 let documentId: string | undefined
 export function captureDocumentId(): string {
-  return (documentId ??= crypto.randomUUID())
+  return (documentId ??= captureId())
 }
 export function eventFromStep(step: Step): CapturedEvent {
+  // A child never reads top.document or parent geometry. The authenticated
+  // browser-frame broker supplies that context in the background.
   return {
+    schema: CAPTURE_TRANSPORT,
     documentId: captureDocumentId(),
     step,
-    topUrl: documentUrl(window.top!.document),
+    topUrl: window === window.top ? localDocumentUrl(document) : null,
     devicePixelRatio: window.devicePixelRatio,
-    viewport: {
-      width: window.top!.innerWidth,
-      height: window.top!.innerHeight,
-    },
-    meta: {
-      event:
-        step.action === 'navigate'
-          ? 'navigation'
-          : step.action === 'fill' || step.action === 'upload'
-            ? 'input'
-            : step.action === 'select'
-              ? 'select'
-              : step.action === 'press'
-                ? 'submit'
-                : 'click',
-      tag: step.target?.tag ?? 'body',
-      role: step.target?.role,
-      label: step.target?.name,
-      selector: step.target?.locators?.find(
-        (locator) => locator.strategy === 'css',
-      )?.value,
-      rect: step.target?.rect,
-      url: step.url ?? documentUrl(document),
-      click:
-        step.click?.x !== undefined && step.click.y !== undefined
-          ? {
-              x: step.click.x / window.devicePixelRatio,
-              y: step.click.y / window.devicePixelRatio,
-            }
-          : undefined,
-      devicePixelRatio: window.devicePixelRatio,
-      viewport: {
-        width: window.top!.innerWidth,
-        height: window.top!.innerHeight,
-      },
-      optionLabel:
-        step.value?.kind === 'literal' && step.action === 'select'
-          ? step.value.literal
-          : undefined,
-      inputType: legacyInputType(step),
-    },
+    viewport: { width: innerWidth, height: innerHeight },
   }
 }
 export function captureEvent(
@@ -77,22 +34,20 @@ export function captureEvent(
 ): CapturedEvent {
   const event = eventFromStep(
     captureStep(element, action, {
-      id: crypto.randomUUID(),
+      id: captureId(),
       index: 1,
-      ...(click && { click: viewportPoint(window, click) }),
+      frame: [],
+      url: localDocumentUrl(document),
+      ...(click && { click }),
       ...(key && { key }),
     }),
   )
-  event.meta.inputType = legacyInputType(
-    event.step,
-    element.localName === 'input'
-      ? (element.getAttribute('type') ?? 'text')
-      : undefined,
-  )
+  if (element.localName === 'input')
+    event.inputType = localCaptureSchema.shape.inputType.parse(
+      (element as HTMLInputElement).type,
+    )
   return event
 }
 export function captureNavigation(): CapturedEvent {
-  return eventFromStep(
-    navigationStep(documentUrl(document), crypto.randomUUID(), 1),
-  )
+  return eventFromStep(navigationStep(documentUrl(document), captureId(), 1))
 }

@@ -1,12 +1,16 @@
-export type CaptureFrame<T> = { event: T; frame: string; reused: boolean }
-export class CaptureQueue<T> {
+export type CaptureFrame<T, F = string> = {
+  event: T
+  frame: F
+  reused: boolean
+}
+export class CaptureQueue<T, F = string> {
   private items: T[] = []
   private draining: Promise<void> | null = null
-  private lastFrame = ''
+  private lastFrame: F | undefined
   private epoch = 0
   constructor(
-    private readonly capture: (event: T) => Promise<string>,
-    private readonly persist: (result: CaptureFrame<T>) => Promise<void>,
+    private readonly capture: (event: T) => Promise<F>,
+    private readonly persist: (result: CaptureFrame<T, F>) => Promise<void>,
   ) {}
   enqueue(event: T) {
     this.items.push(event)
@@ -14,8 +18,13 @@ export class CaptureQueue<T> {
   }
   clear() {
     this.items = []
-    this.lastFrame = ''
+    this.lastFrame = undefined
     this.epoch++
+  }
+  primeFrame(frame: F) {
+    if (this.draining || this.items.length)
+      throw new Error('Capture queue is busy')
+    this.lastFrame = frame
   }
   drain(): Promise<void> {
     if (this.draining) return this.draining
@@ -29,13 +38,13 @@ export class CaptureQueue<T> {
     while (this.items.length) {
       const event = this.items.shift()!
       const epoch = this.epoch
-      let frame: string,
+      let frame: F,
         reused = false
       try {
         frame = await this.capture(event)
         if (epoch === this.epoch) this.lastFrame = frame
       } catch (error) {
-        if (!this.lastFrame) throw error
+        if (this.lastFrame === undefined) throw error
         frame = this.lastFrame
         reused = true
       }

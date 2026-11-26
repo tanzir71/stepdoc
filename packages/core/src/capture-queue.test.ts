@@ -2,6 +2,43 @@ import { describe, expect, it, vi } from 'vitest'
 import { CaptureQueue } from './capture-queue'
 
 describe('CaptureQueue', () => {
+  it('reuses the primed processed image together with its applied-mask provenance', async () => {
+    const frame = {
+      data: 'redacted-only',
+      masks: [{ x: 1, y: 2, width: 3, height: 4 }],
+    }
+    const saved: unknown[] = []
+    const queue = new CaptureQueue<number, typeof frame>(
+      async () => {
+        throw new Error('Throttled')
+      },
+      async (result) => {
+        saved.push(result)
+      },
+    )
+    queue.primeFrame(frame)
+    await queue.enqueue(1)
+    expect(saved).toEqual([{ event: 1, frame, reused: true }])
+    queue.clear()
+    await expect(queue.enqueue(2)).rejects.toThrow('Throttled')
+  })
+  it('rejects priming while capture is in flight', async () => {
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const queue = new CaptureQueue<number>(
+      async () => {
+        await gate
+        return 'redacted'
+      },
+      async () => {},
+    )
+    const running = queue.enqueue(1)
+    expect(() => queue.primeFrame('new')).toThrow('busy')
+    release()
+    await running
+  })
   it('passes event context to capture and never reuses a frame across clear', async () => {
     const capture = vi
       .fn()

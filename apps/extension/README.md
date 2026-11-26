@@ -54,7 +54,7 @@ Capture uses `@stepdoc/core/capture`: a bounded inert DOM mirror provides
 `dom-accessibility-api` with labels/roles while omitting every control value and
 editable descendant. Uniqueness is measured in the actual document/shadow root.
 Steps use secret/variable references, select labels or key names; page URLs omit
-credentials, queries and fragments. Same-origin frame and open-shadow paths,
+credentials, queries and fragments. Cross-origin frame and open-shadow paths,
 source-pixel click coordinates and scoped dialog/heading/SPA expectations are
 retained in `capturedSteps`. The current server upload stays in the v1 format.
 
@@ -73,7 +73,28 @@ selection/Enter, shadow/frame clicks, SPA state, stored references, field pixels
 and failure gating. A separate native core test installs throwing value-getter
 proxies in the collector's execution world.
 
-Cross-origin parent-frame identity resolution remains open; unavailable frame
-metadata fails closed. Frame pixels are conservatively masked as a whole. Smart
-Blur's visible-text Range mapping and Alt+B element masks remain the next privacy
-unit, followed by the designed recording/review surfaces.
+The frame broker uses `webNavigation` frame/document IDs and isolated-world
+snapshots, including frames in open shadow roots. Same-origin children report
+their unique parent selector; unresolved cross-origin children receive short-lived
+nonce/token probes from their actual parent WindowProxy. Children consume these
+before page listeners and identify themselves only through authenticated extension
+runtime senders. No guide data, URL, text or page-supplied frame ID travels through
+window messages. Identical-src siblings and redirects are never matched by URL.
+`match_about_blank` and `match_origin_as_fallback` include inherited/opaque frames;
+document.open/write listener removal is repaired with idempotent registration.
+
+Masks map through border/scale offsets and clip at every ancestor viewport.
+Unresolved receivers, unsupported transforms and animation/paint uncertainty
+stay opaque; explicit collector errors/limits stop capture and block upload.
+Snapshot geometry, mutations and document identities must remain stable across
+the screenshot. A changing scene discards raw pixels and can reuse only an
+already-processed image with its original applied source-pixel mask provenance.
+Prewarming that cache before recording preserves the first immediate action;
+unavailable event context stops instead of guessing selectors/click geometry.
+
+The second loaded-extension suite owns two local HTTP origins and verifies
+identical-src siblings, cross-origin shadow/nested frames, blank/srcdoc/sandbox
+inheritance, hidden contexts, scale/borders/scroll clipping, private probes,
+redaction pixels/provenance, deterministic camera races and missing/error cases.
+Smart Blur's visible-text detector Range mapping and Alt+B element masks remain
+the next privacy unit, followed by the designed recording/review surfaces.

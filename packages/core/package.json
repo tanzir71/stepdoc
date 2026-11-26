@@ -12,6 +12,7 @@
     "./selector": "./src/selector.ts",
     "./capture-queue": "./src/capture-queue.ts",
     "./capture": "./src/capture/index.ts",
+    "./capture/geometry": "./src/capture/geometry.ts",
     "./redaction": "./src/redaction/index.ts",
     "./canvas": "./src/canvas/index.ts",
     "./export": "./src/export/index.ts",

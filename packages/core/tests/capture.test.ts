@@ -300,6 +300,14 @@ describe('privacy-safe DOM capture', () => {
     })
   })
   it('masks ordinary fields, contenteditable, open shadows and every frame without reading values', () => {
+    // jsdom has no Range layout API. Native Chromium separately verifies real
+    // overflow rectangles; this fixture supplies only the no-overflow geometry.
+    const createRange = document.createRange.bind(document)
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      const range = createRange()
+      Object.defineProperty(range, 'getClientRects', { value: () => [] })
+      return range
+    })
     document.body.innerHTML =
       '<input><input type="checkbox"><textarea></textarea><div contenteditable>PRIVATE</div><div id="host"></div><iframe></iframe>'
     document.querySelector('#host')!.attachShadow({ mode: 'open' }).innerHTML =
@@ -318,6 +326,20 @@ describe('privacy-safe DOM capture', () => {
         },
       })
     expect(fieldMasks(document)).toHaveLength(5)
+  })
+  it('blocks capture if editable Range geometry cannot be collected', () => {
+    const element = target('<div contenteditable>PRIVATE</div>', 'div')
+    rect(element)
+    const range = document.createRange()
+    Object.defineProperty(range, 'getClientRects', {
+      value: () => {
+        throw new Error('PRIVATE_GEOMETRY_ERROR')
+      },
+    })
+    vi.spyOn(document, 'createRange').mockReturnValue(range)
+    expect(() => fieldMasks(document)).toThrow(
+      'Capture metadata unavailable: dom_failure',
+    )
   })
   it('fails closed with data-free errors on limits, geometry and DOM failures', () => {
     const button = target('<button>Save</button>', 'button')

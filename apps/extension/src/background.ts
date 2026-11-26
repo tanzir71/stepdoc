@@ -1,14 +1,11 @@
 import { browser } from 'wxt/browser'
 import { makeStep } from './legacy-capture'
-import { composite } from './image'
+import { compositeFrame } from './image'
 import { CaptureQueue } from '@stepdoc/core/capture-queue'
-import {
-  stepSchema,
-  expectationSchema,
-  type Step,
-  type Rect,
-} from '@stepdoc/schema'
-import { elementMetaSchema, type ElementMeta } from '@stepdoc/schema/legacy-v1'
+import { stepSchema, expectationSchema, type Step } from '@stepdoc/schema'
+import { localCaptureSchema, FRAME_PROBE } from '@stepdoc/schema/capture'
+import { FrameBroker, type FrameScene } from './frame-broker'
+import { contextualStep, legacyMeta } from './capture-context'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
 
@@ -37,14 +34,10 @@ type Pending = {
   sessionId: string
   tabId: number
   windowId: number
+  frameId: number
 }
-type Masks = {
-  ok: boolean
-  documentId: string
-  masks: Rect[]
-  url: string
-  viewport: { width: number; height: number }
-  devicePixelRatio: number
+type ProcessedFrame = Awaited<ReturnType<typeof compositeFrame>> & {
+  scene: FrameScene
 }
 const safeUrl = (raw: string) => {
   const url = new URL(raw)
@@ -60,6 +53,12 @@ export function startBackground() {
   if (import.meta.env.BROWSER !== 'firefox')
     void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
   let lastCapture = 0
+  const broker = new FrameBroker({
+    frames: async (tabId) =>
+      (await browser.webNavigation.getAllFrames({ tabId })) ?? [],
+    send: (tabId, frameId, message) =>
+      browser.tabs.sendMessage(tabId, message, { frameId }),
+  })
   const activationEpochs = new Map<number, number>()
   browser.tabs.onActivated.addListener(({ windowId }) =>
     activationEpochs.set(windowId, (activationEpochs.get(windowId) ?? 0) + 1),
@@ -74,89 +73,83 @@ export function startBackground() {
     writes = next.catch(() => {})
     return next
   }
-  const masks = async (pending: Pending): Promise<Masks> => {
-    try {
-      const result: Masks = await browser.tabs.sendMessage(
-        pending.tabId,
-        { type: 'GET_MASKS' },
-        { frameId: 0 },
-      )
-      if (
-        !result.ok ||
-        typeof result.documentId !== 'string' ||
-        result.documentId.length < 16 ||
-        result.documentId.length > 100 ||
-        result.url !== pending.event.topUrl ||
-        !Array.isArray(result.masks) ||
-        result.masks.length > 12_000 ||
-        !Number.isFinite(result.devicePixelRatio) ||
-        result.devicePixelRatio <= 0 ||
-        ![result.viewport.width, result.viewport.height].every(
-          (value) => Number.isFinite(value) && value > 0,
-        )
-      )
+  const takeFrame = async (
+    pending: Omit<Pending, 'event' | 'frameId'>,
+    warming = false,
+  ): Promise<ProcessedFrame> => {
+    const wait = 550 - (Date.now() - lastCapture)
+    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+    const state = await browser.storage.local.get<LegacyStorage>([
+      'recording',
+      'captureSessionId',
+    ])
+    if (
+      (!warming && !state.recording) ||
+      state.captureSessionId !== pending.sessionId
+    )
+      throw new Error('Capture ended')
+    const tab = await browser.tabs.get(pending.tabId)
+    const activation = activationEpochs.get(pending.windowId) ?? 0
+    if (!tab.active) {
+      await abort(pending.sessionId, 'tab_changed')
+      throw new Error('Selected tab changed')
+    }
+    const collect = async () => {
+      try {
+        return await broker.collect(pending.tabId)
+      } catch {
+        await abort(pending.sessionId)
         throw new Error('Masks unavailable')
-      for (const rect of result.masks)
-        if (
-          ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
-          rect.width < 0 ||
-          rect.height < 0
-        )
-          throw new Error('Invalid mask')
-      return result
+      }
+    }
+    const before = await collect()
+    const raw = await browser.tabs.captureVisibleTab(pending.windowId, {
+      format: 'png',
+    })
+    lastCapture = Date.now()
+    const after = await collect()
+    const afterTab = await browser.tabs.get(pending.tabId)
+    if (
+      !afterTab.active ||
+      activation !== (activationEpochs.get(pending.windowId) ?? 0)
+    ) {
+      await abort(pending.sessionId, 'tab_changed')
+      throw new Error('Selected tab changed')
+    }
+    if (
+      safeUrl(afterTab.url ?? '') !== after.top.url ||
+      before.signature !== after.signature
+    ) {
+      // Discard raw pixels if layout/document identity changed. The queue may
+      // reuse only its previously processed frame and that frame's provenance.
+      throw new Error('Frame changed')
+    }
+    // Only this processed frame enters the queue's reuse cache. Raw screenshot
+    // pixels are never stored, cached between events, downloaded or uploaded.
+    try {
+      return {
+        ...(await compositeFrame(
+          raw,
+          before.masks,
+          before.top.devicePixelRatio,
+        )),
+        scene: before,
+      }
     } catch {
       await abort(pending.sessionId)
-      throw new Error('Masks unavailable')
+      throw new Error('Image processing unavailable')
     }
   }
-  const queue = new CaptureQueue<Pending>(
+  const queue = new CaptureQueue<Pending, ProcessedFrame>(
     async (pending) => {
-      const wait = 550 - (Date.now() - lastCapture)
-      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
-      const state = await browser.storage.local.get<LegacyStorage>([
-        'recording',
-        'captureSessionId',
-      ])
-      if (!state.recording || state.captureSessionId !== pending.sessionId)
-        throw new Error('Capture ended')
-      const tab = await browser.tabs.get(pending.tabId)
-      const activation = activationEpochs.get(pending.windowId) ?? 0
-      if (!tab.active || safeUrl(tab.url ?? '') !== pending.event.topUrl)
-        throw new Error('Page changed')
-      const before = await masks(pending)
-      const raw = await browser.tabs.captureVisibleTab(pending.windowId, {
-        format: 'png',
-      })
-      lastCapture = Date.now()
-      const after = await masks(pending)
-      const afterTab = await browser.tabs.get(pending.tabId)
+      const frame = await takeFrame(pending)
       if (
-        !afterTab.active ||
-        safeUrl(afterTab.url ?? '') !== pending.event.topUrl ||
-        activation !== (activationEpochs.get(pending.windowId) ?? 0)
-      ) {
-        await abort(pending.sessionId, 'tab_changed')
-        throw new Error('Selected tab changed')
-      }
-      if (
-        !after.ok ||
-        before.documentId !== after.documentId ||
-        before.url !== after.url ||
-        before.viewport.width !== after.viewport.width ||
-        before.viewport.height !== after.viewport.height ||
-        before.devicePixelRatio !== after.devicePixelRatio
-      ) {
-        await abort(pending.sessionId)
-        throw new Error('Page changed')
-      }
-      // Only this processed frame enters the queue's reuse cache. Raw screenshot
-      // pixels are never stored, cached between events, downloaded or uploaded.
-      return composite(
-        raw,
-        [...before.masks, ...after.masks],
-        undefined,
-        before.devicePixelRatio,
+        (pending.event.topUrl !== null &&
+          frame.scene.top.url !== pending.event.topUrl) ||
+        frame.scene.frameIds.get(pending.event.documentId) !== pending.frameId
       )
+        throw new Error('Page changed')
+      return frame
     },
     async ({ event: pending, frame, reused }) =>
       mutate(async () => {
@@ -178,8 +171,24 @@ export function startBackground() {
           await broadcast()
           return
         }
+        // A reused image can belong to a previous document. It cannot supply
+        // guessed frame selectors or click coordinates for a new document.
+        if (
+          frame.scene.frameIds.get(pending.event.documentId) !== pending.frameId
+        ) {
+          queue.clear()
+          await browser.storage.local.set({
+            recording: false,
+            captureError:
+              'Capture stopped because the frame context was unavailable.',
+          })
+          await broadcast()
+          return
+        }
+        const enriched = contextualStep(pending.event, frame.scene)
         const step = stepSchema.parse({
-          ...pending.event.step,
+          ...enriched,
+          redactions: frame.redactions,
           index,
           ...(reused && { lowConfidence: true }),
           ...(expectations.has(pending.event.step.id) && {
@@ -220,7 +229,7 @@ export function startBackground() {
             previous.expect = { urlMatches: step.url! }
         }
         capturedSteps.push(step)
-        const legacy = makeStep(pending.event.meta)
+        const legacy = makeStep(legacyMeta(step, pending.event, frame.scene))
         await browser.storage.local.set({
           capturedSteps,
           steps: [
@@ -230,7 +239,7 @@ export function startBackground() {
               text: step.title,
               lowConfidence: step.lowConfidence,
               position: index - 1,
-              screenshot: frame,
+              screenshot: frame.dataUrl,
             },
           ],
         })
@@ -293,6 +302,20 @@ export function startBackground() {
     await broadcast()
   }
   browser.runtime.onMessage.addListener((message, sender, respond) => {
+    if (message.type === FRAME_PROBE) {
+      respond({
+        ok:
+          sender.tab?.id !== undefined &&
+          sender.frameId !== undefined &&
+          broker.link(
+            message,
+            sender.tab.id,
+            sender.frameId,
+            sender.documentId,
+          ),
+      })
+      return
+    }
     void (async () => {
       if (message.type === 'START') {
         const [tab] = await browser.tabs.query({
@@ -303,6 +326,7 @@ export function startBackground() {
         const startedUrl = safeUrl(tab.url ?? message.url ?? '')
         // A prior canceled capture can still own the queue's drain promise.
         // Stop producers and settle it before admitting a new session's work.
+        const captureSessionId = crypto.randomUUID()
         await mutate(async () => {
           queue.clear()
           await browser.storage.local.set({ recording: false })
@@ -314,14 +338,41 @@ export function startBackground() {
           expectations.clear()
           lastNavigation = undefined
           await browser.storage.local.set({
-            recording: true,
+            recording: false,
             steps: [],
             capturedSteps: [],
-            captureSessionId: crypto.randomUUID(),
+            captureSessionId,
             captureTabId: tab.id,
             captureError: null,
             startedUrl,
           })
+        })
+        let primed: ProcessedFrame
+        try {
+          primed = await takeFrame(
+            {
+              sessionId: captureSessionId,
+              tabId: tab.id,
+              windowId: tab.windowId,
+            },
+            true,
+          )
+        } catch {
+          await abort(captureSessionId)
+          throw new Error('Capture could not start')
+        }
+        await mutate(async () => {
+          const latest = await browser.storage.local.get<LegacyStorage>([
+            'captureSessionId',
+            'captureError',
+          ])
+          if (
+            latest.captureSessionId !== captureSessionId ||
+            latest.captureError
+          )
+            throw new Error('Capture ended')
+          queue.primeFrame(primed)
+          await browser.storage.local.set({ recording: true })
         })
         await broadcast()
         respond({ ok: true })
@@ -385,19 +436,13 @@ export function startBackground() {
           respond({ ok: true })
           return
         }
-        const step = stepSchema.parse(message.event.step)
-        const meta = elementMetaSchema.parse(message.event.meta)
-        const event = {
-          ...message.event,
-          step,
-          meta,
-          topUrl: safeUrl(message.event.topUrl),
-        } as CapturedEvent
+        const event = localCaptureSchema.parse(message.event)
         await queue.enqueue({
           event,
           sessionId: message.sessionId,
           tabId: sender.tab.id!,
           windowId: sender.tab.windowId,
+          frameId: sender.frameId ?? 0,
         })
         respond({ ok: true })
       } else if (message.type === 'STOP') {
@@ -462,6 +507,7 @@ export function startBackground() {
         sessionId: state.captureSessionId!,
         tabId: id,
         windowId: tab.windowId,
+        frameId: 0,
       })
     })().catch(() => {})
   })

@@ -15,9 +15,16 @@ URLs. Target rectangles are CSS pixels in their document; `viewportPoint` maps
 same-origin nested-frame points to the top viewport, and click markers use source
 image pixels at DPR. `observePage` compares visible dialogs/headings within the
 action scope and top-level URLs, matching the replay runner's assertion scopes.
-`fieldMasks` returns mandatory CSS-pixel field/frame/opaque-host masks without reading values;
-unavailable cross-origin metadata fails closed. The extension currently masks
-whole frames until more precise frame privacy collection is implemented.
+`fieldRedactions` returns CSS-pixel masks with source/rule provenance without
+reading values; `fieldMasks` remains the rectangle-only compatibility helper.
+Editable Range geometry covers overflowing text without reading its characters;
+filters/text shadows conservatively cover the viewport. Opaque hosts stay masked.
+`FrameTracker` observes document/open-shadow geometry and mutation counters,
+provides stable unique frame selectors and detects unsupported transforms.
+The extension combines authenticated browser frame IDs with these snapshots to
+map cross-origin fields through nested content boxes. Unresolved frames stay
+opaque. `@stepdoc/core/capture/geometry` is a separate pure, worker-safe subpath.
+`captureId` uses cryptographic UUIDs even on ordinary HTTP pages.
 
 The native DOM verifier is included in `test:browser`, alongside the existing
 worker/replay checks. Structured metadata errors and resource-limit messages omit page data.
@@ -97,8 +104,8 @@ The v1 extension imports text/selector helpers directly from core. Its payload
 contracts and the v1 web app's schemas live in `@stepdoc/schema/legacy-v1`;
 `packages/shared` was removed during M9. Core's minimal description metadata type
 is derived from that schema and deliberately exposes no input-value field.
-The complete guide@1 capture pipeline, frame chain and accessible-name collection
-are scheduled for M11; callers supply semantic locator candidates and counts here.
+The M11 extension uses the DOM capture entrypoint for accessible names, scoped
+locator counts and frame chains. Visible-text Smart Blur and Alt+B remain open.
 
 `@stepdoc/core/export` (also individual `export/*` modules) provides synchronous,
 pure `exportMarkdown`, `exportHtml`, `exportGuideJson`, `exportPlaywright`,

@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds the isolated `@stepdoc/schema/capture` entry point for ephemeral
+`stepdoc/capture@1` extension messages: bounded local events, frame geometry and
+nonce-only probes. It rejects extra value/text fields and unknown input types.
+Only the existing guide@1 Step projection is persisted; applied mask rectangles
+use the existing source-image-pixel `redactions` fields. Guide JSON Schema,
+Storage API, identifiers and defaults are unchanged. No guide-data version bump
+or migration is needed for this private transport.
+
 M10 completes the renderer for the existing optional `rectangle.text`: a nonempty
 value adds a rounded caption to the outlined target. Existing optional `toX`/`toY`
 place that caption, defaulting to below the rectangle; arrow endpoints retain

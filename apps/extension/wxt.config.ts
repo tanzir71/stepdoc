@@ -6,7 +6,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: 'StepDoc Capture',
     description: 'Capture browser workflows as private step-by-step guides.',
-    permissions: ['activeTab', 'tabs', 'storage', 'downloads'],
+    permissions: ['activeTab', 'tabs', 'storage', 'downloads', 'webNavigation'],
     host_permissions: ['<all_urls>'],
     action: { default_title: 'StepDoc' },
     ...(browser === 'firefox'

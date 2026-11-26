@@ -271,6 +271,48 @@ Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-tar
 after a Chrome build. Normal runs compare trees and write ignored evidence PNGs.
 
 
+## M11 paired capture destinations
+
+`m11-destination-*.png` records eight native control states from the built Chrome
+extension. Fresh full contexts/screenshots for E01 (`26:5543`), E04 (`27:6690`)
+and E06 (`27:6897`) supply the reference. The E01/E04 panel is 400×900; E06's
+content is 360×560. Reference browser chrome is excluded from extension content.
+E01 retains its 52px header, 16px gutters and 32px shared segmented track. E04's
+native Save to field retains 13px/20px text and the original 12px chevron. The
+local file `packages/ui/assets/9e248.svg` is downloaded unchanged from E04 node
+`27:6813`; provenance records its source and SHA-256. The driver checks root
+dimensions, effective geometry and nonuniform painted pixels. Existing original
+logo, settings, record, merge/delete and arrow assets remain covered by the
+earlier screen suites and built-extension byte checks.
+
+Compared with the reference: actual source steps replace fictional Ledgerly
+content; title provenance describes page origin; mask counts reflect applied
+privacy masks. Existing manual merge/delete controls remain until real cleanup
+suggestions ship. The paired E06 adds the functional destination row using E01's
+shared segments. Safe status/activity and navigation remain reachable below the
+save controls. Pending-write and saved-editor failures lock the capture and
+explain retry/local recovery. These additions preserve the original token/font
+and asset treatments; no mock third-party app is built.
+
+Paired E01 keeps Pair server in its idle footer, using the existing original
+14px pair icon and shared ghost Button. The driver reopens E05 through this
+action and returns with the chosen destination intact.
+
+Eight committed aria trees cover idle/popup, light/dark/narrow review, uncertain
+save, editor retry and revoked access. Axe and overflow checks run on every
+state; keyboard ArrowRight selects the server. The paired card is a named tab
+panel; the unpaired native action tree is unchanged. The native save test checks
+selected-server recents/library links, original redacted upload bytes, stable
+retry without overwriting a later revision, cancellation and local recovery with
+an unreadable private vault. The server/editor are explicit local protocol
+fixtures, not the M12–M14 production targets. E05 connected-state copy now points
+to the implemented controls; its three affected trees are refreshed by the
+existing pairing suite. The form captures are unchanged.
+
+Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-destination.mjs`
+after a Chrome build. Ordinary verification compares trees and writes ignored
+PNG evidence. All cases run under the default loaded-extension gate.
+
 ## M17 L01/L02 public landing
 
 `m17-landing-desktop.png` and `m17-landing-mobile.png` are native Chromium

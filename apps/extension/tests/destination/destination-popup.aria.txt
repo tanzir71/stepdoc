@@ -1,0 +1,28 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Paired
+- main:
+  - text: Save captures to
+  - tablist "Save captures to":
+    - tab "This browser"
+    - tab "<server-host>/workspace" [selected]
+  - tabpanel "<server-host>/workspace":
+    - button "Start capture"
+    - heading "Start capture" [level=2]
+    - paragraph: Alt + Shift + S
+  - region "Capture options":
+    - heading "Smart blur" [level=3]
+    - switch "Smart blur" [checked]
+    - heading "Agent context" [level=3]
+    - switch "Agent context" [checked]
+  - region "Recent":
+    - heading "Recent" [level=2]
+    - paragraph: No server guides yet. Save a capture to create one.
+- contentinfo:
+  - status: Ready to capture
+  - navigation "StepDoc":
+    - button "Open library"
+    - button "Pair server"
+  - paragraph: "No side panel here: the popup starts and stops capture; the editor opens in a full tab."
+- complementary "Capture activity":
+  - group: Activity log

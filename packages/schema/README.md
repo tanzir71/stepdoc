@@ -45,6 +45,12 @@ token; public state and commands do not accept unexpected credential fields.
 and start DTOs. It rejects titles, paths, query strings, credentials and unexpected
 value fields. These controls do not change guide@1 or Storage API v1.
 
+`@stepdoc/schema/capture-destination` owns private browser/server choices,
+optimistic save commands and metadata-only receipts. A server choice binds the
+exact installation, device and private-vault generation. Tokens and unexpected
+fields are rejected. An absent choice on an older capture means this browser;
+retained write intent prevents editing a capture whose server commit is uncertain.
+
 The existing `/sessions` response has a typed client projection in
 `@stepdoc/schema/storage-api`. Guide parsing also creates independent mutable
 array defaults for each document; editing one guide cannot change another

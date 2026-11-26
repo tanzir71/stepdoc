@@ -489,7 +489,10 @@ export class CaptureHttpClient {
     }
     return this.#result(input, guide)
   }
-  async upload(input: GuideInput): Promise<ApiCaptureResult> {
+  async upload(
+    input: GuideInput,
+    beforePost?: () => Promise<void>,
+  ): Promise<ApiCaptureResult> {
     this.#client.ready()
     const guide = validateGuide(input)
     if (
@@ -527,6 +530,8 @@ export class CaptureHttpClient {
     // Read the stable capture ID first; never overwrite a later editor revision.
     const existing = await this.#existing(guide)
     if (existing) return existing
+    await beforePost?.()
+    this.#client.ready()
     let result: ApiCaptureResult
     try {
       result = await this.#client.json('sessions', apiCaptureResultSchema, {

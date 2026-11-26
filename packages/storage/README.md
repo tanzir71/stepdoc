@@ -184,6 +184,11 @@ capture's editor URL must resolve to exactly `g/<id>/edit` inside the selected
 server installation, without credentials, query strings, fragments or another
 origin. Only that constructed canonical URL leaves the client.
 
+The optional `upload(guide, beforePost)` callback durably records extension write
+intent after image/size/health/identity preflight and before the single POST.
+A rejected callback prevents the write. Existing-guide recovery does not invoke
+it. Private token providers still revalidate state immediately before a request.
+
 The native HTTP fixture now also runs real extension image preparation in a
 window and a module worker, then uploads to two local origins. Its server
 copies bytes into fixture blob storage without any image library. Client pixel

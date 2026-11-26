@@ -245,6 +245,7 @@ export function SegmentGroup<T extends string>({
   label,
   controls,
   hook,
+  disabled,
 }: {
   value: T
   options: ReadonlyArray<{ value: T; label: string }>
@@ -252,6 +253,7 @@ export function SegmentGroup<T extends string>({
   label: string
   controls: string
   hook: string
+  disabled?: boolean
 }) {
   const root = useRef<HTMLDivElement>(null)
   const selected = options.findIndex((option) => option.value === value)
@@ -262,6 +264,7 @@ export function SegmentGroup<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={(event) => {
+        if (disabled) return
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
           return
         event.preventDefault()
@@ -287,6 +290,7 @@ export function SegmentGroup<T extends string>({
         <Segment
           key={option.value}
           selected={option.value === value}
+          disabled={disabled}
           id={`${hook}-${option.value}`}
           aria-controls={controls}
           data-sd={`${hook}-${option.value}`}

@@ -1,0 +1,33 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Paired
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Save captures to
+  - tablist "Save captures to":
+    - tab "This browser"
+    - tab "<server-host>/workspace" [selected]
+  - tabpanel "<server-host>/workspace":
+    - button "Start capture"
+    - heading "Start capture" [level=2]
+    - paragraph: Records clicks, selects, navigation and page structure. Typed values are never recorded.
+    - text: Alt Shift S
+  - region "Capture options":
+    - heading "Smart blur" [level=3]
+    - paragraph: Pixelate detected text before screenshots are stored. Typed fields are always masked.
+    - switch "Smart blur" [checked]
+    - heading "Agent context Agent" [level=3]
+    - paragraph: Save role, accessible name, selectors and expected result per step.
+    - switch "Agent context" [checked]
+  - region "Recent captures":
+    - heading "Recent captures" [level=2]
+    - paragraph: No server guides yet. Save a capture to create one.
+- contentinfo:
+  - status: Capture destination updated.
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: <server>/workspace/
+    - button "Pair server"
+- complementary "Capture activity":
+  - group: Activity log

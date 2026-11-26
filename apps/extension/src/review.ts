@@ -16,6 +16,12 @@ import {
 } from '@stepdoc/storage'
 import { flattenImage } from '@stepdoc/core/canvas'
 import { captureUrl } from '@stepdoc/core/capture'
+import type {
+  CaptureDestination,
+  CaptureReceipt,
+  CaptureDestinationErrorCode,
+  ServerDestination,
+} from '@stepdoc/schema/capture-destination'
 import {
   captureImageBlob,
   MAX_API_JSON_BYTES,
@@ -40,6 +46,10 @@ export interface ReviewState {
   startedAt?: string
   clock?: CaptureClock
   savedId?: string
+  destination?: CaptureDestination
+  remoteAttempt?: ServerDestination
+  remoteSaved?: CaptureReceipt
+  saveError?: CaptureDestinationErrorCode
 }
 export interface CaptureDraft {
   sessionId: string

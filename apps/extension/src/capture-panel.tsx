@@ -12,6 +12,20 @@ import {
   Toggle,
 } from '@stepdoc/ui'
 import { IndexedDbAdapter, type GuideSummary } from '@stepdoc/storage'
+import { apiGuidePageSchema } from '@stepdoc/schema/storage-api'
+import { pairingStateSchema, type PairingState } from '@stepdoc/schema/pairing'
+import {
+  captureDestinationSchema,
+  captureDestinationErrorSchema,
+  type CaptureDestination,
+} from '@stepdoc/schema/capture-destination'
+import { DestinationFailure } from './capture-destination'
+import { destinationMessages, serverRoot } from './destination-view'
+import {
+  CaptureDestinationPicker,
+  pairedDestination,
+  sameDestination,
+} from './capture-destination-picker'
 import {
   capturePreferencesSchema,
   type ReviewEdit,
@@ -103,6 +117,8 @@ function CapturePanel() {
   const latest = useRef(state)
   const refreshNumber = useRef(0)
   const [ready, setReady] = useState(false)
+  const [pairState, setPairState] = useState<PairingState | null>(null)
+  const recentNumber = useRef(0)
   const [pairView, setPairView] = useState(
     new URL(location.href).searchParams.get('view') === 'pair',
   )
@@ -115,7 +131,9 @@ function CapturePanel() {
     null,
   )
   const [activity, setActivity] = useState<string[]>([])
-  const [recent, setRecent] = useState<GuideSummary[]>([])
+  const [recent, setRecent] = useState<
+    Array<GuideSummary & { editUrl?: string }>
+  >([])
   const [title, setTitle] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [confirm, setConfirm] = useState<'discard' | 'merge' | null>(null)
@@ -125,13 +143,35 @@ function CapturePanel() {
     : (review?.phase ?? (state.recording ? 'recording' : 'idle'))
   const recording = phase === 'recording' || phase === 'paused'
   const reviewing = phase === 'review' || phase === 'saving'
-  const committed = reviewing && !!review?.savedId
+  const committed =
+    reviewing &&
+    !!(review?.savedId || review?.remoteSaved || review?.remoteAttempt)
+  const parsedDestination = captureDestinationSchema.safeParse(
+    (phase === 'idle' ? state.captureDestination : review?.destination) ?? {
+      kind: 'browser',
+    },
+  )
+  const destination: CaptureDestination = parsedDestination.success
+    ? parsedDestination.data
+    : { kind: 'browser' }
+  const paired = pairedDestination(pairState)
+  const destinationKey = JSON.stringify(destination)
+  const serverSelected =
+    destination.kind === 'server' && sameDestination(destination, paired)
+  const libraryHref =
+    serverSelected && destination.kind === 'server'
+      ? serverRoot(destination).href
+      : 'app.html'
+  const libraryLabel =
+    destination.kind === 'server' && !serverSelected
+      ? 'Open local library'
+      : 'Open library'
   const steps = state.capturedSteps ?? []
   const preferences = review?.preferences ?? capturePreferencesSchema.parse({})
   const transition = ['starting', 'pausing', 'stopping', 'saving'].includes(
     phase,
   )
-  const disabled = !ready || busy || transition
+  const disabled = !ready || busy || transition || !!pairState?.pending
   const announce = (text: string) => {
     const current = latest.current
     setNotice({
@@ -154,12 +194,34 @@ function CapturePanel() {
     setReady(true)
   }
   async function loadRecent() {
+    const n = ++recentNumber.current
     let storage: IndexedDbAdapter | undefined
     try {
-      storage = await IndexedDbAdapter.open()
-      setRecent((await storage.listGuides()).items.slice(0, compact ? 2 : 3))
+      let items: Array<GuideSummary & { editUrl?: string }>
+      if (destination.kind === 'server') {
+        const reply: { ok: boolean; items?: unknown } =
+          await browser.runtime.sendMessage({
+            type: 'CAPTURE_SERVER_RECENT',
+            destination,
+          })
+        if (!reply.ok) throw new Error()
+        items = apiGuidePageSchema
+          .parse({ items: reply.items, nextCursor: null })
+          .items.map((guide) => ({
+            ...guide,
+            editUrl: new URL(`g/${guide.id}/edit`, serverRoot(destination))
+              .href,
+          }))
+      } else {
+        storage = await IndexedDbAdapter.open()
+        items = (await storage.listGuides()).items
+      }
+      if (n === recentNumber.current) setRecent(items.slice(0, compact ? 2 : 3))
     } catch {
-      announce('Recent captures are unavailable. Open the library to retry.')
+      if (n === recentNumber.current) {
+        setRecent([])
+        announce('Recent captures are unavailable. Open the library to retry.')
+      }
     } finally {
       storage?.close()
     }
@@ -168,16 +230,55 @@ function CapturePanel() {
     void refresh().catch(() =>
       announce('Capture controls are unavailable. Reopen this panel to retry.'),
     )
-    void loadRecent()
+    const updatePair = (next: PairingState) =>
+      setPairState((current) =>
+        current?.epoch === next.epoch && current.sequence > next.sequence
+          ? current
+          : next,
+      )
+    void browser.runtime
+      .sendMessage({ type: 'PAIR_STATUS' })
+      .then((reply: { ok: boolean; state?: unknown }) => {
+        const parsed = pairingStateSchema.safeParse(reply.state)
+        if (reply.ok && parsed.success) updatePair(parsed.data)
+      })
+      .catch(() => {})
+    const pairChanged: Parameters<
+      typeof browser.runtime.onMessage.addListener
+    >[0] = (message: unknown, sender) => {
+      if (
+        sender.id !== browser.runtime.id ||
+        sender.tab ||
+        !sender.url?.startsWith(browser.runtime.getURL('/'))
+      )
+        return
+      if (
+        !message ||
+        typeof message !== 'object' ||
+        !('type' in message) ||
+        message.type !== 'PAIR_STATE' ||
+        !('state' in message)
+      )
+        return
+      const parsed = pairingStateSchema.safeParse(message.state)
+      if (parsed.success) updatePair(parsed.data)
+    }
+    browser.runtime.onMessage.addListener(pairChanged)
     const changed = (_changes: unknown, area: string) => {
       if (area === 'local') void refresh()
     }
     browser.storage.onChanged.addListener(changed)
-    return () => browser.storage.onChanged.removeListener(changed)
+    return () => {
+      browser.storage.onChanged.removeListener(changed)
+      browser.runtime.onMessage.removeListener(pairChanged)
+    }
   }, [])
   useEffect(() => {
     const url = new URL(location.href)
     if (fullTab) writeTargetChoice(url, targetChoice)
+    if (destination.kind === 'server')
+      url.searchParams.set('destination', 'server')
+    else url.searchParams.delete('destination')
     url.searchParams.set(
       'view',
       state.guideMe
@@ -207,25 +308,40 @@ function CapturePanel() {
     state.guideMe?.index,
     state.guideMe?.guideId,
     targetChoice,
+    destinationKey,
   ])
   useEffect(() => {
     setTitle(review?.title ?? '')
     setSelected([])
   }, [review?.title, state.captureSessionId])
   useEffect(() => {
+    if (phase !== 'idle') return
+    setRecent([])
     void loadRecent()
-  }, [review?.savedId])
+    return () => {
+      recentNumber.current++
+    }
+  }, [review?.savedId, phase === 'idle', destinationKey, pairState?.generation])
   const invoke = async (type: string, extra: Record<string, unknown> = {}) => {
     const current = latest.current
-    const result: { ok: boolean; id?: string; code?: unknown } =
-      await browser.runtime.sendMessage({
-        type,
-        sessionId: current.captureSessionId,
-        revision: current.captureReview?.revision,
-        ...extra,
-      })
+    const result: {
+      ok: boolean
+      id?: string
+      code?: unknown
+      destinationCode?: unknown
+    } = await browser.runtime.sendMessage({
+      type,
+      sessionId: current.captureSessionId,
+      revision: current.captureReview?.revision,
+      ...extra,
+    })
     await refresh()
     if (!result.ok) {
+      const destinationCode = captureDestinationErrorSchema.safeParse(
+        result.destinationCode,
+      )
+      if (destinationCode.success)
+        throw new DestinationFailure(destinationCode.data)
       const code = captureTargetErrorSchema.safeParse(result.code)
       if (code.success) throw new CaptureTargetError(code.data)
       throw new Error('Command failed')
@@ -256,9 +372,11 @@ function CapturePanel() {
       }
     } catch (error) {
       announce(
-        error instanceof CaptureTargetError
-          ? targetMessages[error.code]
-          : 'Operation could not finish. The capture is retained; refresh and retry.',
+        error instanceof DestinationFailure
+          ? destinationMessages[error.code]
+          : error instanceof CaptureTargetError
+            ? targetMessages[error.code]
+            : 'Operation could not finish. The capture is retained; refresh and retry.',
       )
     } finally {
       setBusy(false)
@@ -266,7 +384,7 @@ function CapturePanel() {
   }
   const edit = (edit: ReviewEdit) =>
     command('EDIT_REVIEW', 'Review updated.', { edit })
-  async function save(openEditor: boolean) {
+  async function save(openEditor: boolean, keepLocal = false) {
     setBusy(true)
     try {
       if (!title.trim()) {
@@ -277,17 +395,21 @@ function CapturePanel() {
         await invoke('EDIT_REVIEW', {
           edit: { operation: 'title', title: title.trim() },
         })
-      await invoke('SAVE_CAPTURE', { openEditor })
+      await invoke('SAVE_CAPTURE', { openEditor, keepLocal })
       announce(
-        openEditor
-          ? 'Saved locally and opened the editor.'
-          : 'Saved to this browser.',
+        destination.kind === 'server' && !keepLocal
+          ? 'Saved on the server and opened the editor.'
+          : openEditor
+            ? 'Saved locally and opened the editor.'
+            : 'Saved to this browser.',
       )
-    } catch {
+    } catch (error) {
       announce(
-        latest.current.captureReview?.savedId
-          ? 'Guide is saved locally. Retry opening the editor or keep it local.'
-          : 'Local save could not finish. Your review is retained; retry saving.',
+        error instanceof DestinationFailure
+          ? destinationMessages[error.code]
+          : latest.current.captureReview?.savedId
+            ? 'Guide is saved locally. Retry opening the editor or keep it local.'
+            : 'Local save could not finish. Your review is retained; retry saving.',
       )
     } finally {
       setBusy(false)
@@ -295,6 +417,12 @@ function CapturePanel() {
   }
   const status =
     state.captureError ??
+    (!parsedDestination.success
+      ? destinationMessages.connection_changed
+      : null) ??
+    (reviewing && review?.saveError
+      ? destinationMessages[review.saveError]
+      : null) ??
     (transition
       ? `${phase[0]!.toUpperCase()}${phase.slice(1)}…`
       : (notice?.phase === phase ? notice.text : '') ||
@@ -352,7 +480,15 @@ function CapturePanel() {
         <Logo />
         <Badge
           className={recording ? 'capture-recording-badge' : undefined}
-          tone={phase === 'recording' ? 'danger' : 'neutral'}
+          tone={
+            phase === 'recording'
+              ? 'danger'
+              : phase === 'idle' &&
+                  destination.kind === 'server' &&
+                  sameDestination(destination, paired)
+                ? 'success'
+                : 'neutral'
+          }
           dot={compact && phase === 'idle'}
         >
           {phase === 'recording' ? <Icon name="pill-dot" /> : null}
@@ -362,7 +498,11 @@ function CapturePanel() {
               ? 'Paused'
               : reviewing
                 ? 'Stopped'
-                : 'Local'}
+                : destination.kind === 'server'
+                  ? sameDestination(destination, paired)
+                    ? 'Paired'
+                    : 'Server changed'
+                  : 'Local'}
           {recording ? <CaptureTime clock={review?.clock} /> : null}
         </Badge>
         {!compact ? (
@@ -378,9 +518,39 @@ function CapturePanel() {
         ) : null}
       </header>
       <main id="capture-main" className="capture-main">
+        {!parsedDestination.success && (phase === 'idle' || reviewing) ? (
+          <Button
+            kind="secondary"
+            disabled={disabled || committed}
+            data-sd="capture-destination-reset"
+            onClick={() =>
+              void command(
+                'SET_CAPTURE_DESTINATION',
+                'Capture destination reset to this browser.',
+                { destination: { kind: 'browser' } },
+              )
+            }
+          >
+            Use this browser
+          </Button>
+        ) : null}
         {phase === 'idle' || phase === 'starting' ? (
           <>
-            {!compact ? (
+            {paired || destination.kind === 'server' ? (
+              <CaptureDestinationPicker
+                choice={destination}
+                paired={paired}
+                reviewing={false}
+                disabled={disabled}
+                onChange={(destination) =>
+                  void command(
+                    'SET_CAPTURE_DESTINATION',
+                    'Capture destination updated.',
+                    { destination },
+                  )
+                }
+              />
+            ) : !compact ? (
               <div className="capture-destination">
                 <span>Save captures to</span>
                 <span>This browser</span>
@@ -405,12 +575,24 @@ function CapturePanel() {
                 disabled={disabled}
               />
             ) : null}
-            <div className="capture-start-card">
+            <div
+              className="capture-start-card"
+              id={paired ? 'capture-start-content' : undefined}
+              role={paired ? 'tabpanel' : undefined}
+              aria-labelledby={
+                paired ? `capture-destination-${destination.kind}` : undefined
+              }
+            >
               <Button
                 className="capture-record"
                 aria-label="Start capture"
                 data-sd="capture-start"
-                disabled={disabled || (fullTab && !targetReady)}
+                disabled={
+                  disabled ||
+                  !parsedDestination.success ||
+                  (destination.kind === 'server' && !serverSelected) ||
+                  (fullTab && !targetReady)
+                }
                 onClick={() => {
                   setNotice(null)
                   void command(
@@ -510,8 +692,12 @@ function CapturePanel() {
                     className="capture-recent-card"
                     data-sd="capture-recent"
                     key={guide.id}
-                    href={`app.html?route=${encodeURIComponent(`/g/${guide.id}/edit`)}`}
+                    href={
+                      guide.editUrl ??
+                      `app.html?route=${encodeURIComponent(`/g/${guide.id}/edit`)}`
+                    }
                     target="_blank"
+                    referrerPolicy="no-referrer"
                   >
                     {!compact ? (
                       <span className="capture-number">
@@ -522,13 +708,22 @@ function CapturePanel() {
                     <span>
                       {guide.title}
                       {!compact ? (
-                        <small>{guide.stepCount} steps · this browser</small>
+                        <small>
+                          {guide.stepCount} steps ·{' '}
+                          {destination.kind === 'server'
+                            ? 'server'
+                            : 'this browser'}
+                        </small>
                       ) : null}
                     </span>
                   </a>
                 ))
               ) : (
-                <p>No local guides yet. Start a capture to create one.</p>
+                <p>
+                  {destination.kind === 'server'
+                    ? 'No server guides yet. Save a capture to create one.'
+                    : 'No local guides yet. Start a capture to create one.'}
+                </p>
               )}
             </section>
           </>
@@ -628,9 +823,13 @@ function CapturePanel() {
               onChange={(event) => setTitle(event.target.value)}
             />
             <p className="capture-hint">
-              {committed
+              {review?.savedId
                 ? 'Saved locally. Continue editing in the native editor.'
-                : 'Suggested from the page origin. Edit before saving.'}
+                : review?.remoteSaved
+                  ? 'Saved on the server. Continue editing in its editor.'
+                  : review?.remoteAttempt
+                    ? 'Server save is unconfirmed. Retry to recover it or keep a local copy.'
+                    : 'Suggested from the page origin. Edit before saving.'}
             </p>
             <div className="capture-counts">
               <Badge dot={false}>{steps.length} steps</Badge>
@@ -785,16 +984,32 @@ function CapturePanel() {
         ) : null}
         {reviewing && !compact ? (
           <>
-            <div className="capture-destination">
-              <span>Save to</span>
-              <span>This browser</span>
-            </div>
+            {paired || destination.kind === 'server' ? (
+              <CaptureDestinationPicker
+                choice={destination}
+                paired={paired}
+                reviewing
+                disabled={disabled || committed}
+                onChange={(destination) =>
+                  void command(
+                    'SET_CAPTURE_DESTINATION',
+                    'Save destination updated.',
+                    { destination },
+                  )
+                }
+              />
+            ) : (
+              <div className="capture-destination">
+                <span>Save to</span>
+                <span>This browser</span>
+              </div>
+            )}
             <div className="capture-actions">
               <Button
                 kind="ghost"
                 data-sd="capture-keep-local"
                 disabled={disabled || !steps.length || !!state.captureError}
-                onClick={() => void save(false)}
+                onClick={() => void save(false, true)}
               >
                 Keep local
               </Button>
@@ -821,6 +1036,9 @@ function CapturePanel() {
           }
         >
           {status}
+          {phase === 'review' && review?.remoteAttempt && !review.remoteSaved
+            ? ' Saving may already have finished on the server. Retry to recover it or keep a local copy.'
+            : ''}
         </p>
         <nav aria-label="StepDoc">
           {compact ? (
@@ -833,13 +1051,17 @@ function CapturePanel() {
                 disabled={recording || transition || busy}
                 onClick={() => {
                   void browser.tabs
-                    .create({ url: browser.runtime.getURL('/app.html') })
+                    .create({
+                      url: serverSelected
+                        ? libraryHref
+                        : browser.runtime.getURL('/app.html'),
+                    })
                     .catch(() =>
                       announce('The library could not open. Retry opening it.'),
                     )
                 }}
               >
-                Open library
+                {libraryLabel}
               </Button>
               <Button
                 kind="ghost"
@@ -853,10 +1075,29 @@ function CapturePanel() {
               </Button>
             </>
           ) : (
-            <a href="app.html" target="_blank" data-sd="capture-library">
-              <Icon name="popup-library" />
-              Open library
-            </a>
+            <>
+              <a
+                href={libraryHref}
+                target="_blank"
+                referrerPolicy="no-referrer"
+                data-sd="capture-library"
+              >
+                <Icon name="popup-library" />
+                {libraryLabel}
+              </a>
+              {phase === 'idle' && (paired || destination.kind === 'server') ? (
+                <Button
+                  kind="ghost"
+                  size="s"
+                  icon="popup-pair"
+                  data-sd="capture-pair"
+                  disabled={disabled}
+                  onClick={openPair}
+                >
+                  Pair server
+                </Button>
+              ) : null}
+            </>
           )}
           {phase !== 'idle' ? (
             <Button
@@ -920,7 +1161,9 @@ function CapturePanel() {
         >
           {confirm === 'merge'
             ? 'Combine instructions into one manual step and retain the first screenshot. The combined step will be marked for review and will require manual completion.'
-            : 'The unsaved steps and screenshots will be removed from this browser.'}
+            : review?.remoteAttempt
+              ? 'The retained steps and screenshots will be removed from this browser. Any guide already saved on the server will remain there.'
+              : 'The unsaved steps and screenshots will be removed from this browser.'}
         </Confirm>
       ) : null}
     </div>

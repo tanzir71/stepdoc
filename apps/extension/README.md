@@ -3,8 +3,8 @@
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
 The local E01/E02/E04 capture/review path and E03 Guide Me use shared React,
 tokens, original Figma vectors and bundled Geist. E02 includes its recording
-pill/timer, and E06 has its native local popup flow. Pairing, voice and cleanup
-remain M11 work.
+pill/timer, and E06 has its native popup flow. E05 pairing and paired capture
+destinations are implemented; voice and cleanup remain M11 work.
 The recorder now also retains guide@1 event metadata. The local library and editor run the actual shared SPA,
 with native `IndexedDbAdapter` storage, at the private extension `app.html` page.
 The **Open library** link opens it in a full tab.
@@ -37,7 +37,7 @@ The retained v1 destination is configured through **Settings → Web app URL**;
 it still posts to `/api/sessions` and opens `/guides/:id/edit`. Its retry payload
 stays in extension storage. The recovery JSON download uses a data URL because
 MV3 service workers have no `URL.createObjectURL` API. V2 paired/local capture
-destinations share the reviewed local flow; paired hosts remain M11 work.
+destinations share the review flow described below.
 The v1 projection preserves static input types, uses a password hint for secret
 references on ordinary controls, and retains the authoritative guide@1 caption;
 the existing v1 migration can therefore keep those fields classified as secrets.
@@ -122,7 +122,7 @@ then force failure to prove upload blocking. A third loaded-extension suite also
 checks strict page CSP, keyboard/pointer/cross-frame picking, no target activation,
 stored text/manual pixels, wide/narrow axe and an exact aria snapshot, session
 reset and actual text-collector limits. Local recording/review/saving, Guide Me
-and popup flows are covered below; paired destinations remain M11 work.
+and popup flows are covered below, including paired destinations.
 
 ## Guide Me (E03)
 
@@ -260,8 +260,42 @@ records can be forgotten without allowing recovery to overwrite a valid record.
 fixture. It checks geometry/original painted vectors, light/dark/narrow/dialog
 aria and axe, paste/keyboard, private persistence, content-world authorization,
 cookie/referrer-free requests, cancellation, stale generations, recovery and
-popup/full-tab navigation. Captures still save locally: scoped server capture
-upload, destination selection and paired editor integration remain M11 work.
+popup/full-tab navigation. Paired capture saving is covered by the separate
+destination suite below.
+
+## Paired capture destinations
+
+E01/E06 use the shared keyboard SegmentGroup to choose this browser or the paired
+installation. E04 exposes the same choice as a native Save to select. The idle
+choice applies to new captures; a review choice applies only to that capture.
+The server/device/vault-generation binding is revalidated privately for every
+authorized request. A changed or revoked connection requires explicit recovery.
+The idle Pair server action remains available in the panel footer while paired,
+so check, repair and forget stay reachable after selecting a destination.
+Only `destination=server` enters control URLs; no device ID or token does.
+
+The background prepares already-redacted original/rendered images and uses the
+capture-only `/sessions` client. It records pending-write intent immediately
+before POST. An uncertain write freezes edits and destination changes; retry
+reads the stable capture ID and preserves later server edits. A saved receipt
+survives an editor-opening failure, so retry opens the canonical installation
+editor without uploading again. Cancel aborts transport and prevents late state
+from restoring an old review. Discard warns that an existing server save remains.
+
+Keep local always uses the native atomic browser adapter, including when the
+credential vault is unreadable. It does not change the global destination.
+Recent captures and Open library follow the selected destination; choose this
+browser to find a local fallback. Metadata and fixed error codes stay private to
+extension controls; source content scripts cannot select, list, save or cancel.
+
+`verify-destination.mjs` pairs through E05, records trusted source interactions,
+saves/opens the selected server editor, checks retained redacted bytes, recovers
+a truncated acknowledgement while preserving a newer revision, retries editor
+opening, cancels an in-flight save and proves local recovery after revocation and
+vault corruption. Eight aria trees and axe cover E01/E04/E06, light/dark/narrow
+review and retained failures. Fixtures only store bytes; actual PHP/Worker/Node
+implementations remain M12–M14. Captures exceeding the inline JSON budget still
+need the separate blob path.
 
 ## Full-tab capture source
 

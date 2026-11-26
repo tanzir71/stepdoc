@@ -5,7 +5,7 @@
 - main:
   - region "Server paired":
     - heading "Server paired" [level=1]
-    - paragraph: Captures currently stay in this browser. Your server connection is saved for the paired workspace.
+    - paragraph: Choose this server in the capture controls to upload reviewed captures. Keep local remains available.
     - heading "Connected server" [level=2]
     - paragraph: <server>/api/v1/
     - text: Connection checked

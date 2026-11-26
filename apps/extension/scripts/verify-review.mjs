@@ -355,7 +355,7 @@ try {
     .fill('Reviewed local workflow')
   await press('capture-save')
   await expect(panel.getByRole('status')).toHaveText(
-    'Local save could not finish. Your review is retained; retry saving.',
+    'Capture storage is unavailable. Your review is retained; retry saving.',
   )
   await waitPhase('review')
   assert.equal((await state()).capturedSteps.length, 2)

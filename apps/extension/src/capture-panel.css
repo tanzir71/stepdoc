@@ -53,11 +53,52 @@ body {
   font: var(--sd-type-label-s);
   color: var(--sd-text-secondary);
 }
-.capture-destination span:last-child {
+.capture-destination > span:last-child {
   color: var(--sd-text-primary);
   background: var(--sd-bg-sunken);
   border-radius: var(--sd-radius-md);
   padding: var(--sd-space-2) var(--sd-space-3);
+}
+.capture-destination-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sd-space-2);
+  color: var(--sd-text-secondary);
+  font: var(--sd-type-label-s);
+}
+.capture-destination-picker .sd-segment-group {
+  max-width: 100%;
+}
+.capture-destination-picker .sd-segment {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.capture-destination-select {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 300px;
+}
+.capture-destination-select select {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-radius: var(--sd-radius-sm);
+  padding: 0 var(--sd-space-5) 0 0;
+  height: 20px;
+  background: transparent;
+  color: var(--sd-text-primary);
+  font: var(--sd-type-body-s);
+  text-align: right;
+  text-overflow: ellipsis;
+}
+.capture-destination-select .sd-icon {
+  position: absolute;
+  right: 0;
+  top: 4px;
+  pointer-events: none;
 }
 .capture-start-card {
   display: flex;

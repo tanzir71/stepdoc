@@ -78,6 +78,32 @@ function fixture(
   return { calls, fetcher, token, open }
 }
 describe('scoped capture HTTP client', () => {
+  it('persists caller intent immediately before POST, after validation and identity lookup', async () => {
+    const f = fixture(),
+      client = await f.open()
+    const beforePost = vi.fn(async () => {
+      expect(f.calls.map((call) => call.init.method)).toEqual(['GET', 'GET'])
+    })
+    await client.upload(input(), beforePost)
+    expect(beforePost).toHaveBeenCalledOnce()
+    client.close()
+    const existing = fixture(() => json(stored())),
+      recovered = await existing.open()
+    await recovered.upload(input(), beforePost)
+    expect(beforePost).toHaveBeenCalledOnce()
+    recovered.close()
+  })
+  it('does not post when persisting caller intent fails', async () => {
+    const f = fixture(),
+      client = await f.open()
+    await expect(
+      client.upload(input(), async () => {
+        throw new Error('Not persisted')
+      }),
+    ).rejects.toThrow('Not persisted')
+    expect(f.calls.some((call) => call.init.method === 'POST')).toBe(false)
+    client.close()
+  })
   it('uses only anonymous health, guides:read identity recovery and capture:write sessions', async () => {
     const f = fixture(),
       client = await f.open()

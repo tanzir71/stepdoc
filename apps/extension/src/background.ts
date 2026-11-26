@@ -41,6 +41,18 @@ import {
   suggestedTitle,
   type ReviewState,
 } from './review'
+import {
+  captureDestinationCommandSchema,
+  captureSaveCommandSchema,
+  captureRecentCommandSchema,
+  type CaptureDestination,
+} from '@stepdoc/schema/capture-destination'
+import {
+  CaptureDestinations,
+  DestinationFailure,
+  destinationChoice,
+  destinationError,
+} from './capture-destination'
 
 type SessionBody = {
   title: string
@@ -66,6 +78,7 @@ export interface LegacyStorage {
   pendingSession?: SessionBody
   captureBlurMode?: boolean
   captureManualCount?: number
+  captureDestination?: CaptureDestination
 }
 type Pending = {
   event: CapturedEvent
@@ -152,8 +165,11 @@ export function startBackground() {
   let commands = Promise.resolve()
   let privateRunning = false
   let legacyStarting = 0
+  let activeSave: { sessionId: string; controller: AbortController } | undefined
+  const vault = new IndexedDbConnectionVault()
+  const destinations = new CaptureDestinations(vault)
   const pairing = new PairingController({
-    vault: new IndexedDbConnectionVault(),
+    vault,
     extensionId: new URL(browser.runtime.getURL('/')).host,
     deviceName: `StepDoc ${import.meta.env.BROWSER}`,
     canChange: async () => {
@@ -595,6 +611,23 @@ export function startBackground() {
     const ownControls =
       sender.id === browser.runtime.id &&
       !!sender.url?.startsWith(browser.runtime.getURL(''))
+    if (['CANCEL', 'STOP', 'RETRY'].includes(message.type) && !ownControls) {
+      respond({ ok: false, error: 'Capture operation failed' })
+      return
+    }
+    if (message.type === 'CAPTURE_SERVER_RECENT') {
+      const command = captureRecentCommandSchema.safeParse(message)
+      if (!ownControls || !command.success) {
+        respond({ ok: false, code: 'forbidden' })
+        return
+      }
+      void destinations.recent(command.data.destination).then(
+        (items) => respond({ ok: true, items }),
+        (error: unknown) =>
+          respond({ ok: false, code: destinationError(error).code }),
+      )
+      return true
+    }
     if (message.type === 'CAPTURE_TARGETS') {
       if (
         !ownControls ||
@@ -647,6 +680,7 @@ export function startBackground() {
       'SAVE_CAPTURE',
       'DISCARD_CAPTURE',
       'SET_CAPTURE_PREFERENCES',
+      'SET_CAPTURE_DESTINATION',
       'SHORTCUT',
       'GUIDE_START',
       'GUIDE_CLEAR',
@@ -721,7 +755,46 @@ export function startBackground() {
           }
         }
       }
-      if (message.type === 'CAPTURE_FOCUS_TARGET') {
+      if (message.type === 'SET_CAPTURE_DESTINATION') {
+        const parsed = captureDestinationCommandSchema.safeParse(message)
+        if (!parsed.success) throw new DestinationFailure('forbidden')
+        const command = parsed.data
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'captureSessionId',
+          'captureReview',
+          'recording',
+        ])
+        const review = state.captureReview
+        if (
+          pairing.busy ||
+          state.recording ||
+          ![undefined, 'idle', 'review'].includes(review?.phase)
+        )
+          throw new DestinationFailure('busy')
+        if (
+          command.sessionId !== state.captureSessionId ||
+          command.revision !== review?.revision
+        )
+          throw new DestinationFailure('stale')
+        if (
+          review?.phase === 'review' &&
+          (review.savedId || review.remoteSaved || review.remoteAttempt)
+        )
+          throw new DestinationFailure('busy')
+        const destination = await destinations.validate(command.destination)
+        if (review?.phase === 'review')
+          await browser.storage.local.set({
+            captureReview: {
+              ...review,
+              destination,
+              saveError: undefined,
+              revision: (review.revision ?? 0) + 1,
+            },
+          })
+        else
+          await browser.storage.local.set({ captureDestination: destination })
+        respond({ ok: true })
+      } else if (message.type === 'CAPTURE_FOCUS_TARGET') {
         const command = captureTargetCommandSchema.parse(message)
         if (command.type !== 'CAPTURE_FOCUS_TARGET')
           throw new CaptureTargetError('forbidden')
@@ -781,6 +854,7 @@ export function startBackground() {
         await openReview(true)
         respond({ ok: true })
       } else if (message.type === 'START' || message.type === 'START_CAPTURE') {
+        if (activeSave) throw new DestinationFailure('busy')
         if (pairing.busy) throw new Error('Pairing active')
         const local = message.type === 'START_CAPTURE'
         const start = local ? captureStartSchema.parse(message) : undefined
@@ -798,7 +872,13 @@ export function startBackground() {
         const previous = await browser.storage.local.get<LegacyStorage>([
           'recording',
           'captureReview',
+          'captureDestination',
         ])
+        const destination = local
+          ? await destinations.validate(
+              destinationChoice(previous.captureDestination),
+            )
+          : { kind: 'browser' as const }
         if (
           local &&
           (previous.recording ||
@@ -849,6 +929,7 @@ export function startBackground() {
                 capturePreferencesSchema.parse({}),
               startedAt: new Date().toISOString(),
               clock: stopClock(),
+              destination,
             },
           })
         })
@@ -902,6 +983,7 @@ export function startBackground() {
         message.type === 'CANCEL' ||
         message.type === 'DISCARD_CAPTURE'
       ) {
+        if (message.type === 'CANCEL') activeSave?.controller.abort()
         if (
           message.type === 'DISCARD_CAPTURE' &&
           message.sessionId !==
@@ -1040,7 +1122,8 @@ export function startBackground() {
         )
           throw new Error('Review changed')
         if (message.type === 'EDIT_REVIEW') {
-          if (review.savedId) throw new Error('Capture already committed')
+          if (review.savedId || review.remoteSaved || review.remoteAttempt)
+            throw new Error('Capture already committed')
           const edit = reviewEditSchema.parse(message.edit)
           if (edit.operation === 'title') review.title = edit.title
           else {
@@ -1059,55 +1142,141 @@ export function startBackground() {
           })
           respond({ ok: true })
         } else {
+          const parsed = captureSaveCommandSchema.safeParse(message)
+          if (!parsed.success) throw new DestinationFailure('forbidden')
+          const command = parsed.data
           if (state.captureError)
-            throw new Error('Capture failed privacy checks')
-          await browser.storage.local.set({
-            captureReview: { ...review, phase: 'saving' },
-          })
-          let committedId = review.savedId
+            throw new DestinationFailure('invalid_capture')
+          const operation = {
+            sessionId: state.captureSessionId!,
+            controller: new AbortController(),
+          }
+          activeSave = operation
           try {
-            const guide = await saveCapture({
-              sessionId: state.captureSessionId!,
-              title: review.title!,
-              startedAt: review.startedAt!,
-              startedUrl: state.startedUrl!,
-              steps: state.capturedSteps ?? [],
-              images: state.steps ?? [],
-            })
-            committedId = guide.id
-            await browser.storage.local.set({
-              captureReview: {
-                ...review,
-                phase: 'saving',
-                savedId: committedId,
-              },
-            })
-            if (message.openEditor !== false)
-              await browser.tabs.create({
-                url: browser.runtime.getURL(
-                  `/app.html?route=${encodeURIComponent(`/g/${guide.id}/edit?step=1`)}`,
-                ),
+            await mutate(async () => {
+              const current = await browser.storage.local.get<LegacyStorage>([
+                'captureSessionId',
+                'captureReview',
+              ])
+              if (
+                operation.controller.signal.aborted ||
+                current.captureSessionId !== operation.sessionId ||
+                current.captureReview?.phase !== 'review' ||
+                current.captureReview.revision !== review.revision
+              )
+                throw new DestinationFailure('stale')
+              await browser.storage.local.set({
+                captureReview: {
+                  ...review,
+                  phase: 'saving',
+                  saveError: undefined,
+                },
               })
-            await browser.storage.local.set({
-              recording: false,
-              steps: [],
-              capturedSteps: [],
-              captureReview: {
-                phase: 'idle',
-                preferences: review.preferences,
-                savedId: guide.id,
-              },
             })
-            respond({ ok: true, id: guide.id })
-          } catch {
-            await browser.storage.local.set({
-              captureReview: {
-                ...review,
+          } catch (error) {
+            if (activeSave === operation) activeSave = undefined
+            throw destinationError(error)
+          }
+          const assertSaving = async () => {
+            if (activeSave !== operation || operation.controller.signal.aborted)
+              throw new DestinationFailure('cancelled')
+            const current = await browser.storage.local.get<LegacyStorage>([
+              'captureSessionId',
+              'captureReview',
+            ])
+            if (
+              current.captureSessionId !== operation.sessionId ||
+              current.captureReview?.phase !== 'saving' ||
+              current.captureReview.revision !== review.revision
+            )
+              throw new DestinationFailure('stale')
+            return current.captureReview
+          }
+          const remember = (update: (current: ReviewState) => ReviewState) =>
+            mutate(async () => {
+              const current = await assertSaving()
+              await browser.storage.local.set({
+                captureReview: update(current),
+              })
+            })
+          const draft = {
+            sessionId: operation.sessionId,
+            title: review.title!,
+            startedAt: review.startedAt!,
+            startedUrl: state.startedUrl!,
+            steps: state.capturedSteps ?? [],
+            images: state.steps ?? [],
+          }
+          try {
+            const destination = command.keepLocal
+              ? { kind: 'browser' as const }
+              : destinationChoice(review.destination)
+            let id: string, url: string
+            if (destination.kind === 'browser') {
+              const saved = await saveCapture(draft).catch(() => {
+                throw new DestinationFailure('storage_unavailable')
+              })
+              id = saved.id
+              await remember((current) => ({ ...current, savedId: id }))
+              url = browser.runtime.getURL(
+                `/app.html?route=${encodeURIComponent(`/g/${id}/edit?step=1`)}`,
+              )
+            } else {
+              let receipt = review.remoteSaved
+              if (!receipt) {
+                receipt = await destinations.upload(draft, destination, {
+                  signal: operation.controller.signal,
+                  guard: async () => {
+                    await assertSaving()
+                  },
+                  started: () =>
+                    remember((current) => ({
+                      ...current,
+                      remoteAttempt: destination,
+                    })),
+                })
+                await remember((current) => ({
+                  ...current,
+                  remoteSaved: receipt,
+                }))
+              }
+              id = receipt.id
+              url = await destinations.editor(receipt, operation.sessionId)
+            }
+            await assertSaving()
+            if (command.openEditor !== false) {
+              try {
+                await browser.tabs.create({ url })
+              } catch {
+                throw new DestinationFailure('editor_unavailable')
+              }
+            }
+            await mutate(async () => {
+              await assertSaving()
+              await browser.storage.local.set({
+                recording: false,
+                steps: [],
+                capturedSteps: [],
+                captureReview: {
+                  phase: 'idle',
+                  preferences: review.preferences,
+                  ...(destination.kind === 'browser' && { savedId: id }),
+                },
+              })
+            })
+            respond({ ok: true, id })
+          } catch (error) {
+            const failure = destinationError(error)
+            try {
+              await remember((current) => ({
+                ...current,
                 phase: 'review',
-                ...(committedId && { savedId: committedId }),
-              },
-            })
-            throw new Error('Local save failed')
+                saveError: failure.code,
+              }))
+            } catch {}
+            throw failure
+          } finally {
+            if (activeSave === operation) activeSave = undefined
           }
         }
       } else if (
@@ -1275,6 +1444,7 @@ export function startBackground() {
             'captureManualCount',
             'captureReview',
             'guideMe',
+            'captureDestination',
           ]),
         )
     }
@@ -1308,6 +1478,9 @@ export function startBackground() {
           ok: false,
           error: 'Capture operation failed',
           ...(error instanceof CaptureTargetError ? { code: error.code } : {}),
+          ...(error instanceof DestinationFailure
+            ? { destinationCode: error.code }
+            : {}),
         }),
       )
     } else

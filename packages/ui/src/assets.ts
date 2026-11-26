@@ -1,4 +1,5 @@
 import asset0 from '../assets/418d0.svg?url&no-inline'
+import destinationChevron from '../assets/9e248.svg?url'
 import asset1 from '../assets/70a3e.svg?url'
 import asset2 from '../assets/8fef2.svg?url'
 import asset3 from '../assets/aad3f.svg?url'
@@ -325,6 +326,11 @@ export const icons = {
     url: asset44,
     width: 14,
     height: 14,
+  },
+  'capture-destination-chevron': {
+    url: destinationChevron,
+    width: 12,
+    height: 12,
   },
   plus: {
     url: asset45,

@@ -1,0 +1,34 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Stopped
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Guide title
+  - textbox "Guide title": Local recovery
+  - paragraph: Suggested from the page origin. Edit before saving.
+  - text: 2 steps 2 masks applied 0 unclear
+  - paragraph: Select adjacent steps to merge, or delete selected steps. Alt+Up/Down reorders the focused row.
+  - list:
+    - listitem:
+      - 'checkbox "Select step 1: Click \"Open settings\""'
+      - text: 01 Click "Open settings" click · button
+    - listitem:
+      - 'checkbox "Select step 2: Fill in the \"Email\" field"'
+      - text: 02 Fill in the "Email" field fill · secret
+  - button "Merge selected" [disabled]
+  - button "Delete" [disabled]
+- contentinfo:
+  - text: Save to
+  - combobox "Save to":
+    - option "This browser"
+    - option "<server-host>/workspace" [selected]
+  - button "Keep local"
+  - button "Save & open editor"
+  - status: This device no longer has server access. Keep the capture local, then pair again with a new code.
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: <server>/workspace/
+    - button "Discard capture"
+- complementary "Capture activity":
+  - group: Activity log

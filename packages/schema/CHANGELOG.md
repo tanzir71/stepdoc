@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds `@stepdoc/schema/capture-destination`: strict private destination,
+save/recent commands and metadata-only save receipts. Extension preferences
+optionally retain a destination; reviews optionally retain that binding, pending
+write intent, a receipt and a safe error code. Older captures without a binding
+save to this browser. These records contain no token and are never guide fields
+or exports. Guide@1, Storage API v1 and both database layouts are unchanged;
+no data migration, wire identifier or package version bump is needed.
+
 M11 adds the response-only client projection for the existing Storage API v1
 `POST /sessions` result (`guide` plus `editUrl`). Captures use existing guide@1
 identity/step/screenshot fields and the API's documented inline-data-URL path;

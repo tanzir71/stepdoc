@@ -1116,6 +1116,16 @@
           "name": "E05 scoped-token notice"
         }
       ]
+    },
+    {
+      "file": "9e248.svg",
+      "sha256": "6a5e696c0ac4c2c3f45c1fdde78099795446e59640e004cfea00b075fd320114",
+      "slots": [
+        {
+          "node": "27:6813",
+          "name": "E04 Save to destination chevron, 12x12"
+        }
+      ]
     }
   ]
 }

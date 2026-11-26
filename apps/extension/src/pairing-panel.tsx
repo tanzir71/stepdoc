@@ -337,8 +337,8 @@ export function PairingPanel({
                   : 'Server paired'}
               </h1>
               <p>
-                Captures currently stay in this browser. Your server connection
-                is saved for the paired workspace.
+                Choose this server in the capture controls to upload reviewed
+                captures. Keep local remains available.
               </p>
             </div>
             <div className="pair-local">

@@ -197,7 +197,7 @@ export const stepSchema = z
     screenshot: screenshotSchema.optional(),
     click: clickSchema.nullable().optional(),
     edits: editsSchema.optional(),
-    redactions: z.array(redactionSchema).default([]),
+    redactions: z.array(redactionSchema).default(() => []),
     confidence: z.number().min(0).max(1).optional(),
     lowConfidence: z.boolean().default(false),
     notes: z.string().optional(),
@@ -251,9 +251,9 @@ export const guideSchema = z.strictObject({
     .optional(),
   locale: z.string().default('en'),
   collectionId: z.string().nullable().optional(),
-  tags: z.array(z.string()).default([]),
-  preconditions: z.array(z.string()).default([]),
-  variables: z.array(variableSchema).default([]),
+  tags: z.array(z.string()).default(() => []),
+  preconditions: z.array(z.string()).default(() => []),
+  variables: z.array(variableSchema).default(() => []),
   steps: z.array(stepSchema).min(1).max(500),
   version: integer.min(1),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
@@ -267,7 +267,7 @@ export const guideSchema = z.strictObject({
       isPublic: z.boolean().default(false),
       targets: z
         .array(z.enum(['link', 'embed', 'github-pages', 'cloudflare-pages']))
-        .default([]),
+        .default(() => []),
     })
     .optional(),
 })

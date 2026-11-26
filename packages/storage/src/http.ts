@@ -8,6 +8,8 @@ import {
   bearerTokenSchema,
   issuedTokenSchema,
   pairingClaimSchema,
+  apiCaptureResultSchema,
+  type ApiCaptureResult,
   type PairingClaim,
   type IssuedToken,
 } from '@stepdoc/schema/storage-api'
@@ -28,8 +30,10 @@ import {
   validateVersion,
 } from './guides'
 import { MAX_BLOB_BYTES, validateBlob } from './raster'
+import { jsonBody } from './json-body'
 
 export const MAX_API_JSON_BYTES = 64 * 1024 * 1024
+export const MAX_CAPTURE_INLINE_BYTES = 8 * 1024 * 1024
 export interface HttpRequestOptions {
   signal?: AbortSignal
   fetch?: typeof globalThis.fetch
@@ -217,6 +221,7 @@ class HttpClient {
   }
   ready() {
     if (this.#closed) throw new StorageError('closed')
+    if (this.#external?.aborted) throw new StorageError('storage_unavailable')
   }
   async #run<T>(work: (signal: AbortSignal) => Promise<T>): Promise<T> {
     if (this.#closed) throw new StorageError('closed')
@@ -364,11 +369,196 @@ class HttpClient {
       },
     )
   }
-  body(value: unknown): string {
-    const body = JSON.stringify(value)
-    if (new TextEncoder().encode(body).length > this.jsonLimit)
+  body(value: unknown, code: StorageErrorCode = 'invalid_guide'): string {
+    return jsonBody(value, this.jsonLimit, code)
+  }
+}
+
+export interface CaptureHttpOptions extends HttpRequestOptions {
+  token: () => string | Promise<string>
+}
+export async function captureImageBlob(
+  url: string,
+  maximum = MAX_BLOB_BYTES,
+): Promise<Blob> {
+  if (typeof url !== 'string') throw new StorageError('invalid_blob')
+  if (!Number.isSafeInteger(maximum) || maximum < 0 || maximum > MAX_BLOB_BYTES)
+    throw new StorageError('invalid_options')
+  if (url.length > MAX_CAPTURE_INLINE_BYTES)
+    throw new StorageError('upload_too_large')
+  const match =
+    /^data:(image\/(?:png|webp));base64,([A-Za-z0-9+/]*={0,2})$/.exec(url)
+  if (!match || !match[2] || match[2].length % 4)
+    throw new StorageError('invalid_blob')
+  const encoded = match[2]
+  const size =
+    (encoded.length / 4) * 3 -
+    (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0)
+  if (size > maximum) throw new StorageError('upload_too_large')
+  let file: Blob
+  try {
+    const raw = atob(encoded)
+    if (btoa(raw) !== encoded) throw new Error()
+    file = new Blob([Uint8Array.from(raw, (char) => char.charCodeAt(0))], {
+      type: match[1],
+    })
+  } catch {
+    throw new StorageError('invalid_blob')
+  }
+  return validateBlob({ file, stepId: 'capture', kind: 'rendered' }, maximum)
+}
+
+/** Only capture:write + guides:read; exposes no general guide-write operation. */
+export class CaptureHttpClient {
+  #client: HttpClient
+  #root: string
+  readonly capabilities: Readonly<
+    Pick<StorageCapabilities, 'target' | 'maxUploadBytes'>
+  >
+  private constructor(
+    client: HttpClient,
+    base: string,
+    health: { target: StorageCapabilities['target']; maximum: number },
+  ) {
+    this.#client = client
+    this.#root = new URL('../../', base).href
+    this.capabilities = Object.freeze({
+      target: health.target,
+      maxUploadBytes: Math.min(MAX_BLOB_BYTES, health.maximum),
+    })
+  }
+  static async open(
+    server: string,
+    options: CaptureHttpOptions,
+  ): Promise<CaptureHttpClient> {
+    let client: HttpClient | undefined
+    try {
+      if (
+        !options ||
+        typeof options !== 'object' ||
+        Array.isArray(options) ||
+        typeof options.token !== 'function'
+      )
+        throw new StorageError('invalid_options')
+      const base = storageApiUrl(server)
+      client = new HttpClient(base, options, {
+        kind: 'bearer',
+        token: options.token,
+      })
+      const health = await client.json('health', apiHealthSchema, {
+        authenticated: false,
+      })
+      return new CaptureHttpClient(client, base, {
+        target: health.target,
+        maximum: health.capabilities.maxUploadBytes,
+      })
+    } catch (error) {
+      client?.close()
+      if (error instanceof StorageError) throw error
+      throw new StorageError('invalid_options')
+    }
+  }
+  close() {
+    this.#client.close()
+  }
+  #result(input: Guide, incoming: Guide): ApiCaptureResult {
+    const guide = validateGuide(incoming, true)
+    if (guide.id !== input.id) throw new StorageError('corrupt_data')
+    if (guide.uuid !== input.uuid) throw new StorageError('conflict')
+    for (const step of guide.steps)
+      if (step.screenshot) {
+        for (const key of [step.screenshot.original, step.screenshot.rendered])
+          if (key !== undefined && key !== null) {
+            if (/^data:/i.test(key)) throw new StorageError('corrupt_data')
+            try {
+              keyPath(key)
+            } catch {
+              throw new StorageError('corrupt_data')
+            }
+          }
+      }
+    return { guide, editUrl: new URL(`g/${guide.id}/edit`, this.#root).href }
+  }
+  async #existing(input: Guide): Promise<ApiCaptureResult | undefined> {
+    let guide: Guide
+    try {
+      guide = await this.#client.json(`guides/${input.id}`, guideSchema)
+    } catch (error) {
+      if (error instanceof StorageError && error.code === 'not_found') return
+      throw error
+    }
+    return this.#result(input, guide)
+  }
+  async upload(input: GuideInput): Promise<ApiCaptureResult> {
+    this.#client.ready()
+    const guide = validateGuide(input)
+    if (
+      !guide.uuid ||
+      guide.version !== 1 ||
+      guide.status !== 'draft' ||
+      guide.publish?.isPublic ||
+      guide.publish?.publicId ||
+      guide.publish?.targets.length
+    )
       throw new StorageError('invalid_guide')
-    return body
+    if (
+      guide.steps.some((step) =>
+        step.redactions.some((item) => item.status === 'open'),
+      )
+    )
+      throw new StorageError('redaction_open')
+    const body = this.#client.body(guide, 'upload_too_large')
+    for (const step of guide.steps)
+      if (step.screenshot) {
+        this.#client.ready()
+        if (
+          ![step.screenshot.width, step.screenshot.height].every(
+            (size) => Number.isSafeInteger(size) && size > 0 && size <= 16_384,
+          ) ||
+          step.screenshot.devicePixelRatio <= 0 ||
+          step.screenshot.devicePixelRatio > 8
+        )
+          throw new StorageError('invalid_blob')
+        for (const url of [step.screenshot.original, step.screenshot.rendered])
+          if (url !== undefined && url !== null)
+            await captureImageBlob(url, this.capabilities.maxUploadBytes)
+      }
+    // A worker may stop after the server commit but before it can acknowledge it.
+    // Read the stable capture ID first; never overwrite a later editor revision.
+    const existing = await this.#existing(guide)
+    if (existing) return existing
+    let result: ApiCaptureResult
+    try {
+      result = await this.#client.json('sessions', apiCaptureResultSchema, {
+        method: 'POST',
+        body,
+        json: true,
+        expected: 201,
+      })
+    } catch (error) {
+      if (error instanceof StorageError && error.code === 'conflict') {
+        const winner = await this.#existing(guide)
+        if (winner) return winner
+      }
+      throw error
+    }
+    const checked = this.#result(guide, result.guide)
+    let edit: URL
+    try {
+      edit = new URL(result.editUrl, this.#root)
+    } catch {
+      throw new StorageError('corrupt_data')
+    }
+    if (edit.href !== checked.editUrl) throw new StorageError('corrupt_data')
+    if (
+      checked.guide.version === 1 &&
+      (checked.guide.status !== 'draft' ||
+        checked.guide.publish?.isPublic ||
+        checked.guide.publish?.publicId ||
+        checked.guide.publish?.targets.length)
+    )
+      throw new StorageError('corrupt_data')
+    return checked
   }
 }
 

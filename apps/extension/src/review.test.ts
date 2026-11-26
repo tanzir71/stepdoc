@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   capturedGuide,
+  captureUploadGuide,
   editReview,
   suggestedTitle,
   type CaptureDraft,
@@ -45,6 +46,29 @@ const draft = (): CaptureDraft => ({
   images: [{ screenshot: 'a' }, { screenshot: 'b' }, { screenshot: 'c' }],
 })
 describe('capture review privacy and identity', () => {
+  it('rejects incomplete or invalid upload drafts before processing source pixels', async () => {
+    await expect(
+      captureUploadGuide({ ...draft(), images: [] }),
+    ).rejects.toMatchObject({ code: 'invalid_guide' })
+    await expect(
+      captureUploadGuide({ ...draft(), sessionId: 'not-a-uuid' }),
+    ).rejects.toMatchObject({ code: 'invalid_guide' })
+    await expect(captureUploadGuide(draft())).rejects.toMatchObject({
+      code: 'invalid_blob',
+    })
+  })
+  it('blocks unresolved redactions before producing an upload payload', async () => {
+    const input = draft()
+    input.steps[0]!.redactions.push({
+      kind: 'field',
+      source: 'auto',
+      status: 'open',
+      rect: { x: 0, y: 0, width: 1, height: 1 },
+    })
+    await expect(captureUploadGuide(input)).rejects.toMatchObject({
+      code: 'redaction_open',
+    })
+  })
   it('declares reference-only variables and stable capture identity', () => {
     const guide = capturedGuide(draft())
     expect(guide.id).toBe(`capture-${draft().sessionId}`)

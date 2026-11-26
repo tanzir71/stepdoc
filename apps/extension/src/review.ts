@@ -16,6 +16,11 @@ import {
 } from '@stepdoc/storage'
 import { flattenImage } from '@stepdoc/core/canvas'
 import { captureUrl } from '@stepdoc/core/capture'
+import {
+  captureImageBlob,
+  MAX_API_JSON_BYTES,
+  MAX_CAPTURE_INLINE_BYTES,
+} from '@stepdoc/storage/http'
 
 // Private extension state. Existing guide@1 fields carry the completed capture.
 export type CapturePhase =
@@ -183,4 +188,63 @@ export async function saveCapture(draft: CaptureDraft): Promise<Guide> {
   } finally {
     storage.close()
   }
+}
+
+async function captureDataUrl(file: Blob): Promise<string> {
+  const prefix = `data:${file.type};base64,`
+  if (prefix.length + Math.ceil(file.size / 3) * 4 > MAX_CAPTURE_INLINE_BYTES)
+    throw new StorageError('upload_too_large')
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const chunks: string[] = []
+  for (let at = 0; at < bytes.length; at += 0x8000)
+    chunks.push(String.fromCharCode(...bytes.subarray(at, at + 0x8000)))
+  return prefix + btoa(chunks.join(''))
+}
+
+/** Prepare the existing /sessions inline-image path entirely in the client. */
+export async function captureUploadGuide(draft: CaptureDraft): Promise<Guide> {
+  if (draft.steps.length !== draft.images.length)
+    throw new StorageError('invalid_guide')
+  let guide: Guide
+  try {
+    guide = capturedGuide(draft)
+  } catch {
+    throw new StorageError('invalid_guide')
+  }
+  const images = draft.images.map((image) => image.screenshot)
+  if (
+    guide.steps.some((step) =>
+      step.redactions.some((item) => item.status === 'open'),
+    )
+  )
+    throw new StorageError('redaction_open')
+  let imageBytes = 0
+  for (const [index, step] of guide.steps.entries()) {
+    try {
+      const source = images[index]!
+      imageBytes += source.length
+      if (imageBytes > MAX_API_JSON_BYTES)
+        throw new StorageError('upload_too_large')
+      const original = await captureImageBlob(source)
+      // The stored source has mandatory masks already applied; the second
+      // image adds its click marker. Neither image is processed by a server.
+      const rendered = await flattenImage(original, { click: step.click })
+      const flattened = await captureDataUrl(rendered.blob)
+      imageBytes += flattened.length
+      if (imageBytes > MAX_API_JSON_BYTES)
+        throw new StorageError('upload_too_large')
+      step.screenshot = {
+        original: source,
+        rendered: flattened,
+        width: rendered.width,
+        height: rendered.height,
+        devicePixelRatio: step.screenshot?.devicePixelRatio ?? 1,
+        alt: step.title,
+      }
+    } catch (error) {
+      if (error instanceof StorageError) throw error
+      throw new StorageError('invalid_blob')
+    }
+  }
+  return guide
 }

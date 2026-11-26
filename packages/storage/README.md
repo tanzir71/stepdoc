@@ -140,8 +140,8 @@ explicit code/device/extension fields to `/pairing/claim`. It returns a one-time
 credential only when the response has exactly `capture:write` and `guides:read`.
 It does not persist that credential, implement server-side hashing/revocation or
 grant generic guide-write permission. The extension now owns E05 and its private
-credential vault. Scoped capture upload, destination selection and paired editor
-integration remain M11 work; no public endpoint has
+credential vault. The scoped capture client is described below; destination
+selection and paired editor integration remain M11 work. No public endpoint has
 been added or changed by this client implementation.
 
 `pnpm --filter @stepdoc/storage test` includes HTTP unit checks and a real Chromium
@@ -151,3 +151,43 @@ saves/history, anonymous one-use pairing, redirect rejection, abort/close and a
 module worker under a CSP without eval. Fixture servers persist bytes only and
 are local stand-ins, not implementations of the PHP/Worker/Node targets or the
 future cross-target contract suite. Existing IndexedDB/OPFS checks still run.
+
+## Scoped capture client
+
+`CaptureHttpClient.open(server, { token, ...requestOptions })` shares the bounded
+HTTP transport but exposes only `upload` and `close`. It requires a private
+bearer provider, checks health anonymously and uses only `guides:read` and
+`capture:write`. It never grants generic create/save/delete/blob-write access.
+The extension's `captureUploadGuide` prepares both already-redacted source and
+client-flattened rendered images before this client receives a document.
+
+`upload` sends a private version-one guide@1 document through the existing
+`POST /sessions` inline-image path. A stable capture UUID is required. Every
+provided screenshot must be a canonical PNG/WebP data URL, at most 8 MiB as an
+encoded URL and within the host's decoded raster capacity. Signatures and
+positive capture dimensions are checked; the transport neither decodes pixels
+nor applies redaction. Open redactions, typed fill literals and public/published
+captures are rejected before credential lookup. JSON bodies have an exact
+escaped UTF-8 preflight budget before serialization/allocation. The default
+64 MiB budget can be lowered by `maxJsonBytes`; image preparation also stops
+when the accumulated inline media exceeds that ceiling. Larger captures need
+the contract's separate blob-upload path in a later integration unit.
+
+Before posting, the client reads the stable guide ID. A matching UUID returns
+the current stored revision, preserving subsequent editor changes after an
+unacknowledged server commit. An identity collision fails; a concurrent 409
+permits one read to recover the matching winner. There is at most one POST per
+attempt, and failed writes are never automatically retried. Server-side unique
+identity and authorization remain required. Returned guides are validated;
+inline screenshot echoes are rejected in favor of persisted blob keys. A new
+capture's editor URL must resolve to exactly `g/<id>/edit` inside the selected
+server installation, without credentials, query strings, fragments or another
+origin. Only that constructed canonical URL leaves the client.
+
+The native HTTP fixture now also runs real extension image preparation in a
+window and a module worker, then uploads to two local origins. Its server
+copies bytes into fixture blob storage without any image library. Client pixel
+checks prove that mandatory masks survive and only the rendered image gains a
+click marker. Retry recovery preserves a later editor revision. The fixture
+independently rejects general writes made with a capture-only token. These are
+automated local stand-ins; server implementations remain M12–M14.

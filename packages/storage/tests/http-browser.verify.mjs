@@ -162,15 +162,57 @@ for (let index = 0; index < 2; index++) {
       }
       const authenticated =
         req.headers.cookie?.includes('sd_session=fixture_session') ||
-        ['Bearer sd_fixture_first', 'Bearer sd_fixture_rotated'].includes(
-          req.headers.authorization,
-        )
+        [
+          'Bearer sd_fixture_first',
+          'Bearer sd_fixture_rotated',
+          'Bearer sd_fixture_capture',
+        ].includes(req.headers.authorization)
       if (!authenticated) {
         failure(401)
         return
       }
       if (req.headers.authorization)
         assert(!req.headers.cookie, 'Bearer request also sent cookies')
+      if (
+        req.headers.authorization === 'Bearer sd_fixture_capture' &&
+        req.method !== 'GET' &&
+        api !== 'sessions'
+      ) {
+        failure(403)
+        return
+      }
+      if (api === 'sessions' && req.method === 'POST') {
+        assert.equal(req.headers.authorization, 'Bearer sd_fixture_capture')
+        const doc = JSON.parse(body.toString())
+        assert.equal(doc.schema, 'stepdoc/guide@1')
+        assert(
+          !body.toString().includes('PRIVATE'),
+          'Private capture metadata uploaded',
+        )
+        assert(!guides.has(doc.id), 'Capture was posted twice')
+        for (const step of doc.steps)
+          if (step.screenshot) {
+            for (const kind of ['original', 'rendered']) {
+              const value = step.screenshot[kind]
+              if (value === null || value === undefined) continue
+              const match = /^data:(image\/(?:png|webp));base64,(.*)$/.exec(
+                value,
+              )
+              assert(match)
+              const key = `captures/${doc.id}/${step.id}/${kind}`
+              // No canvas, codec or image processing exists on this server path.
+              blobs.set(key, {
+                type: match[1],
+                bytes: Buffer.from(match[2], 'base64'),
+              })
+              step.screenshot[kind] = key
+            }
+          }
+        guides.set(doc.id, doc)
+        versions.set(doc.id, [structuredClone(doc)])
+        send({ guide: doc, editUrl: `/workspace/g/${doc.id}/edit` }, 201)
+        return
+      }
       if (api === 'guides' && req.method === 'GET') {
         let docs = [...guides.values()]
         if (url.searchParams.has('q'))
@@ -329,6 +371,14 @@ try {
     (server) => globalThis.httpFixture.failures(server),
     `${origins[1]}/workspace`,
   )
+  for (const [index, origin] of origins.entries())
+    checks += await page.evaluate(
+      ({ server, label }) => globalThis.httpFixture.capture(server, label),
+      {
+        server: `${origin}/workspace`,
+        label: index ? 'cross-origin' : 'same-origin',
+      },
+    )
   checks += await page.evaluate(
     ({ code, server }) =>
       new Promise((resolve, reject) => {
@@ -336,7 +386,7 @@ try {
           new Blob(
             [
               code +
-                '\nself.onmessage=async(event)=>{try{self.postMessage({checks:await self.httpFixture.run(event.data,"module-worker","WRK-001")})}catch{self.postMessage({failure:true})}}',
+                '\nself.onmessage=async(event)=>{try{self.postMessage({checks:await self.httpFixture.run(event.data,"module-worker","WRK-001")+await self.httpFixture.capture(event.data,"module-worker")})}catch{self.postMessage({failure:true})}}',
             ],
             { type: 'text/javascript' },
           ),
@@ -380,7 +430,7 @@ try {
   assert.deepEqual(errors, [])
   assert.deepEqual(unexpected, [])
   console.log(
-    `HTTP adapter verified in Chromium: ${checks} checks, real same/cross-origin fetch and CORS preflights, cookie/bearer isolation, multipart rasters, concurrent versions/history, anonymous one-use pairing, redirects/abort and a module worker; no external requests.`,
+    `HTTP adapter verified in Chromium: ${checks} checks, real same/cross-origin fetch and CORS preflights, cookie/bearer isolation, multipart rasters, concurrent versions/history, anonymous pairing, scoped capture with client-rendered/masked pixels and retry recovery, server-enforced scope denial, redirects/abort and a module worker; no external requests.`,
   )
 } finally {
   await browser.close()

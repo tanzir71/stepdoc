@@ -44,3 +44,10 @@ token; public state and commands do not accept unexpected credential fields.
 `@stepdoc/schema/capture-target` owns private origin/tab/browser-session selection
 and start DTOs. It rejects titles, paths, query strings, credentials and unexpected
 value fields. These controls do not change guide@1 or Storage API v1.
+
+The existing `/sessions` response has a typed client projection in
+`@stepdoc/schema/storage-api`. Guide parsing also creates independent mutable
+array defaults for each document; editing one guide cannot change another
+guide's omitted redactions, variables, tags, preconditions or publish targets.
+Wire defaults and identifiers are unchanged; see CHANGELOG.md for the version
+and migration note.

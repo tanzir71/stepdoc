@@ -5,6 +5,16 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds the response-only client projection for the existing Storage API v1
+`POST /sessions` result (`guide` plus `editUrl`). Captures use existing guide@1
+identity/step/screenshot fields and the API's documented inline-data-URL path;
+no endpoint or persisted guide field changes. A validation bug fix gives each
+Zod parse fresh empty arrays for omitted tags, preconditions, variables,
+redactions and publish targets. Their serialized defaults remain `[]`; this
+prevents one parsed guide's edits from contaminating later parses. The source
+JSON Schema, wire identifier and stored data are unchanged, so no migration or
+schema/package version bump is needed.
+
 M11 adds `@stepdoc/schema/capture-target`: strict private origin/tab/session DTOs
 and optional `captureSource` in extension capture metadata. The session identifier
 uses extension session storage, separate from persisted guides. Older active

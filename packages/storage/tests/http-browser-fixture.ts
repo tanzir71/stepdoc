@@ -1,5 +1,6 @@
 import { guideSchema } from '@stepdoc/schema'
-import { HttpAdapter, claimPairing } from '../src/http'
+import { HttpAdapter, claimPairing, CaptureHttpClient } from '../src/http'
+import { captureUploadGuide } from '../../../apps/extension/src/review'
 import { StorageError } from '../src/adapter'
 import source from '../../schema/tests/fixtures/minimal.json'
 
@@ -160,6 +161,129 @@ const httpFixture = {
     const pending = rejected(closing.getGuide('native-errors'), 'closed')
     closing.close()
     await pending
+    return checks - start
+  },
+  async capture(server: string, label: string) {
+    const start = checks
+    const canvas = new OffscreenCanvas(64, 48),
+      ctx = canvas.getContext('2d')!
+    ctx.fillStyle = 'rgb(20,40,60)'
+    ctx.fillRect(0, 0, 64, 48)
+    // A simulated mandatory mask is already in the stored source image.
+    ctx.fillStyle = 'rgb(80,80,80)'
+    ctx.fillRect(0, 0, 16, 16)
+    const pixel = await canvas.convertToBlob({ type: 'image/png' })
+    const encoded = btoa(
+      String.fromCharCode(...new Uint8Array(await pixel.arrayBuffer())),
+    )
+    const guide = await captureUploadGuide({
+      sessionId: crypto.randomUUID(),
+      title: `Scoped capture ${label}`,
+      startedAt: '2026-11-26T00:00:00Z',
+      startedUrl:
+        'https://fixture.test/settings?PRIVATE_QUERY#PRIVATE_FRAGMENT',
+      steps: [
+        guideSchema.parse(source).steps[0]!,
+        {
+          ...guideSchema.parse(source).steps[0]!,
+          id: 'fill-private',
+          index: 2,
+          type: 'action',
+          action: 'fill',
+          title: 'Fill email',
+          value: { kind: 'secret', variable: 'invoice_email' },
+          click: { x: 40, y: 28, radius: 8 },
+          redactions: [
+            {
+              kind: 'field',
+              source: 'auto',
+              status: 'applied',
+              rect: { x: 0, y: 0, width: 16, height: 16 },
+            },
+          ],
+        },
+      ],
+      images: [
+        { screenshot: `data:image/png;base64,${encoded}` },
+        { screenshot: `data:image/png;base64,${encoded}` },
+      ],
+    })
+    check(
+      !JSON.stringify(guide).includes('PRIVATE'),
+      'Private query escaped preparation',
+    )
+    check(
+      guide.variables[0]?.kind === 'secret' &&
+        !('literal' in guide.steps[1]!.value!),
+      'Reference-only fill',
+    )
+    const client = await CaptureHttpClient.open(server, {
+      token: () => 'sd_fixture_capture',
+    })
+    const result = await client.upload(guide)
+    check(
+      result.guide.id === guide.id && result.guide.uuid === guide.uuid,
+      'Capture identity',
+    )
+    check(
+      result.editUrl ===
+        `${new URL('../../', new URL(server + '/api/v1/')).href}g/${guide.id}/edit`,
+      'Installation-scoped editor URL',
+    )
+    const reader = await HttpAdapter.open(server, {
+      readOnly: true,
+      auth: { kind: 'bearer', token: () => 'sd_fixture_capture' },
+    })
+    for (const kind of ['original', 'rendered'] as const) {
+      const key = result.guide.steps[1]!.screenshot![kind]!
+      const image = await reader.getBlob(key)
+      const bitmap = await createImageBitmap(image)
+      const proof = new OffscreenCanvas(bitmap.width, bitmap.height),
+        pixels = proof.getContext('2d')!
+      pixels.drawImage(bitmap, 0, 0)
+      bitmap.close()
+      check(
+        proof.width === 64 && proof.height === 48,
+        'Server copied raster dimensions',
+      )
+      const mask = pixels.getImageData(4, 4, 1, 1).data
+      check(
+        Math.abs(mask[0]! - 80) < 8 && Math.abs(mask[1]! - 80) < 8,
+        'Mandatory source mask survives upload',
+      )
+      const marker = pixels.getImageData(48, 28, 1, 1).data
+      check(
+        kind === 'original' ? marker[0]! < 40 : marker[0]! > 150,
+        'Client marker only on rendered raster',
+      )
+    }
+    const editor = await HttpAdapter.open(server)
+    const later = { ...result.guide, title: `Edited after capture ${label}` }
+    await editor.saveGuide(later, 1)
+    const recovered = await client.upload(guide)
+    check(
+      recovered.guide.version === 2 && recovered.guide.title === later.title,
+      'Retry preserves later editor version',
+    )
+    // The fixture enforces capture scopes independently of client readOnly.
+    const scoped = await HttpAdapter.open(server, {
+      auth: { kind: 'bearer', token: () => 'sd_fixture_capture' },
+    })
+    await rejected(scoped.createGuide(guide), 'forbidden')
+    await rejected(scoped.saveGuide(recovered.guide, 2), 'forbidden')
+    await rejected(
+      scoped.putBlob(guide.id, {
+        file: pixel,
+        stepId: 'fill-private',
+        kind: 'original',
+      }),
+      'forbidden',
+    )
+    await rejected(scoped.deleteGuide(guide.id), 'forbidden')
+    client.close()
+    reader.close()
+    editor.close()
+    scoped.close()
     return checks - start
   },
 }

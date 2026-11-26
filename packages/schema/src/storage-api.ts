@@ -78,3 +78,10 @@ export const issuedTokenSchema = z.object({
   scopes: z.array(apiScopeSchema),
 })
 export type IssuedToken = z.output<typeof issuedTokenSchema>
+
+// Response projection of the existing capture:write POST /sessions operation.
+export const apiCaptureResultSchema = z.object({
+  guide: guideSchema,
+  editUrl: z.string().min(1).max(4096),
+})
+export type ApiCaptureResult = z.output<typeof apiCaptureResultSchema>

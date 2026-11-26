@@ -22,6 +22,26 @@ function expectBoth(input: unknown, valid: boolean) {
 }
 
 describe('guide@1 source-of-truth validation', () => {
+  it('gives every parse independent mutable defaults, including nested arrays', () => {
+    const first = guideSchema.parse({ ...minimal, publish: {} })
+    first.tags.push('one-guide-only')
+    first.preconditions.push('one-guide-only')
+    first.variables.push({ name: 'local_only', kind: 'secret', type: 'string' })
+    first.publish!.targets.push('link')
+    first.steps[0]!.redactions.push({
+      kind: 'field',
+      source: 'auto',
+      status: 'open',
+      rect: { x: 0, y: 0, width: 1, height: 1 },
+    })
+    const second = guideSchema.parse({ ...minimal, publish: {} })
+    expect(second.tags).toEqual([])
+    expect(second.preconditions).toEqual([])
+    expect(second.variables).toEqual([])
+    expect(second.publish!.targets).toEqual([])
+    expect(second.steps[0]!.redactions).toEqual([])
+    expectBoth(second, true)
+  })
   it('exports the wire identifier and the actual source JSON Schema', () => {
     expect(guideJsonSchema.$id).toBe(GUIDE_SCHEMA_URL)
     expect(guideJsonSchema.properties.schema.const).toBe(GUIDE_SCHEMA_ID)

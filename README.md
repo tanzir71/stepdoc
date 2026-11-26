@@ -1,7 +1,5 @@
 # StepDoc
 
-[Website](https://stepdoc-guides.vercel.app/) · [Generated HTML guide](https://stepdoc-guides.vercel.app/demo)
-
 > Record a browser workflow once; get an editable, exportable step-by-step guide — like Scribe, but self-hosted in **your** Supabase project.
 
 ## What is this?

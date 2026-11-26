@@ -1,0 +1,71 @@
+.guide-panel .capture-main {
+  gap: 10px;
+}
+.guide-panel-title {
+  font: var(--sd-type-heading-s);
+  letter-spacing: var(--sd-tracking-heading-s);
+}
+.guide-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-2);
+}
+.guide-progress span {
+  font: var(--sd-type-mono-s);
+  color: var(--sd-text-secondary);
+}
+.guide-progress progress {
+  appearance: none;
+  width: 280px;
+  max-width: calc(100% - 64px);
+  height: 6px;
+  border: 0;
+  border-radius: var(--sd-radius-full);
+  overflow: hidden;
+  background: var(--sd-bg-sunken);
+}
+.guide-progress progress::-webkit-progress-bar {
+  background: var(--sd-bg-sunken);
+}
+.guide-progress progress::-webkit-progress-value {
+  background: var(--sd-accent-solid);
+  border-radius: var(--sd-radius-full);
+}
+.guide-progress progress::-moz-progress-bar {
+  background: var(--sd-accent-solid);
+  border-radius: var(--sd-radius-full);
+}
+.guide-panel-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.guide-panel-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px var(--sd-space-3);
+  border-radius: 10px;
+  color: var(--sd-text-secondary);
+  overflow-wrap: anywhere;
+}
+.guide-panel-steps [aria-current='step'] {
+  background: var(--sd-bg-selected);
+  color: var(--sd-text-primary);
+}
+.guide-panel-steps [data-outcome='matched'] .sd-icon,
+.guide-panel-steps [data-outcome='confirmed'] .sd-icon {
+  color: var(--sd-success-text);
+}
+.guide-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--sd-space-3);
+  border-radius: 10px;
+  background: var(--sd-bg-raised);
+  color: var(--sd-text-secondary);
+}
+.guide-hint .sd-icon {
+  color: var(--sd-agent-solid);
+}

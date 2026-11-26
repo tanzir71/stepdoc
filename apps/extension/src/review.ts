@@ -14,6 +14,7 @@ import {
   type BlobUpload,
 } from '@stepdoc/storage'
 import { flattenImage } from '@stepdoc/core/canvas'
+import { captureUrl } from '@stepdoc/core/capture'
 
 // Private extension state. Existing guide@1 fields carry the completed capture.
 export type CapturePhase =
@@ -128,6 +129,7 @@ export function capturedGuide(draft: CaptureDraft): Guide {
     title: draft.title,
     app: { origin: new URL(draft.startedUrl).origin },
     variables: [...variables.values()],
+    preconditions: [`Open ${captureUrl(draft.startedUrl)}`],
     steps: draft.steps,
     version: 1,
     createdAt: draft.startedAt,

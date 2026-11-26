@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 Guide Me adds the private `@stepdoc/schema/guide-me` message projection and
+populates the existing `verification` object with runner `guide-me`. New local
+captures retain their sanitized parent URL in the existing `preconditions`
+array, so a first action inside a frame still opens its parent page. Existing
+guides remain valid and use their root-step/app/first-step URL as a fallback.
+No guide fields, defaults, schema identifier, database layout or public endpoint
+change; no persisted-data migration or version bump is needed.
+
 M11's private capture transport adds strict bounded review commands and capture
 preferences. The review produces the existing guide@1 variable declarations,
 notes, manual steps, source-pixel masks and original/rendered image references.

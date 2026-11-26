@@ -126,7 +126,11 @@ export class FrameTracker {
     })
     this.observers.push(observer)
   }
-  snapshot(nonce: string, smartBlur = true): FrameSnapshot {
+  snapshot(
+    nonce: string,
+    smartBlur = true,
+    geometryOnly = false,
+  ): FrameSnapshot {
     this.windows.clear()
     const children: FrameChild[] = []
     let count = 0
@@ -198,11 +202,13 @@ export class FrameTracker {
       devicePixelRatio: view.devicePixelRatio,
       revision: this.revision,
       children,
-      masks: [
-        ...fieldRedactions(this.document, false),
-        ...(smartBlur ? visibleTextRedactions(this.document) : []),
-        ...this.manual.collect(),
-      ],
+      masks: geometryOnly
+        ? []
+        : [
+            ...fieldRedactions(this.document, false),
+            ...(smartBlur ? visibleTextRedactions(this.document) : []),
+            ...this.manual.collect(),
+          ],
       geometryMotion,
     }
   }

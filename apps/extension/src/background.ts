@@ -10,6 +10,8 @@ import {
 } from '@stepdoc/schema/capture'
 import { FrameBroker, type FrameScene } from './frame-broker'
 import { contextualStep, legacyMeta } from './capture-context'
+import { GuideController } from './guide-controller'
+import type { GuideRun } from './guide-run'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
 import {
@@ -28,6 +30,7 @@ type SessionBody = {
   steps: unknown[]
 }
 export interface LegacyStorage {
+  guideMe?: GuideRun
   captureReview?: ReviewState
   recording?: boolean
   steps?: (ReturnType<typeof makeStep> & {
@@ -105,6 +108,11 @@ export function startBackground() {
         { frameId },
       )
     },
+  })
+  const guide = new GuideController(broker)
+  const guideRecovered = guide.recover()
+  browser.tabs.onRemoved.addListener((tabId) => {
+    void guide.closed(tabId).catch(() => {})
   })
   const activationEpochs = new Map<number, number>()
   browser.tabs.onActivated.addListener(({ windowId }) =>
@@ -418,9 +426,12 @@ export function startBackground() {
       'DISCARD_CAPTURE',
       'SET_CAPTURE_PREFERENCES',
       'SHORTCUT',
+      'GUIDE_START',
+      'GUIDE_CLEAR',
     ]
     const run = async () => {
       await recovered
+      await guideRecovered
       if (privateCommands.includes(message.type)) {
         if (!ownControls && message.type !== 'SHORTCUT')
           throw new Error('Invalid controls')
@@ -452,7 +463,37 @@ export function startBackground() {
           }
         }
       }
-      if (message.type === 'START' || message.type === 'START_CAPTURE') {
+      if (message.type === 'GUIDE_START') {
+        if (typeof message.id !== 'string') throw new Error('Invalid guide')
+        const run = await guide.start(message.id)
+        respond({ ok: true, runId: run.runId })
+      } else if (message.type === 'GUIDE_CLEAR') {
+        await guide.clear()
+        respond({ ok: true })
+      } else if (message.type === 'GUIDE_CONTROL') {
+        await guide.control(message, { ownControls, tabId: sender.tab?.id })
+        respond({ ok: true })
+      } else if (message.type === 'GUIDE_MATCH') {
+        await guide.match(message, sender.tab?.id, sender.frameId)
+        respond({ ok: true })
+      } else if (
+        message.type === 'GUIDE_READY' ||
+        message.type === 'GUIDE_REFRESH'
+      ) {
+        const run = await guide.state()
+        if (
+          run &&
+          (ownControls || sender.tab?.id === run.tabId) &&
+          (message.type === 'GUIDE_READY' ||
+            (message.runId === run.runId && message.sequence === run.sequence))
+        )
+          await guide.refresh(run.tabId)
+        respond({ ok: true })
+      } else if (message.type === 'START' || message.type === 'START_CAPTURE') {
+        const walkthrough = await guide.state()
+        if (walkthrough && walkthrough.phase !== 'complete')
+          throw new Error('Walkthrough active')
+        if (walkthrough) await guide.clear()
         const local = message.type === 'START_CAPTURE'
         const previous = await browser.storage.local.get<LegacyStorage>([
           'recording',
@@ -641,6 +682,7 @@ export function startBackground() {
           const latest = await browser.storage.local.get<LegacyStorage>([
             'captureError',
             'captureReview',
+            'guideMe',
           ])
           await browser.storage.local.set({
             recording: false,
@@ -909,6 +951,7 @@ export function startBackground() {
             'captureBlurMode',
             'captureManualCount',
             'captureReview',
+            'guideMe',
           ]),
         )
     }
@@ -928,6 +971,8 @@ export function startBackground() {
     return true
   })
   browser.tabs.onUpdated.addListener((id, info) => {
+    if (info.status === 'complete' || info.url)
+      void guide.refresh(id).catch(() => {})
     if (info.status !== 'complete') return
     void (async () => {
       const state = await browser.storage.local.get<LegacyStorage>([

@@ -1,8 +1,9 @@
 # StepDoc extension
 
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
-The existing capture controls are retained during the M11 migration; the E01–E06
-designs, review/local capture saving, pairing and Guide Me are the next units.
+The local E01/E02/E04 capture/review path and E03 Guide Me use shared React,
+tokens, original Figma vectors and bundled Geist. Pairing, voice, cleanup,
+the recording pill/timer and complete fallback evidence remain M11 work.
 The recorder now also retains guide@1 event metadata. The local library and editor run the actual shared SPA,
 with native `IndexedDbAdapter` storage, at the private extension `app.html` page.
 The **Open library** link opens it in a full tab.
@@ -35,7 +36,7 @@ The retained v1 destination is configured through **Settings → Web app URL**;
 it still posts to `/api/sessions` and opens `/guides/:id/edit`. Its retry payload
 stays in extension storage. The recovery JSON download uses a data URL because
 MV3 service workers have no `URL.createObjectURL` API. V2 paired/local capture
-destinations will replace the controls after their complete recording/review flow.
+destinations share the reviewed local flow; paired hosts remain M11 work.
 The v1 projection preserves static input types, uses a password hint for secret
 references on ordinary controls, and retains the authoritative guide@1 caption;
 the existing v1 migration can therefore keep those fields classified as secrets.
@@ -121,3 +122,44 @@ checks strict page CSP, keyboard/pointer/cross-frame picking, no target activati
 stored text/manual pixels, wide/narrow axe and an exact aria snapshot, session
 reset and actual text-collector limits. The complete E01–E06 recording/review,
 pairing and reviewed local saving flows remain open.
+
+## Guide Me (E03)
+
+The extension-origin editor's **Guide Me** action flushes pending edits and opens
+one live tab. New captures retain their sanitized parent URL in the existing
+preconditions array, including frame-first workflows. Role/name lookup comes
+first, followed by ranked locators. The inert metadata mirror handles labels,
+text and XPath without editable text or control values. CSS fallback traverses
+open roots; authenticated frame identities supply cross-origin projection. A
+missing, ambiguous or unsupported context offers manual confirmation or Skip.
+
+Trusted target clicks, double clicks, hover, check/uncheck, committed fill,
+select-label changes, upload changes and named control keys advance the run.
+Fill matching observes only that an input event was committed; it never reads,
+stores or compares its value. Printable key contents are not observed. Manual,
+wait/assert or otherwise unsupported interactions use **I did it** or **Skip**.
+Back clears later outcomes; Escape/end or closing the live tab records pending
+steps as failed. A pass can include explicitly manual confirmations, which both
+surfaces count; it is an interaction walkthrough rather than assertion replay.
+
+The local guide receives the existing verification object with runner
+`guide-me`. A stable report intent survives save retry, and optimistic version
+checks preserve newer editor changes. A clean editor refreshes after the native
+commit; dirty edits remain intact. Server/HttpAdapter write-back stays in M15.
+Capture and walkthrough runs cannot overlap. Only the current step description
+is rendered on the live page; screenshots and full guide data stay private.
+
+`verify-guide.mjs` drives the actual imported-guide editor bridge and loaded
+extension against two local origins with strict CSP. It covers trusted input,
+select/key/click, open roots, same/cross-origin frame geometry, stale/forged
+matches, missing/manual/skip/back, local report failure/retry, editor conflicts,
+frame-first starts, Escape, narrow geometry, aria/axe and original-icon pixels.
+Only the tooltip's two original SVG files are web-accessible; app pages, chunks,
+fonts and stored guides remain private. WXT keeps their source names/hashes in
+content bundles; no inline vector reconstruction or relaxed CSP is used.
+
+Alt+B arms source-page privacy synchronously. Pending mode changes keep selection
+active across older state broadcasts, and turning it off waits for the background
+acknowledgement. The native blur test holds both a real camera result and the
+background mode write, selects a new mask before that write completes, and proves
+that the accepted screenshot is retried with the added mask.

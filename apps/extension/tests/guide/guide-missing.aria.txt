@@ -1,0 +1,11 @@
+- complementary "Guide Me controls":
+  - dialog "Find the missing target":
+    - text: 1 Step 1 of 3
+    - button "End walkthrough"
+    - heading "Find the missing target" [level=2]
+    - paragraph: Follow this step on the page.
+    - status: Target unavailable. Find it on the page, confirm manually or skip.
+    - navigation "Walkthrough actions":
+      - button "Back" [disabled]
+      - button "Skip"
+      - button "I did it"

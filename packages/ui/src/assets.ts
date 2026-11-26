@@ -1,4 +1,4 @@
-import asset0 from '../assets/418d0.svg?url'
+import asset0 from '../assets/418d0.svg?url&no-inline'
 import asset1 from '../assets/70a3e.svg?url'
 import asset2 from '../assets/8fef2.svg?url'
 import asset3 from '../assets/aad3f.svg?url'
@@ -67,8 +67,14 @@ import captureNext from '../assets/d1faf.svg?url'
 import popupRecord from '../assets/3713a.svg?url'
 import popupFile from '../assets/f738b.svg?url'
 import popupLibrary from '../assets/679cd.svg?url'
+import guideCheck from '../assets/0e7f2.svg?url&no-inline'
+import guideCompleted from '../assets/3e359.svg?url'
+import guideTarget from '../assets/a323f.svg?url'
 
 export const icons = {
+  'guide-check': { url: guideCheck, width: 14, height: 14 },
+  'guide-completed': { url: guideCompleted, width: 16, height: 16 },
+  'guide-target': { url: guideTarget, width: 16, height: 16 },
   'capture-record': { url: captureRecord, width: 30, height: 30 },
   'capture-pause': { url: capturePause, width: 16, height: 16 },
   'capture-stop': { url: captureStop, width: 16, height: 16 },

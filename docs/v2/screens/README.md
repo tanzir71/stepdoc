@@ -145,3 +145,31 @@ reset. Native DevTools captures that 400×900 region; dimension and surface/head
 pixel checks reject blank or incorrectly sized images. All real extension,
 capture, storage and accessibility checks remain active. The saved-review
 failure state locks draft edits after commit and offers the saved native editor.
+
+## E03 Guide Me
+
+Reference: Figma `26:6712`, third-party page 1040×856 and private panel 400×856.
+`m11-guide-page.png`, `m11-guide-overlay.png` and `m11-guide-panel.png` capture the
+real loaded extension against a local generic fixture, using E03's spacing,
+330px tooltip, 24px pin, shared button sizes and original 16px/14px close/check
+vectors. The fixture remains generic; Ledgerly is not implemented. The mask is
+live measured geometry (not a redrawn fixed mock illustration), with an 8px
+padding around the target and rounded accent ring. The full-page evidence and independent
+frame-coordinate assertions verify its placement. Panel contents reflect the
+actual imported ten-step guide; manual controls, status and activity are functional
+additions. Narrow overlays scroll internally when their content exceeds the viewport.
+
+The screenshot harness hosts the unchanged private panel entrypoint inside a
+400×856 same-extension iframe, then captures that region through native DevTools.
+The live page is captured at the reference's 1040×856 size. PNG dimensions and
+per-icon painted pixels reject blank captures and CSP-blocked glyphs. The isolated
+software-rendered window has enough native surface for the reference viewport;
+bottom-mask and clear-cutout pixel assertions reject compositor clipping. Only the
+two tooltip vectors are public resources; original bytes are checked in all three
+browser builds. Light/dark panel, narrow overlay and missing-target aria/axe run
+alongside trusted interaction, privacy and real local write-back tests.
+
+After a Chrome build, set `STEPDOC_UPDATE_SCREENS=1` and run
+`pnpm --filter @stepdoc/extension exec node scripts/verify-guide.mjs` to regenerate
+these captures and the committed `tests/guide/*.aria.txt` snapshots. Normal
+verification writes only ignored evidence PNGs and compares the committed trees.

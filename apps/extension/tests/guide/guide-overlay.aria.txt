@@ -1,0 +1,11 @@
+- complementary "Guide Me controls":
+  - dialog "Click \"Change plan\"":
+    - text: 2 Step 2 of 10
+    - button "End walkthrough"
+    - heading "Click \"Change plan\"" [level=2]
+    - paragraph: Opens the plan picker. Only owners see this button.
+    - status: Interact with the highlighted target to advance.
+    - navigation "Walkthrough actions":
+      - button "Back"
+      - button "Skip"
+      - button "I did it"

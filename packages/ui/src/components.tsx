@@ -1,4 +1,6 @@
 import {
+  createContext,
+  useContext,
   useId,
   useRef,
   type ButtonHTMLAttributes,
@@ -20,6 +22,17 @@ import {
 type Hook = { 'data-sd': string }
 const classes = (...values: Array<string | undefined | false>) =>
   values.filter(Boolean).join(' ')
+const assetUrls = createContext<(url: string) => string>((url) => url)
+/** Content-script surfaces resolve the same original files at their extension origin. */
+export function AssetUrlProvider({
+  resolve,
+  children,
+}: {
+  resolve: (url: string) => string
+  children: ReactNode
+}) {
+  return <assetUrls.Provider value={resolve}>{children}</assetUrls.Provider>
+}
 
 export function Icon({
   name,
@@ -29,6 +42,7 @@ export function Icon({
   className?: string
 }) {
   const asset = icons[name]
+  const resolve = useContext(assetUrls)
   return (
     <span
       aria-hidden="true"
@@ -38,7 +52,7 @@ export function Icon({
         {
           width: asset.width,
           height: asset.height,
-          '--sd-icon-image': `url("${asset.url}")`,
+          '--sd-icon-image': `url("${resolve(asset.url)}")`,
         } as CSSProperties
       }
     />

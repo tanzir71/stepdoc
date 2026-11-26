@@ -997,6 +997,33 @@
         }
       ],
       "file": "679cd.svg"
+    },
+    {
+      "file": "0e7f2.svg",
+      "slots": [
+        {
+          "node": "26:6712",
+          "name": "Guide Me original icon"
+        }
+      ]
+    },
+    {
+      "file": "3e359.svg",
+      "slots": [
+        {
+          "node": "26:6712",
+          "name": "Guide Me original icon"
+        }
+      ]
+    },
+    {
+      "file": "a323f.svg",
+      "slots": [
+        {
+          "node": "26:6712",
+          "name": "Guide Me original icon"
+        }
+      ]
     }
   ]
 }

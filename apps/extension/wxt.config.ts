@@ -8,6 +8,12 @@ export default defineConfig({
     description: 'Capture browser workflows as private step-by-step guides.',
     permissions: ['activeTab', 'tabs', 'storage', 'downloads', 'webNavigation'],
     host_permissions: ['<all_urls>'],
+    web_accessible_resources: [
+      {
+        resources: ['assets/418d0-*.svg', 'assets/0e7f2-*.svg'],
+        matches: ['<all_urls>'],
+      },
+    ],
     action: { default_title: 'StepDoc' },
     ...(browser === 'firefox'
       ? {
@@ -26,4 +32,26 @@ export default defineConfig({
     worker: { format: 'es' },
     build: { assetsInlineLimit: 0 },
   }),
+  hooks: {
+    'vite:build:extendConfig'(entrypoints, config) {
+      if (
+        !entrypoints.some((entrypoint) => entrypoint.type === 'content-script')
+      )
+        return
+      const output = config.build?.rollupOptions?.output
+      for (const item of Array.isArray(output)
+        ? output
+        : output
+          ? [output]
+          : []) {
+        const original = item.assetFileNames
+        item.assetFileNames = (asset) =>
+          asset.names.some((name) => name.endsWith('.css'))
+            ? typeof original === 'function'
+              ? original(asset)
+              : (original ?? 'content-scripts/[name][extname]')
+            : 'assets/[name]-[hash][extname]'
+      }
+    },
+  },
 })

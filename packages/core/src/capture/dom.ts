@@ -252,7 +252,10 @@ export class CaptureDom {
       case 'role':
         return (
           this.role(element) === locator.value &&
-          (locator.name === undefined || this.name(element) === locator.name) &&
+          (locator.name === undefined ||
+            (locator.exact
+              ? this.name(element) === locator.name
+              : this.name(element).includes(locator.name))) &&
           visible(element)
         )
       case 'testId':
@@ -282,6 +285,58 @@ export class CaptureDom {
       default:
         return false
     }
+  }
+  /** Match against the inert mirror; editable text and control values are absent. */
+  query(locator: Locator): Element[] {
+    if (locator.strategy === 'xpath') {
+      if (locator.value.length > 2_000) return []
+      const doc = (
+        this.root.ownerDocument ?? (this.root as Document)
+      ).implementation.createHTMLDocument('')
+      const originals = new Map<Node, Element>()
+      const copy = (node: Node): Node => {
+        const clone = node.cloneNode(false)
+        if (node.nodeType === 1) {
+          const original = this.reverse.get(node as Element)
+          if (original) originals.set(clone, original)
+        }
+        for (const child of node.childNodes) clone.appendChild(copy(child))
+        return clone
+      }
+      if (this.root.nodeType === 9)
+        doc.replaceChild(
+          copy(this.mirrors.get((this.root as Document).documentElement)!),
+          doc.documentElement,
+        )
+      else
+        for (const child of this.root.children) {
+          const mirror = this.mirrors.get(child)
+          if (mirror) doc.body.append(copy(mirror))
+        }
+      try {
+        const result = doc.evaluate(
+          locator.value,
+          this.root.nodeType === 9 ? doc : doc.body,
+          null,
+          7,
+        )
+        const matched: Element[] = []
+        for (let i = 0; i < result.snapshotLength; i++) {
+          const original = originals.get(result.snapshotItem(i)!)
+          if (original && visible(original) && !isCaptureUi(original))
+            matched.push(original)
+        }
+        return matched
+      } catch {
+        return []
+      }
+    }
+    return this.originals.filter(
+      (element) =>
+        !isCaptureUi(element) &&
+        visible(element) &&
+        this.matches(element, locator),
+    )
   }
   target(element: Element, frame?: string[]): Target {
     const role = this.role(element),

@@ -53,6 +53,14 @@ describe('capture review privacy and identity', () => {
       { name: 'field_3', kind: 'variable', type: 'string' },
     ])
     expect(guide.verification?.status).toBe('never-run')
+    const input = {
+      ...draft(),
+      startedUrl:
+        'https://user:password@example.test/workflow?private=value#secret',
+    }
+    expect(capturedGuide(input).preconditions).toEqual([
+      'Open https://example.test/workflow',
+    ])
   })
   it('keeps source image identity through deletion and reorder, renumbering indices only', () => {
     const input = draft()

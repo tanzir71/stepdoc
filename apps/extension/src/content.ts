@@ -9,6 +9,7 @@ import {
   isCaptureUi,
 } from '@stepdoc/core/capture'
 import { BlurControls } from './blur-controls'
+import { GuideContent } from './guide-content'
 import { FRAME_PROBE, frameProbeSchema } from '@stepdoc/schema/capture'
 import {
   captureEvent,
@@ -35,11 +36,15 @@ export function startContent() {
   new MutationObserver(() => {
     installListeners()
     updateUi()
+    guide.install()
   }).observe(document, {
     childList: true,
     subtree: true,
   })
   const tracker = new FrameTracker(document, captureDocumentId())
+  const guide = new GuideContent(document, captureDocumentId(), (message) =>
+    browser.runtime.sendMessage(message),
+  )
   let armedNonce = '',
     armedUntil = 0
   // Installed at document_start before page listeners. Only a parent WindowProxy
@@ -67,6 +72,8 @@ export function startContent() {
   let blurMode = false,
     blurBusy = false,
     manualCount = 0
+  let modeRequest = 0
+  let pendingMode: number | undefined
   let sessionId = ''
   let previousUrl = ''
   const touched = new WeakSet<Element>()
@@ -82,6 +89,12 @@ export function startContent() {
     )
   const setBlurMode = async (on: boolean) => {
     const capturedSession = sessionId
+    const request = ++modeRequest
+    pendingMode = request
+    // Arm privacy synchronously on the source page. In-flight STATE broadcasts
+    // cannot undo it, and turning it off waits for the background acknowledgement.
+    blurMode = true
+    updateUi()
     try {
       const result = await browser.runtime.sendMessage({
         type: 'SET_BLUR_MODE',
@@ -89,6 +102,11 @@ export function startContent() {
         on,
       })
       if (!result.ok) fail(capturedSession)
+      else if (capturedSession === sessionId && pendingMode === request) {
+        pendingMode = undefined
+        blurMode = recording && on
+        updateUi()
+      }
     } catch {
       fail(capturedSession)
     }
@@ -126,10 +144,11 @@ export function startContent() {
     if (nonce !== sessionId || (!active && !paused)) {
       tracker.manual.clear()
       blurBusy = false
+      pendingMode = undefined
     }
     recording = active
     sessionId = nonce
-    blurMode = active && mode
+    blurMode = active && (pendingMode !== undefined || mode)
     manualCount = count
     updateUi()
   }
@@ -193,6 +212,7 @@ export function startContent() {
     return node instanceof Element ? node : undefined
   }
   browser.runtime.onMessage.addListener((message, _sender, respond) => {
+    if (guide.handle(message, respond)) return true
     if (message.type === 'FRAME_SNAPSHOT') {
       void (async () => {
         try {
@@ -205,7 +225,13 @@ export function startContent() {
           armedNonce = message.nonce
           armedUntil = Date.now() + 2_000
           await ui.suspend()
-          respond(tracker.snapshot(message.nonce, message.smartBlur !== false))
+          respond(
+            tracker.snapshot(
+              message.nonce,
+              message.smartBlur !== false,
+              message.geometryOnly === true,
+            ),
+          )
         } catch {
           respond({ ok: false, error: 'Capture metadata unavailable' })
         }
@@ -264,6 +290,7 @@ export function startContent() {
       previousUrl = localDocumentUrl(document) ?? ''
     })
     .catch(() => {})
+  void browser.runtime.sendMessage({ type: 'GUIDE_READY' }).catch(() => {})
   listen(
     'mousedown',
     (event) => {

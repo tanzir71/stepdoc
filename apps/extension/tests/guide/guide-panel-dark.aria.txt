@@ -1,0 +1,33 @@
+- banner:
+  - heading "StepDoc Guide Me" [level=1]
+  - text: stepdoc Guide Me
+  - link "Settings":
+    - /url: options.html
+- main:
+  - heading "Complete the local workflow" [level=2]
+  - progressbar "Walkthrough progress"
+  - text: 2 of 10
+  - list:
+    - listitem: Open the local workflow
+    - listitem: 2 Click "Change plan"
+    - listitem: 3 Fill the Password field
+    - listitem: 4 Select Team
+    - listitem: 5 Press Enter
+    - listitem: 6 Click Shadow action
+    - listitem: 7 Click the frame action
+    - listitem: 8 Click the remote frame action
+    - listitem: 9 Click the unique fallback
+    - listitem: 10 Confirm the final result
+  - complementary "Matching information":
+    - paragraph: Advances on a matching interaction. Matching uses role + name first, then selectors. Typed values are never read or compared.
+  - button "Back"
+  - button "Skip"
+  - button "I did it"
+- contentinfo:
+  - status: Step 2 of 10. Target found.
+  - navigation "Guide Me":
+    - link "Open editor":
+      - /url: app.html?route=%2Fg%2Fnative-walkthrough%2Fedit
+    - button "End walkthrough"
+- complementary "Guide Me activity":
+  - group: Activity log

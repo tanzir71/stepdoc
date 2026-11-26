@@ -186,3 +186,11 @@ failure paths and zero HTTP requests in real Chromium module workers. Export tes
 include 12 minimal/complete snapshots, semantic/privacy/injection regressions, strict
 typechecking of generated specs, a 21-step Chromium replay against intercepted local
 fixtures, six fail-closed replay cases and real-browser HTML interpretation.
+
+Live extension walkthroughs use `resolveGuideTarget` from `@stepdoc/core/capture`.
+It requires one visible role/name match or ranked fallback, scopes open roots,
+and fails closed on ambiguity/resource limits. Label/text/XPath lookup uses the
+sanitized inert DOM mirror; editable text and typed field values are absent.
+CSS compounds retain native parsing, including quoted attributes and hex escapes,
+while ancestor matching can cross open shadow hosts. Frame identity/projection
+and trusted interaction observation remain extension responsibilities.

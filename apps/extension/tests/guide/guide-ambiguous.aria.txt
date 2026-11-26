@@ -1,0 +1,11 @@
+- complementary "Guide Me controls":
+  - dialog "Find the unique target":
+    - text: 2 Step 2 of 3
+    - button "End walkthrough"
+    - heading "Find the unique target" [level=2]
+    - paragraph: Follow this step on the page.
+    - status: Several targets match. Confirm manually or skip.
+    - navigation "Walkthrough actions":
+      - button "Back"
+      - button "Skip"
+      - button "I did it"

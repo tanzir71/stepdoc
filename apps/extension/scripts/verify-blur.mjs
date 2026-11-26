@@ -381,10 +381,31 @@ try {
   await expect
     .poll(() => worker.evaluate(() => typeof globalThis.releaseBlurCamera))
     .toBe('function')
+  await worker.evaluate(() => {
+    const original = chrome.storage.local.set.bind(chrome.storage.local)
+    globalThis.restoreBlurMode = () => {
+      chrome.storage.local.set = original
+    }
+    chrome.storage.local.set = async (values) => {
+      if (values.captureBlurMode === true)
+        await new Promise((resolve) => {
+          globalThis.releaseBlurMode = resolve
+        })
+      return original(values)
+    }
+  })
   await page.keyboard.press('Alt+b')
-  await expect.poll(async () => (await state()).captureBlurMode).toBe(true)
+  await expect
+    .poll(() => worker.evaluate(() => typeof globalThis.releaseBlurMode))
+    .toBe('function')
+  assert.equal((await state()).captureBlurMode, false)
   await page.locator('#late-mask').click()
   await expect.poll(async () => (await state()).captureManualCount).toBe(4)
+  await worker.evaluate(() => {
+    globalThis.releaseBlurMode()
+    globalThis.restoreBlurMode()
+  })
+  await expect.poll(async () => (await state()).captureBlurMode).toBe(true)
   await page
     .locator('stepdoc-privacy-controls [role="status"]')
     .waitFor({ state: 'attached' })

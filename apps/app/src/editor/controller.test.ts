@@ -92,6 +92,24 @@ function store(initial = fixture()) {
   }
 }
 describe('serialized editor writes', () => {
+  it('does not replace edits arriving while a clean external report reload is pending', async () => {
+    const storage = store()
+    const gate = deferred<Guide>()
+    storage.adapter.getGuide = () => gate.promise
+    const editor = new EditorController(storage.adapter, fixture())
+    const loading = editor.reload(true)
+    editor.edit((guide) => {
+      guide.title = 'New unsaved edit'
+    })
+    gate.resolve({
+      ...fixture(),
+      version: 2,
+      verification: { status: 'passed', runner: 'guide-me' },
+    })
+    await loading
+    expect(editor.snapshot().guide.title).toBe('New unsaved edit')
+    expect(editor.snapshot().dirty).toBe(true)
+  })
   it('retains edits made while a save is rendering and uses the next version', async () => {
     const storage = store()
     const gate = deferred<void>()

@@ -228,7 +228,8 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `export-link-private`, `export-copy-link`, `export-copy-menu`, `export-copy-markdown`, `export-copy-rich`, `export-copy-html`, `export-host-documents`, `export-host-replay`, `export-host-skill`, `export-host-html` | Browser-mode local link/clipboard and actual hosting-file selections; no publishing claim |
 | `route-library`, `route-reload` | Editor chunk loading/error recovery |
 | `ai-cleanup` | W03 step list header |
-| `guide-me` | W03 topbar |
+| `guide-me` | Extension-origin W03 topbar; starts the native E03 walkthrough after saving edits |
+| `guide-me-overlay`, `guide-me-back`, `guide-me-skip`, `guide-me-confirm`, `guide-me-close`, `guide-me-retry`, `guide-me-editor` | E03 live page dialog and private panel; step navigation, manual confirmation, safe report retry and editor link |
 | `setup-continue` | W01 |
 | `redaction-continue` | W04 |
 | `pair-submit` / `capture-save` | E05 / E04 |

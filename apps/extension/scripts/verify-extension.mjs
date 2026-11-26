@@ -17,7 +17,16 @@ for (const target of ['chrome', 'edge', 'firefox']) {
     'Unused permission retained',
   )
   assert(!manifest.content_security_policy, 'Default extension CSP weakened')
-  assert(!manifest.web_accessible_resources, 'Private app exposed to websites')
+  assert.deepEqual(
+    manifest.web_accessible_resources,
+    [
+      {
+        resources: ['assets/418d0-*.svg', 'assets/0e7f2-*.svg'],
+        matches: ['<all_urls>'],
+      },
+    ],
+    'Only the two original walkthrough icons may be public; app resources remain private',
+  )
   assert.equal(manifest.content_scripts[0].run_at, 'document_start')
   if (target === 'firefox') {
     assert.equal(manifest.action.default_popup, 'popup.html')
@@ -44,7 +53,7 @@ for (const target of ['chrome', 'edge', 'firefox']) {
     ...new Set(
       [
         ...assetSource.matchAll(
-          /from ['"]\.\.\/assets\/([^'"]+\.svg)\?url['"]/g,
+          /from ['"]\.\.\/assets\/([^'"]+\.svg)\?url(?:&no-inline)?['"]/g,
         ),
       ].map((match) => match[1]),
     ),
@@ -158,10 +167,14 @@ try {
     origin.startsWith('chrome-extension://'),
     'Built service worker did not load',
   )
-  assert.deepEqual(
-    await worker.evaluate(() => chrome.sidePanel.getPanelBehavior()),
-    { openPanelOnActionClick: true },
-  )
+  // Chromium announces the service worker before its extension API bindings are
+  // ready. Keep the behavior assertion, waiting for the actual initialized API.
+  await expect
+    .poll(
+      () => worker.evaluate(() => chrome.sidePanel?.getPanelBehavior() ?? null),
+      { timeout: 15_000 },
+    )
+    .toEqual({ openPanelOnActionClick: true })
   const panel = await context.newPage()
   await panel.goto(`${origin}/sidepanel.html`)
   await expect(

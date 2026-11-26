@@ -101,7 +101,7 @@ export class FrameBroker {
     return true
   }
 
-  async collect(tabId: number): Promise<FrameScene> {
+  async collect(tabId: number, geometryOnly = false): Promise<FrameScene> {
     const frames = await this.io.frames(tabId)
     if (
       !frames.length ||
@@ -122,6 +122,7 @@ export class FrameBroker {
             raw = await this.io.send(tabId, frame.frameId, {
               type: 'FRAME_SNAPSHOT',
               nonce,
+              geometryOnly,
             })
           } catch {
             return

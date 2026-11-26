@@ -38,6 +38,7 @@ import { TargetPanel } from './target'
 import { CanvasPanel } from './canvas'
 import { ExportDialog } from '../exports/ExportDialog'
 import './styles.css'
+import type {} from '../extension'
 
 function Row({
   step,
@@ -191,6 +192,29 @@ function EditorLoaded({
   const select = (step: Step) =>
     route({ step: String(step.index), layer: null })
   const announce = useActivity()
+  const [guideMeBusy, setGuideMeBusy] = useState(false)
+  useEffect(
+    () =>
+      window.stepdocExtension?.subscribeGuideMe((result) => {
+        if (result.guideId !== id) return
+        if (!result.saved) {
+          announce(
+            'Walkthrough report was retained without overwriting this guide. Check the extension panel.',
+          )
+          return
+        }
+        announce('Guide Me report saved to this guide.')
+        if (!controller.snapshot().dirty && !controller.snapshot().saving)
+          void controller
+            .reload(true)
+            .catch(() =>
+              announce(
+                'Reload the editor to see the saved walkthrough report.',
+              ),
+            )
+      }),
+    [id, controller, announce],
+  )
   const addDialog = useRef<HTMLDialogElement>(null)
   const detailsDialog = useRef<HTMLDialogElement>(null)
   const deleteDialog = useRef<HTMLDialogElement>(null)
@@ -511,12 +535,28 @@ function EditorLoaded({
         <Button
           kind="secondary"
           icon="target"
-          data-sd="editor-read-guide"
+          data-sd={window.stepdocExtension ? 'guide-me' : 'editor-read-guide'}
+          disabled={guideMeBusy || imageBusy}
           onClick={() => {
-            void chooseMode('preview')
+            if (!window.stepdocExtension) {
+              void chooseMode('preview')
+              return
+            }
+            setGuideMeBusy(true)
+            void controller
+              .flush()
+              .then(async (ok) => {
+                if (ok) await window.stepdocExtension!.guideMe(id)
+              })
+              .catch(() =>
+                announce(
+                  'Guide Me could not start. Finish any capture or walkthrough, then retry.',
+                ),
+              )
+              .finally(() => setGuideMeBusy(false))
           }}
         >
-          Read guide
+          {window.stepdocExtension ? 'Guide Me' : 'Read guide'}
         </Button>
         <Button
           kind="secondary"

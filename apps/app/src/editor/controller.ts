@@ -187,9 +187,18 @@ export class EditorController {
       this.emit({ saving: false })
     }
   }
-  async reload() {
+  async reload(onlyIfClean = false) {
+    const revision = this.state.revision
+    if (onlyIfClean && (this.state.dirty || this.state.saving)) return
     if (this.running) await this.running
     const guide = await this.adapter.getGuide(this.state.guide.id)
+    if (
+      onlyIfClean &&
+      (this.state.dirty ||
+        this.state.saving ||
+        this.state.revision !== revision)
+    )
+      return
     this.saved = structuredClone(guide)
     this.savedRevision = this.state.revision + 1
     this.undoStack = []

@@ -19,6 +19,7 @@ import {
 import type { LegacyStorage } from './background'
 import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
+import { GuidePanel } from './guide-panel'
 
 function Confirm({
   title,
@@ -134,10 +135,26 @@ function CapturePanel() {
     const url = new URL(location.href)
     url.searchParams.set(
       'view',
-      reviewing ? 'review' : recording ? phase : 'idle',
+      state.guideMe
+        ? 'guide-me'
+        : reviewing
+          ? 'review'
+          : recording
+            ? phase
+            : 'idle',
     )
+    if (state.guideMe) {
+      url.searchParams.set(
+        'step',
+        String(Math.min(state.guideMe.index + 1, state.guideMe.steps.length)),
+      )
+      url.searchParams.set('guide', state.guideMe.guideId)
+    } else {
+      url.searchParams.delete('step')
+      url.searchParams.delete('guide')
+    }
     history.replaceState(null, '', url)
-  }, [phase])
+  }, [phase, state.guideMe?.index, state.guideMe?.guideId])
   useEffect(() => {
     setTitle(review?.title ?? '')
     setSelected([])
@@ -224,6 +241,7 @@ function CapturePanel() {
     .sort((a, b) => a - b)
   const canMerge =
     positions.length > 1 && positions.every((at, i) => at === positions[0]! + i)
+  if (state.guideMe) return <GuidePanel run={state.guideMe} />
   return (
     <div className="capture-panel" data-compact={compact}>
       <header className="capture-header">

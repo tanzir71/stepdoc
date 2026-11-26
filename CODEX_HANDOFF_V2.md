@@ -206,6 +206,7 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `capture-pause`, `capture-review`, `capture-title`, `capture-select-step` | Pause/resume, Stop & review, review title and step selection; Alt+Up/Down reorders selected-focus rows |
 | `capture-pill`, `capture-pill-pause`, `capture-pill-resume`, `capture-pill-stop`, `capture-pill-open-review`, `capture-time` | E02 open-shadow recorder controls, retained review retry and active-time clock; no source-page URL changes |
 | `capture-open-review`, `capture-pair` | E06 retained review → `/popup.html?surface=tab&view=review`; E01 Pair server opens `?view=pair`, E06 opens `/popup.html?surface=tab&view=pair` |
+| `capture-source`, `capture-source-refresh`, `capture-source-open` | Full-tab controls: native web-page selector, Refresh pages and Show page. `source`, `origin` and `browser-session` query parameters retain an explicit selection through pairing/reload; `source=none` retains an empty choice. Start focuses that exact page and closes the controls tab after success. |
 | `capture-merge`, `capture-delete`, `capture-discard`, `capture-confirm`, `capture-confirm-cancel`, `capture-keep-local`, `capture-retry` | Adjacent manual merge, delete, discard confirmation, local-only save and retained v1 upload retry |
 | `capture-library` | Extension side panel / popup: open the local SPA in a full tab |
 | `capture-blur`, `capture-blur-controls`, `capture-blur-done` | Side panel/popup Alt+B picker, open-shadow privacy toolbar and Done; focus + Enter/Space adds an element, Esc exits |

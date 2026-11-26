@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds `@stepdoc/schema/capture-target`: strict private origin/tab/session DTOs
+and optional `captureSource` in extension capture metadata. The session identifier
+uses extension session storage, separate from persisted guides. Older active
+captures without this binding recover to retained review; they never resume on a
+potentially recycled tab ID. No guide fields/defaults, public endpoints, schema
+identifier or guide database layout change; no guide migration or version bump
+is needed.
+
 M11 adds `@stepdoc/schema/pairing`: strict private command/public-state DTOs and
 the version-1 extension connection record. Only the private record contains a
 credential; public state explicitly omits it. The new extension-origin IndexedDB

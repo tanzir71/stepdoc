@@ -414,7 +414,7 @@ try {
   const opened = context.waitForEvent('page')
   await pill.getByRole('button', { name: 'Open review', exact: true }).click()
   const review = await opened
-  await review.waitForURL(`${origin}/sidepanel.html?view=review`)
+  await review.waitForURL(`${origin}/sidepanel.html?surface=tab&view=review`)
   await expect(review.locator('[data-sd="capture-title"]')).toBeVisible()
   await expect(pill).toBeHidden()
   assert.equal((await state()).steps.length, 4)

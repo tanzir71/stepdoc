@@ -22,6 +22,18 @@ import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
 import { CaptureTime } from './capture-time'
 import { PairingPanel } from './pairing-panel'
+import { CaptureTargetPicker, targetMessages } from './capture-target-picker'
+import {
+  readTargetChoice,
+  writeTargetChoice,
+  type TargetChoice,
+} from './capture-target-url'
+import {
+  captureTargetErrorSchema,
+  captureTargetListSchema,
+  type CaptureTarget,
+} from '@stepdoc/schema/capture-target'
+import { CaptureTargetError } from './capture-target'
 import {
   applyPreferences,
   preferenceKey,
@@ -29,8 +41,8 @@ import {
 } from '../../app/src/preferences'
 
 const popup = location.pathname.endsWith('popup.html')
-const compact =
-  popup && new URL(location.href).searchParams.get('surface') !== 'tab'
+const fullTab = new URL(location.href).searchParams.get('surface') === 'tab'
+const compact = popup && !fullTab
 document.body.dataset.captureSurface = compact ? 'popup' : 'tab'
 
 function Confirm({
@@ -95,6 +107,10 @@ function CapturePanel() {
     new URL(location.href).searchParams.get('view') === 'pair',
   )
   const [busy, setBusy] = useState(false)
+  const [targetChoice, setTargetChoice] = useState<TargetChoice>(() =>
+    readTargetChoice(location.href),
+  )
+  const [targetReady, setTargetReady] = useState(false)
   const [notice, setNotice] = useState<{ text: string; phase: string } | null>(
     null,
   )
@@ -161,6 +177,7 @@ function CapturePanel() {
   }, [])
   useEffect(() => {
     const url = new URL(location.href)
+    if (fullTab) writeTargetChoice(url, targetChoice)
     url.searchParams.set(
       'view',
       state.guideMe
@@ -184,7 +201,13 @@ function CapturePanel() {
       url.searchParams.delete('guide')
     }
     history.replaceState(null, '', url)
-  }, [phase, pairView, state.guideMe?.index, state.guideMe?.guideId])
+  }, [
+    phase,
+    pairView,
+    state.guideMe?.index,
+    state.guideMe?.guideId,
+    targetChoice,
+  ])
   useEffect(() => {
     setTitle(review?.title ?? '')
     setSelected([])
@@ -194,7 +217,7 @@ function CapturePanel() {
   }, [review?.savedId])
   const invoke = async (type: string, extra: Record<string, unknown> = {}) => {
     const current = latest.current
-    const result: { ok: boolean; id?: string } =
+    const result: { ok: boolean; id?: string; code?: unknown } =
       await browser.runtime.sendMessage({
         type,
         sessionId: current.captureSessionId,
@@ -202,7 +225,11 @@ function CapturePanel() {
         ...extra,
       })
     await refresh()
-    if (!result.ok) throw new Error('Command failed')
+    if (!result.ok) {
+      const code = captureTargetErrorSchema.safeParse(result.code)
+      if (code.success) throw new CaptureTargetError(code.data)
+      throw new Error('Command failed')
+    }
     return result
   }
   async function command(
@@ -216,9 +243,22 @@ function CapturePanel() {
       await invoke(type, extra)
       if (compact && type === 'STOP_REVIEW') await invoke('OPEN_CAPTURE_REVIEW')
       announce(message)
-    } catch {
+      if (fullTab && type === 'START_CAPTURE') {
+        try {
+          const current = await browser.tabs.getCurrent()
+          if (!current?.id) throw new Error()
+          await browser.tabs.remove(current.id)
+        } catch {
+          announce(
+            'Capture started on the selected web page. This controls tab could not close; use the controls on that page to pause or stop.',
+          )
+        }
+      }
+    } catch (error) {
       announce(
-        'Operation could not finish. The capture is retained; refresh and retry.',
+        error instanceof CaptureTargetError
+          ? targetMessages[error.code]
+          : 'Operation could not finish. The capture is retained; refresh and retry.',
       )
     } finally {
       setBusy(false)
@@ -274,24 +314,37 @@ function CapturePanel() {
     positions.length > 1 && positions.every((at, i) => at === positions[0]! + i)
   if (state.guideMe) return <GuidePanel run={state.guideMe} />
   const openPair = () => {
-    if (compact)
-      void browser.tabs.create({
-        url: browser.runtime.getURL('/popup.html') + '?surface=tab&view=pair',
-      })
-    else setPairView(true)
+    if (!compact) {
+      setPairView(true)
+      return
+    }
+    setBusy(true)
+    void (async () => {
+      const url = new URL(
+        browser.runtime.getURL('/popup.html') + '?surface=tab&view=pair',
+      )
+      let target: CaptureTarget | null = null
+      try {
+        const reply: { ok: boolean; state?: unknown } =
+          await browser.runtime.sendMessage({ type: 'CAPTURE_TARGETS' })
+        const parsed = captureTargetListSchema.safeParse(reply.state)
+        if (reply.ok && parsed.success) target = parsed.data.suggested
+      } catch {}
+      writeTargetChoice(url, { target, explicit: true, invalid: false })
+      await browser.tabs.create({ url: url.href })
+    })()
+      .catch(() =>
+        announce('Pairing controls could not open. Retry opening them.'),
+      )
+      .finally(() => setBusy(false))
   }
   if (ready && pairView && phase === 'idle')
-    return (
-      <PairingPanel
-        fullTab={popup && !compact}
-        onExit={() => setPairView(false)}
-      />
-    )
+    return <PairingPanel fullTab={fullTab} onExit={() => setPairView(false)} />
   return (
     <div
       className="capture-panel"
       data-compact={compact}
-      data-full-tab={popup && !compact}
+      data-full-tab={fullTab}
       data-phase={phase}
     >
       <header className="capture-header">
@@ -343,15 +396,28 @@ function CapturePanel() {
                 </Button>
               </div>
             ) : null}
+            {fullTab ? (
+              <CaptureTargetPicker
+                choice={targetChoice}
+                onChoice={setTargetChoice}
+                onAvailable={setTargetReady}
+                onNotice={announce}
+                disabled={disabled}
+              />
+            ) : null}
             <div className="capture-start-card">
               <Button
                 className="capture-record"
                 aria-label="Start capture"
                 data-sd="capture-start"
-                disabled={disabled}
+                disabled={disabled || (fullTab && !targetReady)}
                 onClick={() => {
                   setNotice(null)
-                  void command('START_CAPTURE', 'Capture started.')
+                  void command(
+                    'START_CAPTURE',
+                    'Capture started.',
+                    fullTab ? { target: targetChoice.target } : {},
+                  )
                 }}
               >
                 <Icon name={compact ? 'popup-record' : 'capture-record'} />

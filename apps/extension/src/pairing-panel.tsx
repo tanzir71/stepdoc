@@ -410,6 +410,8 @@ export function PairingPanel({
                 data-sd="pair-devices"
                 href={settingsUrl(connection.server)}
                 target="_blank"
+                referrerPolicy="no-referrer"
+                rel="noreferrer noopener"
               >
                 Devices &amp; tokens on the server
               </a>

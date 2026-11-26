@@ -602,6 +602,35 @@ try {
     )
     .toBe('Captured through the popup')
   await popup.close()
+  popup = await open()
+  const pairingOpened = context.waitForEvent('page')
+  await popup.click('capture-pair')
+  const pairing = await pairingOpened
+  await expect(pairing.locator('[data-sd=pair-server]')).toBeVisible()
+  const pairingUrl = new URL(pairing.url())
+  assert.equal(
+    pairingUrl.searchParams.get('source'),
+    String(tab.id),
+    'Actual action popup preserves the active web page',
+  )
+  assert.equal(pairingUrl.searchParams.get('origin'), base)
+  assert.match(
+    pairingUrl.searchParams.get('browser-session'),
+    /^[a-f0-9-]{36}$/,
+  )
+  const popupStillOpen = (
+    await session.send('Target.getTargets')
+  ).targetInfos.some((target) => target.targetId === popup.targetId)
+  if (popupStillOpen) await popup.close()
+  await pairing.locator('[data-sd=pair-local]').click()
+  await expect(pairing.locator('[data-sd=capture-source]')).toBeVisible()
+  await expect(pairing.locator('[data-sd=capture-start]')).toBeEnabled()
+  const selected = JSON.parse(
+    await pairing.locator('[data-sd=capture-source]').inputValue(),
+  )
+  assert.equal(selected.tabId, tab.id)
+  assert.equal(selected.origin, base)
+  await pairing.close()
   assert.equal(uploads, 0)
   assert.deepEqual(errors, [])
   console.log(

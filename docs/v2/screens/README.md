@@ -252,3 +252,20 @@ and at 320px. Dynamic local server origins are canonicalized in trees only.
 Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-pairing.mjs`
 after a Chrome build. Ordinary verification compares trees and writes ignored
 screenshots. The real HTTP/vault/source-world checks run in both modes.
+
+## M11 full-tab capture source
+
+`m11-capture-source-light.png` and `m11-capture-source-dark.png` show the private
+full-tab return flow at 400×900. The fresh E01 context (`26:5543`) supplies the
+existing logo, sliders, record glyph and tokens. The original 52px header, 16px
+content gutters, Geist text, 30px record glyph and 16px settings glyph remain;
+the native selector composes the shared Input's label and 36px field styles.
+The source card and Refresh/Show actions are functional additions for full tabs.
+E01's side panel and E06's compact popup retain their existing geometry. On wide
+screens, the existing 640px full-tab maximum remains. No Ledgerly UI is built.
+
+Five committed aria trees cover empty, ready, dark, narrow and invalid selections.
+Local origins/tab numbers are canonicalized in trees; real command tests use
+their actual browser identities. Axe and overflow checks run at 400px and 320px.
+Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-targets.mjs`
+after a Chrome build. Normal runs compare trees and write ignored evidence PNGs.

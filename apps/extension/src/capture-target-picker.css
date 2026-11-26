@@ -1,0 +1,25 @@
+.capture-source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-2);
+  padding: var(--sd-space-3);
+  border-radius: var(--sd-radius-lg);
+  background: var(--sd-bg-raised);
+}
+.capture-source select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sd-text-primary);
+  font: var(--sd-type-body-m);
+}
+.capture-source p {
+  color: var(--sd-text-secondary);
+  overflow-wrap: anywhere;
+}
+.capture-source .capture-actions {
+  flex-wrap: wrap;
+}

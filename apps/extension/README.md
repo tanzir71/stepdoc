@@ -263,6 +263,39 @@ cookie/referrer-free requests, cancellation, stale generations, recovery and
 popup/full-tab navigation. Captures still save locally: scoped server capture
 upload, destination selection and paired editor integration remain M11 work.
 
+## Full-tab capture source
+
+Every private review tab uses `surface=tab`. Returning from pairing or discarding
+review exposes a labelled native page selector, Refresh pages and Show page.
+The list contains HTTP(S) origins and tab numbers, excluding titles, paths,
+queries, fragments and URL credentials. A full tab never chooses an arbitrary
+active browser window. The actual action popup carries its active page into E05;
+review can suggest its previous source while that binding remains valid.
+
+`source`, `origin` and `browser-session` preserve a selection through pairing and
+reload. `source=none` preserves an explicit empty choice. Start resolves the exact
+tab, focuses/restores its actual window, rechecks identity/readiness, then primes
+capture. A successful full-tab start closes its controls tab, leaving the in-page
+recording pill available. A failed close reports the running capture accurately.
+Closed, loading, changed or expired selections require another explicit choice;
+they never silently select another page. Private commands reject content senders.
+
+The browser-session UUID prevents persisted tab IDs being reused after restart.
+It lives in extension `storage.session`, which survives worker restarts and is
+[cleared on extension/browser reload](https://developer.chrome.com/docs/extensions/reference/api/storage#session).
+If that API is unavailable, the worker uses a fresh in-memory generation and
+invalidates old selections conservatively. This identifier is freshness metadata,
+not a credential. Active/paused captures with missing or stale bindings recover to
+stopped review with their processed images retained; guides are unchanged.
+The server Devices link sends no referrer from private source-selection URLs.
+
+`verify-targets.mjs` exercises the actual loaded extension, including cross-window
+focus/camera capture, source-world rejection, pairing/reload/review return, stale
+origin/session/closed-tab failures, failed controls closure, browser restart with
+the same profile, retained processed images and light/dark/narrow aria/axe.
+Unit tests also cover tab moves, loading state and identity changes during focus.
+The actual action-popup suite verifies source handoff to E05.
+
 ## Frame graph transitions
 
 A browser document/iframe replacement during metadata collection has a private

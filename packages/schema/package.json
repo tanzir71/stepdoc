@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./legacy-v1": "./src/legacy-v1.ts",
     "./capture": "./src/capture.ts",
+    "./capture-target": "./src/capture-target.ts",
     "./guide-me": "./src/guide-me.ts",
     "./storage-api": "./src/storage-api.ts",
     "./pairing": "./src/pairing.ts",

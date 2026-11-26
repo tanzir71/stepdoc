@@ -40,3 +40,7 @@ The original shared text/selector regressions now run in `@stepdoc/core`.
 public metadata projection and version-1 private connection record. It is
 separate from guide@1 and the public HTTP contract. Only the vault record has a
 token; public state and commands do not accept unexpected credential fields.
+
+`@stepdoc/schema/capture-target` owns private origin/tab/browser-session selection
+and start DTOs. It rejects titles, paths, query strings, credentials and unexpected
+value fields. These controls do not change guide@1 or Storage API v1.

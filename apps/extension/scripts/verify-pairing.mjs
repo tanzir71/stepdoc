@@ -290,6 +290,10 @@ try {
     await hook('pair-devices').getAttribute('href'),
     `${base}/settings/devices`,
   )
+  await expect(hook('pair-devices')).toHaveAttribute(
+    'referrerpolicy',
+    'no-referrer',
+  )
   readStatus = 401
   await hook('pair-test').click()
   await expect(hook('pair-status')).toContainText('no longer has server access')

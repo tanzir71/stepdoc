@@ -26,6 +26,14 @@ import { pairingCommandSchema } from '@stepdoc/schema/pairing'
 import { PairingController } from './pairing-controller'
 import { IndexedDbConnectionVault } from './connection-vault'
 import {
+  captureBrowserSessionSchema,
+  captureStartSchema,
+  captureTargetSchema,
+  captureTargetCommandSchema,
+  type CaptureTarget,
+} from '@stepdoc/schema/capture-target'
+import { CaptureTargets, CaptureTargetError } from './capture-target'
+import {
   capturePreferencesSchema,
   editReview,
   reviewEditSchema,
@@ -51,6 +59,7 @@ export interface LegacyStorage {
   capturedSteps?: Step[]
   captureSessionId?: string
   captureTabId?: number
+  captureSource?: CaptureTarget
   captureError?: string | null
   startedUrl?: string
   appUrl?: string
@@ -97,12 +106,44 @@ const openReview = (fullTab = false) =>
         fullTab || import.meta.env.BROWSER === 'firefox'
           ? '/popup.html'
           : '/sidepanel.html',
-      ) +
-      (fullTab || import.meta.env.BROWSER === 'firefox'
-        ? '?surface=tab&view=review'
-        : '?view=review'),
+      ) + '?surface=tab&view=review',
   })
 export function startBackground() {
+  const fallbackBrowserSession = crypto.randomUUID()
+  let browserSessionPromise: Promise<string> | undefined
+  const browserSession = () =>
+    (browserSessionPromise ??= (async () => {
+      // Session storage survives worker restarts, but never a new browser session.
+      try {
+        if (!browser.storage.session) return fallbackBrowserSession
+        const key = 'stepdoc.capture-browser-session.v1'
+        const stored = await browser.storage.session.get(key)
+        const parsed = captureBrowserSessionSchema.safeParse(stored[key])
+        if (parsed.success) return parsed.data
+        const fresh = crypto.randomUUID()
+        await browser.storage.session.set({ [key]: fresh })
+        return fresh
+      } catch {
+        return fallbackBrowserSession
+      }
+    })())
+  const targets = new CaptureTargets({
+    browserSession,
+    tabs: () => browser.tabs.query({}),
+    active: async () =>
+      (await browser.tabs.query({ active: true, currentWindow: true }))[0],
+    get: (id) => browser.tabs.get(id),
+    activate: async (id, windowId) => {
+      const sourceWindow = await browser.windows.get(windowId)
+      await browser.windows.update(windowId, {
+        focused: true,
+        ...(sourceWindow.state === 'minimized'
+          ? { state: 'normal' as const }
+          : {}),
+      })
+      await browser.tabs.update(id, { active: true })
+    },
+  })
   if (import.meta.env.BROWSER !== 'firefox')
     void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
   let lastCapture = 0
@@ -137,9 +178,34 @@ export function startBackground() {
     },
   })
   const recovered = browser.storage.local
-    .get<LegacyStorage>(['captureReview'])
-    .then(async ({ captureReview }) => {
+    .get<LegacyStorage>([
+      'captureReview',
+      'recording',
+      'captureTabId',
+      'captureSource',
+    ])
+    .then(async ({ captureReview, recording, captureTabId, captureSource }) => {
       const phase = captureReview?.phase
+      const source = captureTargetSchema.safeParse(captureSource)
+      if (
+        (recording || phase === 'recording' || phase === 'paused') &&
+        (!source.success ||
+          source.data.browserSession !== (await browserSession()) ||
+          source.data.tabId !== captureTabId)
+      ) {
+        await browser.storage.local.set({
+          recording: false,
+          captureBlurMode: false,
+          captureError:
+            'Capture stopped because its browser session changed. Review or discard the retained capture.',
+          captureReview: {
+            ...captureReview,
+            phase: 'review',
+            clock: stopClock(captureReview?.clock),
+          },
+        })
+        return
+      }
       if (
         phase &&
         ['starting', 'pausing', 'stopping', 'saving'].includes(phase)
@@ -529,6 +595,27 @@ export function startBackground() {
     const ownControls =
       sender.id === browser.runtime.id &&
       !!sender.url?.startsWith(browser.runtime.getURL(''))
+    if (message.type === 'CAPTURE_TARGETS') {
+      if (
+        !ownControls ||
+        !captureTargetCommandSchema.safeParse(message).success
+      ) {
+        respond({ ok: false, code: 'forbidden' })
+        return
+      }
+      void browser.storage.local
+        .get<LegacyStorage>('captureSource')
+        .then(async (state) => {
+          const fullTab =
+            new URL(sender.url!).searchParams.get('surface') === 'tab'
+          respond({
+            ok: true,
+            state: await targets.list(fullTab, state.captureSource),
+          })
+        })
+        .catch(() => respond({ ok: false, code: 'unavailable' }))
+      return true
+    }
     if (
       [
         'PAIR_STATUS',
@@ -552,6 +639,7 @@ export function startBackground() {
     }
     const privateCommands = [
       'START_CAPTURE',
+      'CAPTURE_FOCUS_TARGET',
       'PAUSE_CAPTURE',
       'RESUME_CAPTURE',
       'STOP_REVIEW',
@@ -633,7 +721,26 @@ export function startBackground() {
           }
         }
       }
-      if (message.type === 'GUIDE_START') {
+      if (message.type === 'CAPTURE_FOCUS_TARGET') {
+        const command = captureTargetCommandSchema.parse(message)
+        if (command.type !== 'CAPTURE_FOCUS_TARGET')
+          throw new CaptureTargetError('forbidden')
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'recording',
+          'captureReview',
+        ])
+        const walkthrough = await guide.state()
+        if (
+          pairing.busy ||
+          legacyStarting ||
+          state.recording ||
+          ![undefined, 'idle'].includes(state.captureReview?.phase) ||
+          (walkthrough && walkthrough.phase !== 'complete')
+        )
+          throw new CaptureTargetError('busy')
+        await targets.focus(command.target)
+        respond({ ok: true })
+      } else if (message.type === 'GUIDE_START') {
         if (pairing.busy) throw new Error('Pairing active')
         if (typeof message.id !== 'string') throw new Error('Invalid guide')
         const run = await guide.start(message.id)
@@ -675,11 +782,19 @@ export function startBackground() {
         respond({ ok: true })
       } else if (message.type === 'START' || message.type === 'START_CAPTURE') {
         if (pairing.busy) throw new Error('Pairing active')
+        const local = message.type === 'START_CAPTURE'
+        const start = local ? captureStartSchema.parse(message) : undefined
+        if (local && legacyStarting) throw new CaptureTargetError('busy')
+        if (
+          local &&
+          ownControls &&
+          new URL(sender.url!).searchParams.get('surface') === 'tab' &&
+          !start?.target
+        )
+          throw new CaptureTargetError('unavailable')
         const walkthrough = await guide.state()
         if (walkthrough && walkthrough.phase !== 'complete')
           throw new Error('Walkthrough active')
-        if (walkthrough) await guide.clear()
-        const local = message.type === 'START_CAPTURE'
         const previous = await browser.storage.local.get<LegacyStorage>([
           'recording',
           'captureReview',
@@ -690,12 +805,15 @@ export function startBackground() {
             !['idle', undefined].includes(previous.captureReview?.phase))
         )
           throw new Error('Capture already active')
-        const [tab] = await browser.tabs.query({
-          active: true,
-          currentWindow: true,
-        })
+        const tab = local
+          ? start?.target
+            ? await targets.focus(start.target)
+            : await targets.active()
+          : (await browser.tabs.query({ active: true, currentWindow: true }))[0]
         if (!tab?.id) throw new Error('No capture tab')
         const startedUrl = safeUrl(tab.url ?? '')
+        const captureSource = await targets.identity(tab)
+        if (walkthrough) await guide.clear()
         // A prior canceled capture can still own the queue's drain promise.
         // Stop producers and settle it before admitting a new session's work.
         const captureSessionId = crypto.randomUUID()
@@ -717,6 +835,7 @@ export function startBackground() {
             capturedSteps: [],
             captureSessionId,
             captureTabId: tab.id,
+            captureSource,
             captureError: null,
             startedUrl,
             captureBlurMode: false,
@@ -746,6 +865,13 @@ export function startBackground() {
         } catch {
           await abort(captureSessionId)
           throw new Error('Capture could not start')
+        }
+        if (
+          local &&
+          new URL(primed.scene.top.url!).origin !== captureSource.origin
+        ) {
+          await abort(captureSessionId)
+          throw new CaptureTargetError('changed')
         }
         await mutate(async () => {
           const latest = await browser.storage.local.get<LegacyStorage>([
@@ -1177,8 +1303,12 @@ export function startBackground() {
         () => {},
         () => {},
       )
-      void next.catch(() =>
-        respond({ ok: false, error: 'Capture operation failed' }),
+      void next.catch((error: unknown) =>
+        respond({
+          ok: false,
+          error: 'Capture operation failed',
+          ...(error instanceof CaptureTargetError ? { code: error.code } : {}),
+        }),
       )
     } else
       void run().catch(() =>

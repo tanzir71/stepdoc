@@ -15,7 +15,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:a11y": "pnpm --filter @stepdoc/app test:a11y",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm website:verify && pnpm website:browser",
     "format": "prettier --write .",
     "website:guide": "node --no-warnings --experimental-strip-types scripts/generate-demo-guide.ts",
     "website:verify": "node scripts/verify-website.mjs",

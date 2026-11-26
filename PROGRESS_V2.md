@@ -12,7 +12,7 @@
 | M14 | Not started | — | Node target + v1 migration | — |
 | M15 | Not started | — | Collaboration and parity | — |
 | M16 | Not started | — | Publishing + agent surface | — |
-| M17 | Not started | — | Landing + docs | — |
+| M17 | In progress | 2026-11-26 | Existing Pages landing entry/assets repaired; L01/L02 redesign and target docs remain | — |
 
 ## M9 — Repo setup, schema and core
 
@@ -113,6 +113,7 @@
 
 ## M17 — Landing + docs
 
+- [x] Repair the existing Pages landing's root entry, project-relative assets/links, local fonts, script-free reading and mobile overflow; regression-test the actual `/stepdoc/` serving prefix in the default verification gate.
 - [ ] Rebuild `site/` from L01/L02; docs per target (browser, PHP, Cloudflare, Node, Pages); `site/llms.txt` updated; local Lighthouse ≥ 95 perf/a11y. Commit and push only; do not deploy.
 
 ## Owner later (non-blocking)
@@ -122,7 +123,6 @@
 - Install in the owner's browser; Chrome/Edge stores and Firefox signing/AMO submission.
 - Live Supabase migrations/integration (carried from v1 `PROGRESS.md`) and deployments to PHP, Cloudflare or Node hosts.
 - Real GitHub publishing and Pages configuration; real email delivery and hardware passkeys. Automated local stand-ins are the milestone criteria.
-- Pages diagnosis (2026-11-26): the legacy builder publishes `main:/`; root renders the README because the existing landing file is `site/index.html`. The landing is live at `https://tanzir71.github.io/stepdoc/site/`. The v2 replacement remains M17; no settings or deployment was changed.
 - Re-check competitor prices before launch; publish the marketing site.
 - Alternative logo selection if desired; Mark A "Stepline" remains the default.
 
@@ -135,6 +135,8 @@
 - M18 performance audit: measure large-guide thumbnail decoding and session undo memory before adding deferral/coalescing; saved native version history remains unlimited. Editor/Word route chunks now keep the initial SPA JavaScript below Vite's advisory threshold.
 
 ## Deviations
+
+- The owner's 2026-11-26 instruction to fix the broken GitHub landing takes priority over milestone order. The existing landing's serving paths are repaired now; this does not claim completion of the L01/L02 redesign or the rest of M17.
 
 - M11 extension routing: extension resources cannot serve arbitrary SPA paths on reload. The same logical `/g/:id/edit?step=...` route is encoded in `/app.html?route=...` at `chrome-extension://` / `moz-extension://` origins. Native links, copied links, new tabs, history and dirty-navigation guards use that representation; web-hosted route paths are unchanged. The loaded-extension suite proves the file-server behavior.
 
@@ -262,6 +264,9 @@
 - Targeted verification: 24 new unit tests cover safe projections, exact browser focus, pre/post-activation tab/origin/window/loading/session changes, fixed errors, strict commands and URL round-trips. The ninth loaded-extension suite exercises actual cross-window capture and review return, pairing/reload, source-world rejection, changed/closed/expired sources, controls-close failure and a real same-profile browser restart preserving processed images. Five aria trees, axe, overflow and light/dark 400px references cover the new full-tab card; existing E01 assets/tokens are reused from fresh Figma context, with measured original/shared-control geometry and painted pixels. The actual action-popup suite also verifies source handoff through E05/local-mode return. React listener cleanup, request ordering, native controls and state updates were reviewed. Full repository and independent accessibility results follow before commit. Next unit: scoped server capture upload/destination/editor, then remaining voice/cleanup parity. M11 remains in progress; no milestone tag yet.
 
 - Final verification: `pnpm verify` and independent `pnpm test:a11y` passed on the final code. Evidence: 734 unit tests (72 extension, including 24 new target/protocol cases), 185 native storage and 83 HTTP checks, 40 DOM and 38 capture-redaction checks, redaction/57-check canvas workers, generated 21-step replay plus six expected failures, eight legacy and 36 SPA browser tests, all nine loaded-extension suites, Chrome/Edge/Firefox builds with zero-error Firefox lint and all production builds. Existing accessibility trees/axe pass with five new source-selection trees, shared keyboard focus and light/dark/320px coverage; independent accessibility passes all 12 tests. Camera/window/restart checks use real browser windows; responsive references use a fresh extension profile to avoid Windows compositor stalls after native window transitions. No camera/privacy assertion or existing timeout was relaxed. Static production smoke passes editing/images, DOCX and bundle exports and separate-copy import without runtime/nonlocal failures. Initial SPA JavaScript remains 317.43 kB (97.27 kB gzip). Next retains two image warnings and Firefox four upstream React DOM warnings. `git diff --check` passes. Logs: `test-results/verify-pages-and-m11-target.log`, `test-results/a11y-pages-and-m11-target.log`, `test-results/m11-target-native-keyboard.log` and `test-results/m11-target-popup.log` (ignored). Work is committed directly to `main` without a PR; M11 remains open and has no milestone tag. The owner's urgent Pages repair is recorded separately below; next extension unit remains scoped upload/destination/editor integration.
+
+- 2026-11-26 — Urgent Pages landing repair: the existing legacy builder publishes `main:/`, while the landing was only at `site/index.html`. The project root consequently rendered the README. The nested page also used host-root `/styles.css`, `/main.js`, icon, demo and llms links, sending requests outside `/stepdoc/`; a title-only HTTP check missed that broken rendering. Added a script-free root entry/fallback to the single landing source and changed internal links/assets to directory-relative paths. Updated the renderer link to `main`, the OG/export URLs to the actual project path, and bundled existing licensed Geist fonts instead of Google Fonts. Content remains visible without JavaScript, and the preview/privacy cards now fit 320px screens. Existing product copy and generated demo remain; the full v2 visual rebuild stays open.
+- Verification: replaced the old browser check, which served `site/` at `/`, with a self-contained fixture mounting the repository at `/stepdoc/` exactly like the real Pages source. It starts from the project root, asserts real CSS/font loading, every internal link/resource, working simulation/reset, generated export metadata/five embedded images, desktop and 390/320px layouts, script-free reading and zero failed/external requests. Static checks cover root fallback, safe project-relative paths, old-branch links and local fonts/licence. Both checks are now part of `pnpm verify`; the complete final gate and independent `pnpm test:a11y` pass (734 unit tests, all browser/native suites/builds and 12 independent accessibility cases). Logs: `test-results/verify-pages-and-m11-target.log`, `test-results/a11y-pages-and-m11-target.log` and `test-results/website-pages.log`; local rendered evidence is in `test-results/website/` (ignored). Work is committed/pushed directly to `main` without a PR. No Pages settings, workflow, release or deployment command was used; the existing Pages source remains `main:/`.
 
 ## Defaults in use
 

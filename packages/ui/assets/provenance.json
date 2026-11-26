@@ -907,6 +907,96 @@
           "name": "W12 published badge dot; shared mask silhouette"
         }
       ]
+    },
+    {
+      "slots": [
+        {
+          "node": "26:5543",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "2fe14.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "26:6061",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "a9d6b.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "26:6061",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "ab7ff.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "26:6061",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "f9c8a.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6690",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "9c01e.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6690",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "5e2bf.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6690",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "d1faf.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6897",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "3713a.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6897",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "f738b.svg"
+    },
+    {
+      "slots": [
+        {
+          "node": "27:6897",
+          "name": "Original Figma capture vector"
+        }
+      ],
+      "file": "679cd.svg"
     }
   ]
 }

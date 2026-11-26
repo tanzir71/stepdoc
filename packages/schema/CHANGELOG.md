@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11's private capture transport adds strict bounded review commands and capture
+preferences. The review produces the existing guide@1 variable declarations,
+notes, manual steps, source-pixel masks and original/rendered image references.
+Local capture import atomically writes that same document, history and client-
+processed blobs. No guide fields/defaults, public endpoints, schema identifier
+or database layout change; no persisted-data migration or version bump is needed.
+
 M11 adds the isolated `@stepdoc/schema/capture` entry point for ephemeral
 `stepdoc/capture@1` extension messages: bounded local events, frame geometry and
 nonce-only probes. It rejects extra value/text fields and unknown input types.

@@ -3,6 +3,31 @@ import { rectSchema, redactionSchema, stepSchema } from './guide'
 
 // Ephemeral extension transport, not guide data or the public Storage API.
 export const CAPTURE_TRANSPORT = 'stepdoc/capture@1' as const
+export const capturePreferencesSchema = z.strictObject({
+  smartBlur: z.boolean().default(true),
+  agentContext: z.boolean().default(true),
+})
+export const reviewEditSchema = z.discriminatedUnion('operation', [
+  z.strictObject({
+    operation: z.literal('title'),
+    title: z.string().trim().min(1).max(200),
+  }),
+  z.strictObject({
+    operation: z.literal('delete'),
+    ids: z.array(z.string()).min(1).max(500),
+  }),
+  z.strictObject({
+    operation: z.literal('merge'),
+    ids: z.array(z.string()).min(2).max(500),
+  }),
+  z.strictObject({
+    operation: z.literal('move'),
+    id: z.string(),
+    direction: z.enum(['up', 'down']),
+  }),
+])
+export type CapturePreferences = z.output<typeof capturePreferencesSchema>
+export type ReviewEdit = z.input<typeof reviewEditSchema>
 export const FRAME_LIMITS = Object.freeze({
   frames: 128,
   depth: 20,

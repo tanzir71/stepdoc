@@ -7,26 +7,7 @@
     <title>StepDoc Capture</title>
   </head>
   <body>
-    <div class="card">
-      <header><h1>StepDoc</h1></header>
-      <main>
-        <p id="status" role="status">Ready to capture</p>
-        <button id="start">Start capture</button
-        ><button id="stop" class="secondary">Stop &amp; open</button
-        ><button id="retry" class="secondary">Retry saved upload</button
-        ><button id="cancel" class="danger">Cancel</button>
-        <button id="blur" class="secondary" data-sd="capture-blur" disabled>
-          Choose element to blur (Alt+B)
-        </button>
-      </main>
-      <footer>
-        <nav aria-label="StepDoc">
-          <a href="app.html" target="_blank" data-sd="capture-library"
-            >Open library</a
-          ><a href="options.html" target="_blank">Settings</a>
-        </nav>
-      </footer>
-    </div>
-    <script type="module" src="/src/popup.ts"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/capture-panel.tsx"></script>
   </body>
 </html>

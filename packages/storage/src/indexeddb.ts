@@ -266,6 +266,124 @@ export class IndexedDbAdapter implements StorageAdapter {
       return doc
     })
   }
+  /** Browser-only atomic import: files finish before the guide becomes visible.
+   * Callers supply client-redacted rasters. No Storage API endpoint is added.
+   */
+  async createGuideWithBlobs(
+    input: GuideInput,
+    uploads: readonly BlobUpload[],
+  ): Promise<Guide> {
+    this.ready()
+    const doc = validateGuide(input)
+    if (!Array.isArray(uploads) || uploads.length > doc.steps.length * 2)
+      throw new StorageError('invalid_blob')
+    const copies: BlobUpload[] = uploads.map((upload: BlobUpload) => ({
+      file: upload.file,
+      stepId: upload.stepId,
+      kind: upload.kind,
+    }))
+    const rows: BlobRecord[] = []
+    const files: string[] = []
+    let directory: FileSystemDirectoryHandle | undefined
+    try {
+      const seen = new Set<string>()
+      for (const upload of copies) {
+        const step = doc.steps.find((step) => step.id === upload.stepId)
+        const slot = `${upload.stepId}/${upload.kind}`
+        if (!step?.screenshot || upload.kind === 'thumb' || seen.has(slot))
+          throw new StorageError('invalid_blob')
+        seen.add(slot)
+        const file = await validateBlob(upload)
+        const sha256 = await digest(file)
+        const fileName = `${crypto.randomUUID()}.${file.type === 'image/png' ? 'png' : 'webp'}`
+        const key = `blobs/${fileName}`
+        const row: BlobRecord = {
+          key,
+          guideId: doc.id,
+          stepId: upload.stepId,
+          kind: upload.kind,
+          mime: file.type,
+          bytes: file.size,
+          sha256,
+          backend: this.blobBackend,
+        }
+        if (this.blobBackend === 'opfs') {
+          directory = await this.files()
+          files.push(fileName)
+          const handle = await directory.getFileHandle(fileName, {
+            create: true,
+          })
+          const writer = await handle.createWritable()
+          try {
+            await writer.write(file)
+            await writer.close()
+          } catch (error) {
+            await writer.abort().catch(() => {})
+            throw error
+          }
+          row.fileName = fileName
+        } else row.data = file
+        rows.push(row)
+        step.screenshot[upload.kind] = key
+      }
+      // An imported document cannot reference files from another guide or origin.
+      const keys = new Set(rows.map((row) => row.key))
+      for (const step of doc.steps) {
+        if (step.screenshot && !step.screenshot.rendered)
+          throw new StorageError('invalid_blob')
+        for (const key of [
+          step.screenshot?.original,
+          step.screenshot?.rendered,
+        ])
+          if (key && !keys.has(key)) throw new StorageError('invalid_blob')
+      }
+      doc.version = 1
+      doc.updatedAt = this.at()
+      return await this.run(
+        ['guides', 'versions', 'blobs'],
+        'readwrite',
+        async (tx) => {
+          const store = tx.objectStore('guides')
+          const existing = await request<GuideRecord | undefined>(
+            store.get(doc.id),
+          )
+          if (existing) {
+            validateRecord(existing)
+            throw new StorageError(
+              'conflict',
+              validateGuide(existing.doc, true).version,
+            )
+          }
+          for (const row of rows)
+            await request(tx.objectStore('blobs').add(row))
+          await request(
+            store.add({
+              id: doc.id,
+              doc,
+              deletedAt: null,
+            } satisfies GuideRecord),
+          )
+          await request(
+            tx.objectStore('versions').add({
+              guideId: doc.id,
+              version: 1,
+              at: doc.updatedAt,
+              by: 'This device',
+              summary: 'Captured',
+              doc,
+            } satisfies VersionRecord),
+          )
+          return doc
+        },
+      )
+    } catch (error) {
+      if (directory)
+        await Promise.allSettled(
+          files.map((file) => directory!.removeEntry(file)),
+        )
+      throw storageError(error)
+    }
+  }
   async saveGuide(input: GuideInput, ifMatch: number): Promise<Guide> {
     const doc = validateGuide(input)
     validateVersion(ifMatch)

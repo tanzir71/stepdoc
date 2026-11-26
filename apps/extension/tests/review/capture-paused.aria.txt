@@ -1,0 +1,22 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Paused
+  - link "Settings":
+    - /url: options.html
+- main:
+  - complementary "Capture privacy": Smart blur active · 1 manual selections
+  - heading "Steps · paused" [level=2]
+  - text: "1"
+  - list:
+    - listitem: 01 Click "Open settings" click · button
+  - button "Choose element to blur (Alt+B)" [disabled]
+- contentinfo:
+  - button "Resume"
+  - button "Stop & review"
+  - status: Capture paused.
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: app.html
+    - button "Discard capture"
+- complementary "Capture activity":
+  - group: Activity log

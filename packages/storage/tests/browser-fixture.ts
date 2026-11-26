@@ -77,6 +77,96 @@ async function fileCount(name: string): Promise<number> {
 }
 
 const fixture = {
+  async atomicCapture(backend: 'opfs' | 'indexeddb') {
+    const name = `stepdoc-capture-${backend}`
+    const adapter = await IndexedDbAdapter.open({
+      databaseName: name,
+      blobStorage: backend,
+    })
+    const input = guide('atomic-capture')
+    input.steps[0]!.screenshot = { rendered: '', width: 4, height: 4 }
+    const file = await image()
+    const uploads = [
+      { file, stepId: 'step-one', kind: 'original' as const },
+      { file, stepId: 'step-one', kind: 'rendered' as const },
+    ]
+    // A failure after blob records were queued must abort the entire document.
+    const add = IDBObjectStore.prototype.add
+    IDBObjectStore.prototype.add = function (...args) {
+      if (this.name === 'versions') throw new Error('private-native-failure')
+      return add.apply(this, args)
+    }
+    try {
+      await rejects(
+        () => adapter.createGuideWithBlobs(input, uploads),
+        'storage_unavailable',
+      )
+    } finally {
+      IDBObjectStore.prototype.add = add
+    }
+    check(
+      (await count(name, 'guides')) === 0 &&
+        (await count(name, 'versions')) === 0 &&
+        (await count(name, 'blobs')) === 0,
+      'Capture transaction left no partial document, history or blobs',
+    )
+    if (backend === 'opfs')
+      check(
+        (await fileCount(name)) === 0,
+        'Capture rollback cleaned staged files',
+      )
+    await rejects(
+      () => adapter.createGuideWithBlobs(input, [uploads[0]!]),
+      'invalid_blob',
+    )
+    check(
+      (await adapter.listGuides()).items.length === 0,
+      'Missing rendered image is not published',
+    )
+    const rival = await IndexedDbAdapter.open({
+      databaseName: name,
+      blobStorage: backend,
+    })
+    const results = await Promise.allSettled([
+      adapter.createGuideWithBlobs(input, uploads),
+      rival.createGuideWithBlobs(input, uploads),
+    ])
+    check(
+      results.filter((result) => result.status === 'fulfilled').length === 1,
+      'One capture wins competing imports',
+    )
+    check(
+      (await count(name, 'guides')) === 1 &&
+        (await count(name, 'versions')) === 1 &&
+        (await count(name, 'blobs')) === 2,
+      'Capture is atomically visible once with exactly its two files',
+    )
+    if (backend === 'opfs')
+      check(
+        (await fileCount(name)) === 2,
+        'Losing capture cleaned only its own files',
+      )
+    const saved = await adapter.getGuide(input.id)
+    check(
+      saved.version === 1 && input.steps[0]!.screenshot!.rendered === '',
+      'Capture import snapshots input and owns version',
+    )
+    for (const key of [
+      saved.steps[0]!.screenshot!.original!,
+      saved.steps[0]!.screenshot!.rendered,
+    ])
+      check(
+        (await adapter.getBlob(key)).size === file.size,
+        'Both captured images are readable with integrity verification',
+      )
+    check(
+      (await adapter.listVersions(input.id)).length === 1,
+      'First capture history includes images',
+    )
+    adapter.close()
+    rival.close()
+    return checks
+  },
   async basic(backend: 'opfs' | 'indexeddb') {
     const name = `stepdoc-test-${backend}`
     const adapter = await IndexedDbAdapter.open({
@@ -642,13 +732,11 @@ const fixture = {
     await rejects(() => adapter.getBlob(key), 'corrupt_data')
     await transaction(db, ['guides'], 'readwrite', (tx) =>
       request(
-        tx
-          .objectStore('guides')
-          .put({
-            id: doc.id,
-            doc: { ...doc, private: 'private-typed-value' },
-            deletedAt: null,
-          }),
+        tx.objectStore('guides').put({
+          id: doc.id,
+          doc: { ...doc, private: 'private-typed-value' },
+          deletedAt: null,
+        }),
       ),
     )
     await rejects(() => adapter.getGuide(doc.id), 'corrupt_data')

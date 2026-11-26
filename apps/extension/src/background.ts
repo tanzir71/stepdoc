@@ -12,6 +12,14 @@ import { FrameBroker, type FrameScene } from './frame-broker'
 import { contextualStep, legacyMeta } from './capture-context'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
+import {
+  capturePreferencesSchema,
+  editReview,
+  reviewEditSchema,
+  saveCapture,
+  suggestedTitle,
+  type ReviewState,
+} from './review'
 
 type SessionBody = {
   title: string
@@ -19,7 +27,8 @@ type SessionBody = {
   sourceUrl?: string
   steps: unknown[]
 }
-interface LegacyStorage {
+export interface LegacyStorage {
+  captureReview?: ReviewState
   recording?: boolean
   steps?: (ReturnType<typeof makeStep> & {
     position: number
@@ -61,12 +70,41 @@ export function startBackground() {
     void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
   let lastCapture = 0
   let privacyEpoch = 0
+  let producerStopped = false
+  let commands = Promise.resolve()
+  const recovered = browser.storage.local
+    .get<LegacyStorage>(['captureReview'])
+    .then(async ({ captureReview }) => {
+      const phase = captureReview?.phase
+      if (
+        phase &&
+        ['starting', 'pausing', 'stopping', 'saving'].includes(phase)
+      )
+        await browser.storage.local.set({
+          recording: false,
+          captureBlurMode: false,
+          captureReview: {
+            ...captureReview,
+            phase: phase === 'pausing' ? 'paused' : 'review',
+          },
+        })
+    })
   const manualCounts = new Map<string, number>()
   const broker = new FrameBroker({
     frames: async (tabId) =>
       (await browser.webNavigation.getAllFrames({ tabId })) ?? [],
-    send: (tabId, frameId, message) =>
-      browser.tabs.sendMessage(tabId, message, { frameId }),
+    send: async (tabId, frameId, message) => {
+      const { captureReview } =
+        await browser.storage.local.get<LegacyStorage>('captureReview')
+      return browser.tabs.sendMessage(
+        tabId,
+        {
+          ...(typeof message === 'object' && message !== null ? message : {}),
+          smartBlur: captureReview?.preferences?.smartBlur ?? true,
+        },
+        { frameId },
+      )
+    },
   })
   const activationEpochs = new Map<number, number>()
   browser.tabs.onActivated.addListener(({ windowId }) =>
@@ -177,6 +215,7 @@ export function startBackground() {
           'steps',
           'capturedSteps',
           'captureSessionId',
+          'captureReview',
         ])
         if (!state.recording || state.captureSessionId !== pending.sessionId)
           return
@@ -208,6 +247,12 @@ export function startBackground() {
         const step = stepSchema.parse({
           ...enriched,
           redactions: frame.redactions,
+          screenshot: {
+            rendered: '',
+            width: frame.width,
+            height: frame.height,
+            devicePixelRatio: frame.scene.top.devicePixelRatio,
+          },
           index,
           ...(reused && { lowConfidence: true }),
           ...(expectations.has(pending.event.step.id) && {
@@ -223,6 +268,11 @@ export function startBackground() {
               }
             : {}),
         })
+        if (state.captureReview?.preferences?.agentContext === false) {
+          delete step.target
+          delete step.expect
+          step.lowConfidence = true
+        }
         const capturedSteps = [...(state.capturedSteps ?? [])]
         if (step.action === 'navigate') {
           const navigation = {
@@ -241,7 +291,8 @@ export function startBackground() {
         }
         if (
           step.action === 'navigate' &&
-          capturedSteps.at(-1)?.type === 'action'
+          capturedSteps.at(-1)?.type === 'action' &&
+          state.captureReview?.preferences?.agentContext !== false
         ) {
           const previous = capturedSteps.at(-1)!
           if (previous.url !== step.url)
@@ -289,6 +340,8 @@ export function startBackground() {
       'captureTabId',
       'captureBlurMode',
       'captureManualCount',
+      'captureReview',
+      'steps',
     ])
     await updateBadge()
     await Promise.allSettled(
@@ -298,6 +351,14 @@ export function startBackground() {
           browser.tabs.sendMessage(tab.id!, {
             type: 'STATE',
             recording: !!state.recording && tab.id === state.captureTabId,
+            paused:
+              ['pausing', 'paused', 'stopping'].includes(
+                state.captureReview?.phase ?? '',
+              ) && tab.id === state.captureTabId,
+            producerStopped: ['pausing', 'stopping'].includes(
+              state.captureReview?.phase ?? '',
+            ),
+            stepCount: state.steps?.length ?? 0,
             sessionId: state.captureSessionId,
             blurMode: !!state.captureBlurMode,
             manualCount: state.captureManualCount ?? 0,
@@ -316,6 +377,11 @@ export function startBackground() {
       queue.clear()
       await browser.storage.local.set({
         recording: false,
+        captureReview: {
+          ...(await browser.storage.local.get<LegacyStorage>('captureReview'))
+            .captureReview,
+          phase: 'review',
+        },
         captureError:
           reason === 'tab_changed'
             ? 'Capture stopped because the selected tab changed during the screenshot.'
@@ -339,14 +405,71 @@ export function startBackground() {
       })
       return
     }
-    void (async () => {
-      if (message.type === 'START') {
+    const ownControls =
+      sender.id === browser.runtime.id &&
+      !!sender.url?.startsWith(browser.runtime.getURL(''))
+    const privateCommands = [
+      'START_CAPTURE',
+      'PAUSE_CAPTURE',
+      'RESUME_CAPTURE',
+      'STOP_REVIEW',
+      'EDIT_REVIEW',
+      'SAVE_CAPTURE',
+      'DISCARD_CAPTURE',
+      'SET_CAPTURE_PREFERENCES',
+      'SHORTCUT',
+    ]
+    const run = async () => {
+      await recovered
+      if (privateCommands.includes(message.type)) {
+        if (!ownControls && message.type !== 'SHORTCUT')
+          throw new Error('Invalid controls')
+        if (message.type === 'SHORTCUT') {
+          const tab =
+            sender.tab?.id === undefined
+              ? undefined
+              : await browser.tabs.get(sender.tab.id)
+          if (!tab?.active) throw new Error('Inactive shortcut')
+          const state = await browser.storage.local.get<LegacyStorage>([
+            'recording',
+            'captureTabId',
+            'captureReview',
+            'captureSessionId',
+          ])
+          if (state.captureReview?.phase === 'review')
+            throw new Error('Review pending')
+          if (
+            (state.recording || state.captureReview?.phase === 'paused') &&
+            state.captureTabId !== tab.id
+          )
+            throw new Error('Wrong capture tab')
+          message = {
+            type:
+              state.recording || state.captureReview?.phase === 'paused'
+                ? 'STOP_REVIEW'
+                : 'START_CAPTURE',
+            sessionId: state.captureSessionId,
+          }
+        }
+      }
+      if (message.type === 'START' || message.type === 'START_CAPTURE') {
+        const local = message.type === 'START_CAPTURE'
+        const previous = await browser.storage.local.get<LegacyStorage>([
+          'recording',
+          'captureReview',
+        ])
+        if (
+          local &&
+          (previous.recording ||
+            !['idle', undefined].includes(previous.captureReview?.phase))
+        )
+          throw new Error('Capture already active')
         const [tab] = await browser.tabs.query({
           active: true,
           currentWindow: true,
         })
         if (!tab?.id) throw new Error('No capture tab')
-        const startedUrl = safeUrl(tab.url ?? message.url ?? '')
+        const startedUrl = safeUrl(tab.url ?? '')
         // A prior canceled capture can still own the queue's drain promise.
         // Stop producers and settle it before admitting a new session's work.
         const captureSessionId = crypto.randomUUID()
@@ -372,6 +495,15 @@ export function startBackground() {
             startedUrl,
             captureBlurMode: false,
             captureManualCount: 0,
+            captureReview: {
+              phase: 'starting',
+              title: suggestedTitle(startedUrl),
+              revision: 0,
+              preferences:
+                previous.captureReview?.preferences ??
+                capturePreferencesSchema.parse({}),
+              startedAt: new Date().toISOString(),
+            },
           })
         })
         let primed: ProcessedFrame
@@ -399,11 +531,27 @@ export function startBackground() {
           )
             throw new Error('Capture ended')
           queue.primeFrame(primed)
-          await browser.storage.local.set({ recording: true })
+          producerStopped = false
+          const { captureReview } =
+            await browser.storage.local.get<LegacyStorage>('captureReview')
+          await browser.storage.local.set({
+            recording: true,
+            captureReview: { ...captureReview, phase: 'recording' },
+          })
         })
         await broadcast()
         respond({ ok: true })
-      } else if (message.type === 'CANCEL') {
+      } else if (
+        message.type === 'CANCEL' ||
+        message.type === 'DISCARD_CAPTURE'
+      ) {
+        if (
+          message.type === 'DISCARD_CAPTURE' &&
+          message.sessionId !==
+            (await browser.storage.local.get<LegacyStorage>('captureSessionId'))
+              .captureSessionId
+        )
+          throw new Error('Stale capture')
         await mutate(async () => {
           queue.clear()
           expectations.clear()
@@ -417,10 +565,187 @@ export function startBackground() {
             captureError: null,
             captureBlurMode: false,
             captureManualCount: 0,
+            captureReview: {
+              phase: 'idle',
+              preferences: (
+                await browser.storage.local.get<LegacyStorage>('captureReview')
+              ).captureReview?.preferences,
+            },
           })
         })
         await broadcast()
         respond({ ok: true })
+      } else if (message.type === 'SET_CAPTURE_PREFERENCES') {
+        const { captureReview } =
+          await browser.storage.local.get<LegacyStorage>('captureReview')
+        if (captureReview?.phase && captureReview.phase !== 'idle')
+          throw new Error('Capture active')
+        await browser.storage.local.set({
+          captureReview: {
+            ...captureReview,
+            preferences: capturePreferencesSchema.parse(message.preferences),
+          },
+        })
+        respond({ ok: true })
+      } else if (
+        ['PAUSE_CAPTURE', 'RESUME_CAPTURE', 'STOP_REVIEW'].includes(
+          message.type,
+        )
+      ) {
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'recording',
+          'captureSessionId',
+          'captureTabId',
+          'captureError',
+          'captureReview',
+        ])
+        const review = state.captureReview ?? {}
+        if (message.sessionId !== state.captureSessionId)
+          throw new Error('Stale session')
+        if (message.type === 'RESUME_CAPTURE') {
+          if (
+            review.phase !== 'paused' ||
+            state.captureError ||
+            !state.captureTabId
+          )
+            throw new Error('Capture cannot resume')
+          const tab = await browser.tabs.get(state.captureTabId)
+          const frame = await takeFrame(
+            {
+              tabId: state.captureTabId,
+              windowId: tab.windowId,
+              sessionId: state.captureSessionId!,
+            },
+            true,
+          )
+          queue.primeFrame(frame)
+          producerStopped = false
+          await browser.storage.local.set({
+            recording: true,
+            captureReview: { ...review, phase: 'recording' },
+          })
+        } else {
+          if (!state.recording && review.phase !== 'paused')
+            throw new Error('Capture inactive')
+          producerStopped = true
+          await browser.storage.local.set({
+            captureReview: {
+              ...review,
+              phase: message.type === 'PAUSE_CAPTURE' ? 'pausing' : 'stopping',
+            },
+            captureBlurMode: false,
+          })
+          await broadcast()
+          await queue.drain()
+          await writes
+          const latest = await browser.storage.local.get<LegacyStorage>([
+            'captureError',
+            'captureReview',
+          ])
+          await browser.storage.local.set({
+            recording: false,
+            captureReview: {
+              ...latest.captureReview,
+              phase:
+                message.type === 'PAUSE_CAPTURE' && !latest.captureError
+                  ? 'paused'
+                  : 'review',
+            },
+          })
+          queue.clear()
+        }
+        await broadcast()
+        respond({ ok: true })
+      } else if (
+        message.type === 'EDIT_REVIEW' ||
+        message.type === 'SAVE_CAPTURE'
+      ) {
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'captureSessionId',
+          'captureReview',
+          'captureError',
+          'capturedSteps',
+          'steps',
+          'startedUrl',
+        ])
+        const review = state.captureReview
+        if (
+          review?.phase !== 'review' ||
+          message.sessionId !== state.captureSessionId ||
+          message.revision !== review.revision
+        )
+          throw new Error('Review changed')
+        if (message.type === 'EDIT_REVIEW') {
+          if (review.savedId) throw new Error('Capture already committed')
+          const edit = reviewEditSchema.parse(message.edit)
+          if (edit.operation === 'title') review.title = edit.title
+          else {
+            const result = editReview(
+              state.capturedSteps ?? [],
+              state.steps ?? [],
+              edit,
+            )
+            await browser.storage.local.set({
+              capturedSteps: result.steps,
+              steps: result.images,
+            })
+          }
+          await browser.storage.local.set({
+            captureReview: { ...review, revision: (review.revision ?? 0) + 1 },
+          })
+          respond({ ok: true })
+        } else {
+          if (state.captureError)
+            throw new Error('Capture failed privacy checks')
+          await browser.storage.local.set({
+            captureReview: { ...review, phase: 'saving' },
+          })
+          let committedId = review.savedId
+          try {
+            const guide = await saveCapture({
+              sessionId: state.captureSessionId!,
+              title: review.title!,
+              startedAt: review.startedAt!,
+              startedUrl: state.startedUrl!,
+              steps: state.capturedSteps ?? [],
+              images: state.steps ?? [],
+            })
+            committedId = guide.id
+            await browser.storage.local.set({
+              captureReview: {
+                ...review,
+                phase: 'saving',
+                savedId: committedId,
+              },
+            })
+            if (message.openEditor !== false)
+              await browser.tabs.create({
+                url: browser.runtime.getURL(
+                  `/app.html?route=${encodeURIComponent(`/g/${guide.id}/edit?step=1`)}`,
+                ),
+              })
+            await browser.storage.local.set({
+              recording: false,
+              steps: [],
+              capturedSteps: [],
+              captureReview: {
+                phase: 'idle',
+                preferences: review.preferences,
+                savedId: guide.id,
+              },
+            })
+            respond({ ok: true, id: guide.id })
+          } catch {
+            await browser.storage.local.set({
+              captureReview: {
+                ...review,
+                phase: 'review',
+                ...(committedId && { savedId: committedId }),
+              },
+            })
+            throw new Error('Local save failed')
+          }
+        }
       } else if (
         message.type === 'SET_BLUR_MODE' ||
         message.type === 'REDACTION_CHANGED'
@@ -480,12 +805,17 @@ export function startBackground() {
           'captureManualCount',
           'captureSessionId',
           'capturedSteps',
+          'captureReview',
         ])
         if (
           !sender.tab ||
           sender.tab.id !== state.captureTabId ||
           message.sessionId !== state.captureSessionId ||
-          !state.recording
+          !state.recording ||
+          producerStopped ||
+          ['pausing', 'stopping', 'paused', 'review'].includes(
+            state.captureReview?.phase ?? '',
+          )
         ) {
           respond({ ok: false, error: 'Capture inactive' })
           return
@@ -501,6 +831,7 @@ export function startBackground() {
             const latest = await browser.storage.local.get<LegacyStorage>([
               'captureSessionId',
               'capturedSteps',
+              'captureReview',
             ])
             if (latest.captureSessionId !== message.sessionId) return
             if (expectations.size >= 500 && !expectations.has(message.id))
@@ -508,7 +839,10 @@ export function startBackground() {
             expectations.set(message.id, expectation)
             const capturedSteps = latest.capturedSteps ?? []
             const step = capturedSteps.find((step) => step.id === message.id)
-            if (step) {
+            if (
+              step &&
+              latest.captureReview?.preferences?.agentContext !== false
+            ) {
               step.expect = expectation
               await browser.storage.local.set({ capturedSteps })
             }
@@ -530,7 +864,10 @@ export function startBackground() {
         await writes
         const state =
           await browser.storage.local.get<LegacyStorage>('captureError')
-        await browser.storage.local.set({ recording: false })
+        await browser.storage.local.set({
+          recording: false,
+          captureReview: { phase: 'idle' },
+        })
         await broadcast()
         respond(
           state.captureError
@@ -545,10 +882,20 @@ export function startBackground() {
           'captureTabId',
           'captureBlurMode',
           'captureManualCount',
+          'captureReview',
+          'steps',
         ])
         respond({
           ...state,
           recording: !!state.recording && sender.tab?.id === state.captureTabId,
+          paused:
+            ['pausing', 'paused', 'stopping'].includes(
+              state.captureReview?.phase ?? '',
+            ) && sender.tab?.id === state.captureTabId,
+          producerStopped: ['pausing', 'stopping'].includes(
+            state.captureReview?.phase ?? '',
+          ),
+          stepCount: state.steps?.length ?? 0,
         })
       } else if (message.type === 'GET_STATE')
         respond(
@@ -561,9 +908,23 @@ export function startBackground() {
             'pendingSession',
             'captureBlurMode',
             'captureManualCount',
+            'captureReview',
           ]),
         )
-    })().catch(() => respond({ ok: false, error: 'Capture operation failed' }))
+    }
+    if (privateCommands.includes(message.type)) {
+      const next = commands.then(run)
+      commands = next.then(
+        () => {},
+        () => {},
+      )
+      void next.catch(() =>
+        respond({ ok: false, error: 'Capture operation failed' }),
+      )
+    } else
+      void run().catch(() =>
+        respond({ ok: false, error: 'Capture operation failed' }),
+      )
     return true
   })
   browser.tabs.onUpdated.addListener((id, info) => {

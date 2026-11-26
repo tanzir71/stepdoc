@@ -126,7 +126,7 @@ export class FrameTracker {
     })
     this.observers.push(observer)
   }
-  snapshot(nonce: string): FrameSnapshot {
+  snapshot(nonce: string, smartBlur = true): FrameSnapshot {
     this.windows.clear()
     const children: FrameChild[] = []
     let count = 0
@@ -200,7 +200,7 @@ export class FrameTracker {
       children,
       masks: [
         ...fieldRedactions(this.document, false),
-        ...visibleTextRedactions(this.document),
+        ...(smartBlur ? visibleTextRedactions(this.document) : []),
         ...this.manual.collect(),
       ],
       geometryMotion,

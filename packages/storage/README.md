@@ -65,6 +65,14 @@ IndexedDB and OPFS do not share a transaction: a terminated process or failed
 cleanup can leave an unreachable file. Maintenance must later collect those
 orphans without deleting images retained by any version or an in-flight write.
 
+`IndexedDbAdapter.createGuideWithBlobs` is a browser-only atomic capture import.
+It snapshots the guide and original/rendered uploads, verifies raster signatures,
+assigns immutable keys, finishes OPFS files, then commits guide/history/blob
+metadata in one transaction. Invalid, missing, duplicate or foreign image slots
+and competing imports cannot expose a partial guide. Ordinary failures remove
+only the attempt's new files. A terminated OPFS write has the orphan limitation
+above. This adds no Storage API endpoint or adapter requirement for servers.
+
 `StorageError` exposes fixed codes/messages without raw validation/native details
 or causes. Unsupported capabilities, quota, missing/corrupt content, blocked
 upgrades, closed connections and version conflicts are separate UI states. No

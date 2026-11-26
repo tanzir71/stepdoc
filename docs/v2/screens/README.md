@@ -99,3 +99,49 @@ Remove-Item Env:STEPDOC_UPDATE_SCREENS
 ```
 
 Normal runs put these crops under ignored `test-results/screens`.
+
+## M11 local capture and review
+
+`m11-capture-idle.png`, `m11-capture-recording.png`, `m11-capture-paused.png`,
+`m11-capture-review.png` and `m11-capture-empty-review.png` show the real extension
+at 400×900. References read on 26 Nov 2026: E01 `26:5543`, E02 `26:6061`,
+E04 `27:6690`, and the compact E06 `27:6897` in the same Figma file above. This
+unit implements the complete local capture-to-editor path; it does not complete
+all E01–E06 parity. The header is 52px, main inset 16px, record control 72px;
+shared Button/Input/Toggle/Badge/Logo, Geist and ten additional original Figma
+vectors supply the controls. Native assertions check panel geometry/font, exact
+aria trees, light/dark axe, no horizontal overflow, keyboard reorder and dialogs.
+
+Local mode displays “This browser” and real native recent guides. It suggests a
+title from the sanitized page origin, without reading an account-specific page
+title. Live thumbnails are the actual client-redacted captures of a local test
+fixture. The screenshot content is not a built Ledgerly application. Review
+counts come from stored masks/steps, and adjacent merge explicitly produces a
+flagged manual instruction with the first screenshot. Keep local and Save & open
+editor both commit the actual native workspace; the latter opens its SPA editor.
+The native suite tests failures before the atomic commit and after commit before
+editor launch, proving recoverable review and no duplicate version on retry.
+
+Text on raised/dark surfaces uses the existing secondary-text token for AA
+contrast; the Smart Blur notice keeps a green shield and a readable text token.
+Main lists scroll inside the panel while all rows remain in the accessibility
+tree. Footer status, activity log, native confirmations and discard are functional
+additions. Paired destinations/E05, voice narration, cleanup suggestions, the
+in-page recording pill/timer and complete fallback evidence remain open in M11;
+no fictional host, voice switch or cleanup result is presented as connected.
+
+After a Chrome build, regenerate the five evidence captures and aria snapshots:
+
+```powershell
+$env:STEPDOC_UPDATE_SCREENS = '1'
+pnpm --filter @stepdoc/extension exec node scripts/verify-review.mjs
+Remove-Item Env:STEPDOC_UPDATE_SCREENS
+```
+
+Normal verification compares committed snapshots and writes only ignored PNGs.
+The isolated Chromium profile uses a native 600×900 window and a 400px private
+panel container, with no per-tab viewport emulation for captureVisibleTab to
+reset. Native DevTools captures that 400×900 region; dimension and surface/header
+pixel checks reject blank or incorrectly sized images. All real extension,
+capture, storage and accessibility checks remain active. The saved-review
+failure state locks draft edits after commit and offers the saved native editor.

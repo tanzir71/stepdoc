@@ -121,8 +121,9 @@ export function startContent() {
     nonce: string,
     mode: boolean,
     count: number,
+    paused = false,
   ) => {
-    if (nonce !== sessionId || !active) {
+    if (nonce !== sessionId || (!active && !paused)) {
       tracker.manual.clear()
       blurBusy = false
     }
@@ -142,9 +143,12 @@ export function startContent() {
     return browser.runtime
       .sendMessage({ type: 'CAPTURE', sessionId: sentSession, event })
       .then((result) => {
-        if (!result.ok) fail(sentSession)
+        if (!result.ok && recording && sentSession === sessionId)
+          fail(sentSession)
       })
-      .catch(() => fail(sentSession))
+      .catch(() => {
+        if (recording && sentSession === sessionId) fail(sentSession)
+      })
   }
   const action = (
     element: Element,
@@ -201,7 +205,7 @@ export function startContent() {
           armedNonce = message.nonce
           armedUntil = Date.now() + 2_000
           await ui.suspend()
-          respond(tracker.snapshot(message.nonce))
+          respond(tracker.snapshot(message.nonce, message.smartBlur !== false))
         } catch {
           respond({ ok: false, error: 'Capture metadata unavailable' })
         }
@@ -230,10 +234,11 @@ export function startContent() {
     if (message.type === 'STATE') {
       installListeners()
       stateChanged(
-        !!message.recording,
+        !!message.recording && !message.producerStopped,
         message.sessionId ?? '',
         !!message.blurMode,
         message.manualCount ?? 0,
+        !!message.paused,
       )
       previousUrl = localDocumentUrl(document) ?? ''
       respond({ ok: true })
@@ -250,10 +255,11 @@ export function startContent() {
     .sendMessage({ type: 'CONTENT_STATE' })
     .then((state) => {
       stateChanged(
-        !!state.recording,
+        !!state.recording && !state.producerStopped,
         state.captureSessionId ?? '',
         !!state.captureBlurMode,
         state.captureManualCount ?? 0,
+        !!state.paused,
       )
       previousUrl = localDocumentUrl(document) ?? ''
     })
@@ -345,6 +351,22 @@ export function startContent() {
     'keydown',
     (event) => {
       const element = elementOf(event)
+      if (
+        event.isTrusted &&
+        event.altKey &&
+        event.shiftKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        event.code === 'KeyS' &&
+        element &&
+        !isCaptureUi(element)
+      ) {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        if (!event.repeat)
+          void browser.runtime.sendMessage({ type: 'SHORTCUT' }).catch(() => {})
+        return
+      }
       if (!recording || !event.isTrusted || !element) return
       if (
         (event.code === 'KeyB' || event.key.toLowerCase() === 'b') &&

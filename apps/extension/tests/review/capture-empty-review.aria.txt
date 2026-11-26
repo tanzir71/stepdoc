@@ -1,0 +1,26 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Stopped
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Guide title
+  - textbox "Guide title": Workflow on 127.0.0.1
+  - paragraph: Suggested from the page origin. Edit before saving.
+  - text: 0 steps 0 masks applied 0 unclear
+  - paragraph: Select adjacent steps to merge, or delete selected steps. Alt+Up/Down reorders the focused row.
+  - list
+  - paragraph: All steps were removed. Discard this review to start again.
+  - button "Merge selected" [disabled]
+  - button "Delete" [disabled]
+- contentinfo:
+  - text: Save to This browser
+  - button "Keep local" [disabled]
+  - button "Save & open editor" [disabled]
+  - status: Review updated.
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: app.html
+    - button "Discard capture"
+- complementary "Capture activity":
+  - group: Activity log

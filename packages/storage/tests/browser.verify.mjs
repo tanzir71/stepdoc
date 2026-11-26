@@ -51,6 +51,7 @@ try {
   let total = 0
   const states = {}
   for (const backend of ['opfs', 'indexeddb']) {
+    await page.evaluate((backend) => window.storageFixture.atomicCapture(backend), backend)
     states[backend] = await page.evaluate(
       (backend) => window.storageFixture.basic(backend),
       backend,

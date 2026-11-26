@@ -23,7 +23,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run && pnpm test:browser",
-    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs && node tests/capture-browser.verify.mjs"
+    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs && node tests/capture-browser.verify.mjs && node tests/capture-redaction.verify.mjs"
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",

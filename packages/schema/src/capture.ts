@@ -80,6 +80,12 @@ export const frameProbeSchema = z.strictObject({
   token: documentId,
 })
 export const frameLinkSchema = frameProbeSchema.extend({ documentId })
+export const redactionChangeSchema = z.strictObject({
+  type: z.literal('REDACTION_CHANGED'),
+  sessionId: documentId,
+  documentId,
+  count: z.number().int().min(1).max(500),
+})
 export type FrameSnapshot = z.output<typeof frameSnapshotSchema>
 export type FrameChild = z.output<typeof frameChildSchema>
 export type LocalCapture = z.output<typeof localCaptureSchema>

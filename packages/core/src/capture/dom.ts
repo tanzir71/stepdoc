@@ -3,6 +3,7 @@ import type { Locator, Rect, Target } from '@stepdoc/schema'
 import { rankLocators, type LocatorCandidate } from '../locators'
 import { buildSelector } from '../selector'
 import { createRedactionDetector, redactSensitiveText } from '../redaction'
+import { isCaptureUi } from './owned-ui'
 
 export const DOM_CAPTURE_LIMITS = Object.freeze({
   nodes: 12_000,
@@ -170,6 +171,7 @@ export class CaptureDom {
       }
   }
   private copy(node: Node, depth: number): Node {
+    if (isCaptureUi(node)) return node.ownerDocument!.createTextNode('')
     if (
       ++this.nodes > DOM_CAPTURE_LIMITS.nodes ||
       depth > DOM_CAPTURE_LIMITS.depth

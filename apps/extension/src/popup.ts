@@ -7,12 +7,27 @@ async function refresh() {
   const state = await browser.runtime.sendMessage({ type: 'GET_STATE' })
   $('status').textContent =
     state.captureError ??
-    (state.recording
-      ? `Recording - ${(state.steps ?? []).length} steps`
-      : state.pendingSession
-        ? 'Saved upload waiting'
-        : 'Ready to capture')
+    (state.recording && state.captureBlurMode
+      ? `Choose an element to blur · ${state.captureManualCount ?? 0} added. Esc to finish.`
+      : state.recording
+        ? `Recording - ${(state.steps ?? []).length} steps`
+        : state.pendingSession
+          ? 'Saved upload waiting'
+          : 'Ready to capture')
   ;($('retry') as HTMLButtonElement).disabled = !state.pendingSession
+  ;($('blur') as HTMLButtonElement).disabled = !state.recording
+  $('blur').textContent = state.captureBlurMode
+    ? 'Finish choosing blur'
+    : 'Choose element to blur (Alt+B)'
+}
+$('blur').onclick = async () => {
+  const state = await browser.runtime.sendMessage({ type: 'GET_STATE' })
+  await browser.runtime.sendMessage({
+    type: 'SET_BLUR_MODE',
+    sessionId: state.captureSessionId,
+    on: !state.captureBlurMode,
+  })
+  void refresh()
 }
 
 $('start').onclick = async () => {
@@ -47,9 +62,14 @@ void refresh()
 browser.storage.onChanged.addListener((changes, area) => {
   if (
     area === 'local' &&
-    ['recording', 'steps', 'captureError', 'pendingSession'].some(
-      (key) => key in changes,
-    )
+    [
+      'recording',
+      'steps',
+      'captureError',
+      'pendingSession',
+      'captureBlurMode',
+      'captureManualCount',
+    ].some((key) => key in changes)
   )
     void refresh()
 })

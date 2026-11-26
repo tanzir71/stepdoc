@@ -67,3 +67,35 @@ Remove-Item Env:STEPDOC_UPDATE_SCREENS
 ```
 
 Normal verification writes screenshots only under ignored test results. No deployment or owner sign-off is involved.
+
+## M11 Alt+B privacy state
+
+Reference: [E02 recording controls](https://www.figma.com/design/lTCFRrrKJb415s0nSxKE3B/StepDoc---Scribe?node-id=26-6696),
+expanded from E02 `26:6061` on 26 Nov 2026. This additional picker state is absent
+from the reference; it reuses the in-page pill's 16px top inset, 48px minimum
+height, full radius, dark surface, floating shadow and 12/16 medium Geist label.
+Shared `Button(kind=ghost,size=s)` supplies Done. Its longer instructions wrap at
+390px with 16px margins. It contains no static icons/images, replacing no Figma
+asset. The actual E02 recording/pause/review controls remain a later M11 unit.
+
+`m11-blur-mode.png` and `m11-blur-mode-narrow.png` are cropped native captures of
+this control on an empty fixture surface, with no third-party page content. Its explicit dark surface
+matches the reference while the host page keeps its own theme. Geist loads from
+bundled bytes under an isolated family; native tests verify it under `font-src
+'none'` without network requests or public extension resources. The exact
+`m11-blur-mode.aria.yml` and axe cover the open shadow tree; numeric assertions
+verify inset/height/radius/surface/font/shadow and narrow containment. Pointer and
+keyboard selection, Done/Esc (including focus inside the toolbar), side-panel
+activation and newly loaded cross-origin frames use real browser events.
+
+The capture pipeline hides the controls/preview for native screenshots and omits
+their DOM, mutations and animation state. Pixel checks prove stored images contain
+only the processed page. Recreate the two committed crops after a Chrome build:
+
+```powershell
+$env:STEPDOC_UPDATE_SCREENS = '1'
+pnpm --filter @stepdoc/extension exec node scripts/verify-blur.mjs
+Remove-Item Env:STEPDOC_UPDATE_SCREENS
+```
+
+Normal runs put these crops under ignored `test-results/screens`.

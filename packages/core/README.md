@@ -26,6 +26,23 @@ map cross-origin fields through nested content boxes. Unresolved frames stay
 opaque. `@stepdoc/core/capture/geometry` is a separate pure, worker-safe subpath.
 `captureId` uses cryptographic UUIDs even on ordinary HTTP pages.
 
+`visibleTextRedactions` scans the visible composed tree, including open roots and
+assigned slots, with one bounded detector call. It preserves UTF-16 positions
+across inline nodes and maps spans to native Range rectangles, including wraps,
+viewport/overflow clipping and conservative paint effects. Form/editable,
+non-rendered and off-screen text is omitted before CharacterData is read; only
+category/rule/source/rectangle metadata is returned. Detector, Range and resource
+failures stop the caller rather than returning partial masks. The native verifier
+tests all built-in categories, source getters, shadow/slot/SVG/contents geometry
+and failure limits.
+
+`ManualRedactions` keeps Element identities for a capture session and refreshes
+their geometry without reading values or text. Capture UI has private WeakSet
+membership; page-provided hooks cannot bypass scanning. Its DOM mutations and
+animations are excluded from screenshot stability. Queue privacy invalidation
+clears reusable pixels and retries in-flight work in order, with bounded retries;
+serialized writers can reject an image that predates a new manual choice.
+
 The native DOM verifier is included in `test:browser`, alongside the existing
 worker/replay checks. Structured metadata errors and resource-limit messages omit page data.
 
@@ -57,8 +74,9 @@ Pure guide logic shared by the extension, SPA, exporters and replay tools.
   high entropy. Overlapping detector/policy spans remain visible for review.
 - `redactSensitiveText(text, spans)` masks the union of those ranges with `[REDACTED]`,
   without changing source spans. The scanner has no DOM/storage/network dependencies:
-  callers must supply visible text, never form values. DOM collection, field masks,
-  rectangle mapping and capture integration remain part of M11.
+  callers must supply visible text, never form values. The explicit DOM capture
+  entrypoint supplies collection, field masks and rectangle mapping for the M11
+  extension without adding DOM dependencies to this pure scanner.
 - `prepareCapture(blob, options)` creates a masked original and a separate cropped,
   annotated render with `OffscreenCanvas`; `flattenImage(blob, options)` returns just
   the render when an original is already stored. Both accept raster PNG/JPEG/WebP
@@ -105,7 +123,8 @@ contracts and the v1 web app's schemas live in `@stepdoc/schema/legacy-v1`;
 `packages/shared` was removed during M9. Core's minimal description metadata type
 is derived from that schema and deliberately exposes no input-value field.
 The M11 extension uses the DOM capture entrypoint for accessible names, scoped
-locator counts and frame chains. Visible-text Smart Blur and Alt+B remain open.
+locator counts and frame chains. Visible-text Smart Blur and Alt+B use the same
+collector/compositor pipeline.
 
 `@stepdoc/core/export` (also individual `export/*` modules) provides synchronous,
 pure `exportMarkdown`, `exportHtml`, `exportGuideJson`, `exportPlaywright`,

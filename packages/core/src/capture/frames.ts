@@ -2,6 +2,8 @@ import type { FrameChild, FrameSnapshot } from '@stepdoc/schema/capture'
 import { FRAME_LIMITS, CAPTURE_TRANSPORT } from '@stepdoc/schema/capture'
 import { CaptureMetadataError, captureUrl, rectOf, safeMetadata } from './dom'
 import { fieldRedactions } from './steps'
+import { visibleTextRedactions, ManualRedactions } from './redactions'
+import { isCaptureUi, captureUiMutation } from './owned-ui'
 
 /** getRandomValues also works on ordinary HTTP pages, where randomUUID is not
  * exposed. IDs remain cryptographically random in the isolated content world. */
@@ -98,6 +100,7 @@ function axisAligned(element: Element): boolean {
 /** Isolated-world collector. Keeps only geometry, UUIDs and a mutation counter;
  * MutationObserver records are discarded without reading old/typed values. */
 export class FrameTracker {
+  readonly manual = new ManualRedactions()
   private revision = 0
   private roots = new WeakSet<Document | ShadowRoot>()
   private tokens = new WeakMap<Element, string>()
@@ -112,8 +115,8 @@ export class FrameTracker {
   private observe(root: Document | ShadowRoot) {
     if (this.roots.has(root)) return
     this.roots.add(root)
-    const observer = new MutationObserver(() => {
-      this.revision++
+    const observer = new MutationObserver((records) => {
+      if (records.some((record) => !captureUiMutation(record))) this.revision++
     })
     observer.observe(root, {
       subtree: true,
@@ -132,6 +135,7 @@ export class FrameTracker {
         throw new CaptureMetadataError('dom_limit')
       this.observe(root)
       for (const element of root.querySelectorAll('*')) {
+        if (isCaptureUi(element)) continue
         if (++count > 12_000) throw new CaptureMetadataError('dom_limit')
         if (element.matches('iframe,frame')) {
           const frame = element as HTMLIFrameElement
@@ -164,7 +168,15 @@ export class FrameTracker {
     // viewport conservatively while any layout/paint animation is running.
     const geometryMotion = this.document
       .getAnimations()
-      .some((animation) => animation.playState === 'running')
+      .some(
+        (animation) =>
+          animation.playState === 'running' &&
+          !(
+            animation.effect instanceof KeyframeEffect &&
+            animation.effect.target instanceof Node &&
+            isCaptureUi(animation.effect.target)
+          ),
+      )
     let parentSelector: string | null = null
     try {
       const frame = this.document.defaultView!.frameElement
@@ -173,7 +185,8 @@ export class FrameTracker {
       /* Cross-origin parent identity comes from the broker. */
     }
     for (const observer of this.observers)
-      if (observer.takeRecords().length) this.revision++
+      if (observer.takeRecords().some((record) => !captureUiMutation(record)))
+        this.revision++
     const view = this.document.defaultView!
     return {
       schema: CAPTURE_TRANSPORT,
@@ -185,7 +198,11 @@ export class FrameTracker {
       devicePixelRatio: view.devicePixelRatio,
       revision: this.revision,
       children,
-      masks: fieldRedactions(this.document, false),
+      masks: [
+        ...fieldRedactions(this.document, false),
+        ...visibleTextRedactions(this.document),
+        ...this.manual.collect(),
+      ],
       geometryMotion,
     }
   }

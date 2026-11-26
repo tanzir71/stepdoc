@@ -13,6 +13,12 @@ use the existing source-image-pixel `redactions` fields. Guide JSON Schema,
 Storage API, identifiers and defaults are unchanged. No guide-data version bump
 or migration is needed for this private transport.
 
+The Smart Blur producer populates existing auto/policy/manual redaction fields;
+matched text is never part of a guide or transport DTO. Manual-change messages
+carry only the session/document UUIDs and a bounded count so the recorder can
+invalidate older cached pixels. This adds no guide fields/defaults, Storage API
+endpoint or schema identifier and requires no persisted-data migration.
+
 M10 completes the renderer for the existing optional `rectangle.text`: a nonempty
 value adds a rounded caption to the outlined target. Existing optional `toX`/`toY`
 place that caption, defaulting to below the rectangle; arrow endpoints retain

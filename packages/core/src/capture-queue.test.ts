@@ -2,6 +2,69 @@ import { describe, expect, it, vi } from 'vitest'
 import { CaptureQueue } from './capture-queue'
 
 describe('CaptureQueue', () => {
+  it('retries in-flight work after a new manual mask without storing the old image', async () => {
+    let release = () => {}
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const capture = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        await gate
+        return 'old-mask-set'
+      })
+      .mockResolvedValue('new-mask-set')
+    const saved: unknown[] = []
+    const queue = new CaptureQueue<number>(capture, async (result) => {
+      saved.push(result)
+    })
+    queue.primeFrame('old-cache')
+    const draining = queue.enqueue(1)
+    void queue.enqueue(2)
+    queue.invalidateFrame()
+    release()
+    await draining
+    expect(saved).toEqual([
+      { event: 1, frame: 'new-mask-set', reused: false },
+      { event: 2, frame: 'new-mask-set', reused: false },
+    ])
+    expect(capture).toHaveBeenCalledTimes(3)
+  })
+  it('retries when a serialized writer rejects stale privacy and never falls back across invalidation', async () => {
+    const capture = vi
+      .fn()
+      .mockResolvedValueOnce('old')
+      .mockResolvedValueOnce('new')
+    const saved: string[] = []
+    let first = true
+    const queue = new CaptureQueue<number>(capture, async ({ frame }) => {
+      if (first) {
+        first = false
+        queue.invalidateFrame()
+        return false
+      }
+      saved.push(frame)
+    })
+    await queue.enqueue(1)
+    expect(saved).toEqual(['new'])
+    queue.invalidateFrame()
+    capture.mockRejectedValue(new Error('No fresh frame'))
+    await expect(queue.enqueue(2)).rejects.toThrow('No fresh frame')
+  })
+  it('bounds retries if privacy keeps changing', async () => {
+    const queue = new CaptureQueue<number>(
+      async () => {
+        queue.invalidateFrame()
+        return 'invalidated'
+      },
+      async () => {
+        throw new Error('Must not store')
+      },
+    )
+    await expect(queue.enqueue(1)).rejects.toThrow(
+      'Capture privacy changed repeatedly',
+    )
+  })
   it('reuses the primed processed image together with its applied-mask provenance', async () => {
     const frame = {
       data: 'redacted-only',

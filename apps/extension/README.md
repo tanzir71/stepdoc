@@ -26,8 +26,9 @@ back/forward and dirty-navigation guards, original SVG/font resources, compiled
 image/export workers under the default MV3 CSP, two-theme editor axe, and the
 injected content script → screenshot queue → client compositor → v1 session
 upload. It also tests failed-upload retention, recovery download, retry and cancel.
-`pnpm verify` includes this check. Firefox lint currently reports two upstream
-React DOM `innerHTML` implementation warnings; it has no errors or eval warnings.
+`pnpm verify` includes this check. Firefox lint currently reports four upstream
+React DOM `innerHTML` implementation warnings (two in the SPA bundle and two in
+the shared-control content bundle); it has no errors or eval warnings.
 StepDoc does not supply `dangerouslySetInnerHTML` or relax extension CSP.
 
 The retained v1 destination is configured through **Settings → Web app URL**;
@@ -96,5 +97,27 @@ The second loaded-extension suite owns two local HTTP origins and verifies
 identical-src siblings, cross-origin shadow/nested frames, blank/srcdoc/sandbox
 inheritance, hidden contexts, scale/borders/scroll clipping, private probes,
 redaction pixels/provenance, deterministic camera races and missing/error cases.
-Smart Blur's visible-text detector Range mapping and Alt+B element masks remain
-the next privacy unit, followed by the designed recording/review surfaces.
+Smart Blur now adds visible-text patterns through the same client compositor.
+Inline-split/wrapped text, open roots, slots, SVG text and scrolling clips retain
+native Range geometry. No matched characters leave the content collector.
+Editable/form/hidden/off-screen content is omitted before text reads; detector,
+geometry and resource errors stop capture and block upload.
+
+While recording, **Alt+B** or **Choose element to blur** starts a picker across
+all frames, including newly loaded ones. Click an element, or focus it and press
+Enter/Space, to add a manual mask. The target's page action is suppressed.
+**Esc** or **Done** exits the picker; chosen masks follow their elements until
+the capture ends. The open-shadow toolbar uses shared Button/tokens and bundled
+Geist bytes with its own font family, preserving page CSS/CSP and private app
+resources. Controls/preview are omitted from metadata and hidden for native
+screenshots. Status is live and reflected in the side panel/popup.
+
+A new manual choice invalidates the processed-frame cache immediately. In-flight
+work retries with current masks; the serialized writer rejects stale privacy
+generations. A fresh camera failure cannot fall back to an image missing that
+choice. Native tests hold the real camera while adding a mask to prove retry/order,
+then force failure to prove upload blocking. A third loaded-extension suite also
+checks strict page CSP, keyboard/pointer/cross-frame picking, no target activation,
+stored text/manual pixels, wide/narrow axe and an exact aria snapshot, session
+reset and actual text-collector limits. The complete E01–E06 recording/review,
+pairing and reviewed local saving flows remain open.

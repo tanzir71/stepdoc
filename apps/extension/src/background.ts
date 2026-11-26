@@ -3,7 +3,11 @@ import { makeStep } from './legacy-capture'
 import { compositeFrame } from './image'
 import { CaptureQueue } from '@stepdoc/core/capture-queue'
 import { stepSchema, expectationSchema, type Step } from '@stepdoc/schema'
-import { localCaptureSchema, FRAME_PROBE } from '@stepdoc/schema/capture'
+import {
+  localCaptureSchema,
+  redactionChangeSchema,
+  FRAME_PROBE,
+} from '@stepdoc/schema/capture'
 import { FrameBroker, type FrameScene } from './frame-broker'
 import { contextualStep, legacyMeta } from './capture-context'
 import type { CapturedEvent } from './capture-event'
@@ -28,6 +32,8 @@ interface LegacyStorage {
   startedUrl?: string
   appUrl?: string
   pendingSession?: SessionBody
+  captureBlurMode?: boolean
+  captureManualCount?: number
 }
 type Pending = {
   event: CapturedEvent
@@ -38,6 +44,7 @@ type Pending = {
 }
 type ProcessedFrame = Awaited<ReturnType<typeof compositeFrame>> & {
   scene: FrameScene
+  privacyEpoch: number
 }
 const safeUrl = (raw: string) => {
   const url = new URL(raw)
@@ -53,6 +60,8 @@ export function startBackground() {
   if (import.meta.env.BROWSER !== 'firefox')
     void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
   let lastCapture = 0
+  let privacyEpoch = 0
+  const manualCounts = new Map<string, number>()
   const broker = new FrameBroker({
     frames: async (tabId) =>
       (await browser.webNavigation.getAllFrames({ tabId })) ?? [],
@@ -68,15 +77,19 @@ export function startBackground() {
     | undefined
   let writes = Promise.resolve()
   const expectations = new Map<string, NonNullable<Step['expect']>>()
-  const mutate = (operation: () => Promise<void>) => {
+  const mutate = <T>(operation: () => Promise<T>) => {
     const next = writes.then(operation)
-    writes = next.catch(() => {})
+    writes = next.then(
+      () => {},
+      () => {},
+    )
     return next
   }
   const takeFrame = async (
     pending: Omit<Pending, 'event' | 'frameId'>,
     warming = false,
   ): Promise<ProcessedFrame> => {
+    const framePrivacyEpoch = privacyEpoch
     const wait = 550 - (Date.now() - lastCapture)
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
     const state = await browser.storage.local.get<LegacyStorage>([
@@ -102,42 +115,47 @@ export function startBackground() {
         throw new Error('Masks unavailable')
       }
     }
-    const before = await collect()
-    const raw = await browser.tabs.captureVisibleTab(pending.windowId, {
-      format: 'png',
-    })
-    lastCapture = Date.now()
-    const after = await collect()
-    const afterTab = await browser.tabs.get(pending.tabId)
-    if (
-      !afterTab.active ||
-      activation !== (activationEpochs.get(pending.windowId) ?? 0)
-    ) {
-      await abort(pending.sessionId, 'tab_changed')
-      throw new Error('Selected tab changed')
-    }
-    if (
-      safeUrl(afterTab.url ?? '') !== after.top.url ||
-      before.signature !== after.signature
-    ) {
-      // Discard raw pixels if layout/document identity changed. The queue may
-      // reuse only its previously processed frame and that frame's provenance.
-      throw new Error('Frame changed')
-    }
-    // Only this processed frame enters the queue's reuse cache. Raw screenshot
-    // pixels are never stored, cached between events, downloaded or uploaded.
     try {
-      return {
-        ...(await compositeFrame(
-          raw,
-          before.masks,
-          before.top.devicePixelRatio,
-        )),
-        scene: before,
+      const before = await collect()
+      const raw = await browser.tabs.captureVisibleTab(pending.windowId, {
+        format: 'png',
+      })
+      lastCapture = Date.now()
+      const after = await collect()
+      const afterTab = await browser.tabs.get(pending.tabId)
+      if (
+        !afterTab.active ||
+        activation !== (activationEpochs.get(pending.windowId) ?? 0)
+      ) {
+        await abort(pending.sessionId, 'tab_changed')
+        throw new Error('Selected tab changed')
       }
-    } catch {
-      await abort(pending.sessionId)
-      throw new Error('Image processing unavailable')
+      if (
+        safeUrl(afterTab.url ?? '') !== after.top.url ||
+        before.signature !== after.signature
+      ) {
+        // Discard raw pixels if layout/document identity changed. The queue may
+        // reuse only its previously processed frame and that frame's provenance.
+        throw new Error('Frame changed')
+      }
+      // Only this processed frame enters the queue's reuse cache. Raw screenshot
+      // pixels are never stored, cached between events, downloaded or uploaded.
+      try {
+        return {
+          ...(await compositeFrame(
+            raw,
+            before.masks,
+            before.top.devicePixelRatio,
+          )),
+          scene: before,
+          privacyEpoch: framePrivacyEpoch,
+        }
+      } catch {
+        await abort(pending.sessionId)
+        throw new Error('Image processing unavailable')
+      }
+    } finally {
+      await broker.release(pending.tabId)
     }
   }
   const queue = new CaptureQueue<Pending, ProcessedFrame>(
@@ -153,6 +171,7 @@ export function startBackground() {
     },
     async ({ event: pending, frame, reused }) =>
       mutate(async () => {
+        if (frame.privacyEpoch !== privacyEpoch) return false
         const state = await browser.storage.local.get<LegacyStorage>([
           'recording',
           'steps',
@@ -268,6 +287,8 @@ export function startBackground() {
       'recording',
       'captureSessionId',
       'captureTabId',
+      'captureBlurMode',
+      'captureManualCount',
     ])
     await updateBadge()
     await Promise.allSettled(
@@ -278,6 +299,8 @@ export function startBackground() {
             type: 'STATE',
             recording: !!state.recording && tab.id === state.captureTabId,
             sessionId: state.captureSessionId,
+            blurMode: !!state.captureBlurMode,
+            manualCount: state.captureManualCount ?? 0,
           }),
         ),
     )
@@ -336,6 +359,8 @@ export function startBackground() {
         await mutate(async () => {
           queue.clear()
           expectations.clear()
+          manualCounts.clear()
+          privacyEpoch++
           lastNavigation = undefined
           await browser.storage.local.set({
             recording: false,
@@ -345,6 +370,8 @@ export function startBackground() {
             captureTabId: tab.id,
             captureError: null,
             startedUrl,
+            captureBlurMode: false,
+            captureManualCount: 0,
           })
         })
         let primed: ProcessedFrame
@@ -380,14 +407,65 @@ export function startBackground() {
         await mutate(async () => {
           queue.clear()
           expectations.clear()
+          manualCounts.clear()
+          privacyEpoch++
           await browser.storage.local.set({
             recording: false,
             steps: [],
             capturedSteps: [],
             captureSessionId: crypto.randomUUID(),
             captureError: null,
+            captureBlurMode: false,
+            captureManualCount: 0,
           })
         })
+        await broadcast()
+        respond({ ok: true })
+      } else if (
+        message.type === 'SET_BLUR_MODE' ||
+        message.type === 'REDACTION_CHANGED'
+      ) {
+        const ownControls =
+          sender.id === browser.runtime.id &&
+          !!sender.url?.startsWith(browser.runtime.getURL(''))
+        const state = await browser.storage.local.get<LegacyStorage>([
+          'recording',
+          'captureSessionId',
+          'captureTabId',
+        ])
+        if (
+          !state.recording ||
+          message.sessionId !== state.captureSessionId ||
+          (sender.tab?.id !== state.captureTabId &&
+            !(message.type === 'SET_BLUR_MODE' && ownControls))
+        ) {
+          respond({ ok: false })
+          return
+        }
+        if (message.type === 'SET_BLUR_MODE') {
+          if (typeof message.on !== 'boolean') throw new Error('Invalid mode')
+          await browser.storage.local.set({ captureBlurMode: message.on })
+        } else {
+          if (!sender.tab) throw new Error('Invalid capture sender')
+          const change = redactionChangeSchema.parse(message)
+          // Invalidate synchronously before waiting on an earlier storage writer.
+          // The queue retries old in-flight work and preserves event order.
+          privacyEpoch++
+          queue.invalidateFrame()
+          manualCounts.set(change.documentId, change.count)
+          const total = [...manualCounts.values()].reduce(
+            (sum, value) => sum + value,
+            0,
+          )
+          if (total > 500) {
+            await abort(change.sessionId)
+            respond({ ok: false })
+            return
+          }
+          await mutate(async () => {
+            await browser.storage.local.set({ captureManualCount: total })
+          })
+        }
         await broadcast()
         respond({ ok: true })
       } else if (
@@ -398,6 +476,8 @@ export function startBackground() {
         const state = await browser.storage.local.get<LegacyStorage>([
           'recording',
           'captureTabId',
+          'captureBlurMode',
+          'captureManualCount',
           'captureSessionId',
           'capturedSteps',
         ])
@@ -463,6 +543,8 @@ export function startBackground() {
           'recording',
           'captureSessionId',
           'captureTabId',
+          'captureBlurMode',
+          'captureManualCount',
         ])
         respond({
           ...state,
@@ -477,6 +559,8 @@ export function startBackground() {
             'captureSessionId',
             'captureError',
             'pendingSession',
+            'captureBlurMode',
+            'captureManualCount',
           ]),
         )
     })().catch(() => respond({ ok: false, error: 'Capture operation failed' }))

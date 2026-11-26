@@ -53,6 +53,18 @@ export class FrameBroker {
     }
   >()
   constructor(private readonly io: FrameTransport) {}
+  async release(tabId: number): Promise<void> {
+    try {
+      const frames = await this.io.frames(tabId)
+      await Promise.allSettled(
+        frames.map(({ frameId }) =>
+          this.io.send(tabId, frameId, { type: 'FRAME_RELEASE' }),
+        ),
+      )
+    } catch {
+      /* A closed/navigated tab has no capture controls to restore. */
+    }
+  }
 
   link(
     raw: unknown,

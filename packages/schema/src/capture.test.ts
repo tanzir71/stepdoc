@@ -5,11 +5,30 @@ import {
   frameProbeSchema,
   frameSnapshotSchema,
   localCaptureSchema,
+  redactionChangeSchema,
 } from './capture'
 import { stepSchema } from './guide'
 
 const uuid = () => crypto.randomUUID()
 describe('ephemeral capture transport (separate from guide@1)', () => {
+  it('accepts only identity/count metadata for manual privacy changes', () => {
+    const change = {
+      type: 'REDACTION_CHANGED',
+      sessionId: uuid(),
+      documentId: uuid(),
+      count: 1,
+    }
+    expect(redactionChangeSchema.parse(change)).toEqual(change)
+    expect(
+      redactionChangeSchema.safeParse({ ...change, text: 'PRIVATE' }).success,
+    ).toBe(false)
+    expect(
+      redactionChangeSchema.safeParse({ ...change, count: 501 }).success,
+    ).toBe(false)
+    expect(
+      redactionChangeSchema.safeParse({ ...change, count: 0 }).success,
+    ).toBe(false)
+  })
   it('accepts metadata-only local events from inherited frames', () => {
     const step = stepSchema.parse({
       id: uuid(),

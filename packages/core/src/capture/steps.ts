@@ -17,6 +17,7 @@ import {
   CaptureMetadataError,
   safeMetadata,
 } from './dom'
+import { isCaptureUi } from './owned-ui'
 
 export interface CaptureOptions {
   id: string
@@ -235,6 +236,7 @@ export function fieldRedactions(
   ) => {
     if (depth > 20) throw new CaptureMetadataError('dom_limit')
     for (const element of root.querySelectorAll('*')) {
+      if (isCaptureUi(element)) continue
       if (++count > 12_000) throw new CaptureMetadataError('dom_limit')
       const rect = rectOf(element)
       const box = {

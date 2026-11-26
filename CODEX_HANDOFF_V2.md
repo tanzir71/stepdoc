@@ -200,6 +200,9 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 `data-sd` registry (extend as you add actions):
 | Hook | Where |
 |---|---|
+| `landing-install`, `landing-deploy`, `landing-docs`, `landing-demo` | L01/L02 source installation, self-host documentation and real generated guide |
+| `landing-menu-open`, `landing-menu-close`, `landing-faq-1`–`landing-faq-4` | L02 native dialog (`?menu=open`) and native FAQ details/summary |
+| `landing-guide-json`, `landing-replay`, `landing-skill`, `landing-host-<browser\|php\|cloudflare\|node\|pages>` | Real guide companion files and target documentation anchors |
 | `capture-start` | W02 New capture, E01 record button |
 | `capture-activity` | Labelled complementary landmark containing the capture activity log |
 | `capture-smart-blur`, `capture-agent-context`, `capture-settings`, `capture-recent`, `capture-library` | Local capture preferences, settings, recent guides and native library |

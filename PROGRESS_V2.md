@@ -12,7 +12,7 @@
 | M14 | Not started | — | Node target + v1 migration | — |
 | M15 | Not started | — | Collaboration and parity | — |
 | M16 | Not started | — | Publishing + agent surface | — |
-| M17 | In progress | 2026-11-26 | Existing Pages landing entry/assets repaired; L01/L02 redesign and target docs remain | — |
+| M17 | In progress | 2026-11-26 | Figma L01/L02 landing, real exports and local Pages gates; full target deployment docs remain | — |
 
 ## M9 — Repo setup, schema and core
 
@@ -115,6 +115,11 @@
 
 - [x] Repair the existing Pages landing's root entry, project-relative assets/links, local fonts, script-free reading and mobile overflow; regression-test the actual `/stepdoc/` serving prefix in the default verification gate.
 - [ ] Rebuild `site/` from L01/L02; docs per target (browser, PHP, Cloudflare, Node, Pages); `site/llms.txt` updated; local Lighthouse ≥ 95 perf/a11y. Commit and push only; do not deploy.
+  - [x] Implement the actual L01/L02 desktop/mobile layout, original assets and shared tokens/components; native menu/FAQ and real guide downloads, with geometry/asset/aria/axe gates.
+  - [x] Serve the generated native landing directly at the existing Pages root; preserve the nested URL, project-relative assets and script-free reading.
+  - [x] Update llms.txt and browser installation/export instructions; distinguish current capabilities from planned PHP/Cloudflare/Node/MCP targets.
+  - [x] Local Lighthouse mobile and desktop performance/accessibility scores meet 95.
+  - [ ] Complete runnable per-target deployment documentation as M12–M16 ship; current target-status documentation does not claim those servers exist.
 
 ## Owner later (non-blocking)
 
@@ -136,7 +141,7 @@
 
 ## Deviations
 
-- The owner's 2026-11-26 instruction to fix the broken GitHub landing takes priority over milestone order. The existing landing's serving paths are repaired now; this does not claim completion of the L01/L02 redesign or the rest of M17.
+- The owner's 2026-11-26 instruction to fix the GitHub landing and match the linked Figma takes priority over milestone order. L01/L02 are now implemented; complete target deployment docs remain tied to M12–M16. M11 work resumes after this unit.
 
 - M11 extension routing: extension resources cannot serve arbitrary SPA paths on reload. The same logical `/g/:id/edit?step=...` route is encoded in `/app.html?route=...` at `chrome-extension://` / `moz-extension://` origins. Native links, copied links, new tabs, history and dirty-navigation guards use that representation; web-hosted route paths are unchanged. The loaded-extension suite proves the file-server behavior.
 
@@ -267,6 +272,11 @@
 
 - 2026-11-26 — Urgent Pages landing repair: the existing legacy builder publishes `main:/`, while the landing was only at `site/index.html`. The project root consequently rendered the README. The nested page also used host-root `/styles.css`, `/main.js`, icon, demo and llms links, sending requests outside `/stepdoc/`; a title-only HTTP check missed that broken rendering. Added a script-free root entry/fallback to the single landing source and changed internal links/assets to directory-relative paths. Updated the renderer link to `main`, the OG/export URLs to the actual project path, and bundled existing licensed Geist fonts instead of Google Fonts. Content remains visible without JavaScript, and the preview/privacy cards now fit 320px screens. Existing product copy and generated demo remain; the full v2 visual rebuild stays open.
 - Verification: replaced the old browser check, which served `site/` at `/`, with a self-contained fixture mounting the repository at `/stepdoc/` exactly like the real Pages source. It starts from the project root, asserts real CSS/font loading, every internal link/resource, working simulation/reset, generated export metadata/five embedded images, desktop and 390/320px layouts, script-free reading and zero failed/external requests. Static checks cover root fallback, safe project-relative paths, old-branch links and local fonts/licence. Both checks are now part of `pnpm verify`; the complete final gate and independent `pnpm test:a11y` pass (734 unit tests, all browser/native suites/builds and 12 independent accessibility cases). Logs: `test-results/verify-pages-and-m11-target.log`, `test-results/a11y-pages-and-m11-target.log` and `test-results/website-pages.log`; local rendered evidence is in `test-results/website/` (ignored). Work is committed/pushed directly to `main` without a PR. No Pages settings, workflow, release or deployment command was used; the existing Pages source remains `main:/`.
+
+- 2026-11-26 — Owner-prioritized M17 Figma landing: replaced the remaining v1 design with L01/L02 from the linked Figma file. Read the full mobile context and all eleven desktop sections, downloaded original assets, and composed native HTML with the shared Button/Badge/StepPin/Logo CSS, tokens and local licensed fonts. The 1200px desktop grid, 68px hero, split human/agent preview, five hosting cards, workflow illustrations, agent/privacy sections, comparison, FAQ, CTA and compact mobile layout follow the reference. Added the central 40px mobile display token; the two core HTML snapshots change only by that token. Original SVG dimensions/bytes and the Ledgerly mock are recorded with node provenance/hashes and verified in the browser. Committed native desktop/mobile screenshots and four aria trees document the implementation; deliberate accessibility, current-capability and no-card-shadow adaptations are recorded in the screens README.
+- Serving and interactions: the generated native landing now lives directly at `main:/index.html`, eliminating the previous refresh delay while preserving `/site/`. Project-relative assets, a root `.nojekyll` marker and local fonts keep both entries and Markdown/skill companions intact on Pages. Menu and FAQ use native keyboard-operable dialog/details elements. Install/Deploy link to real source-install/target-status docs; no unavailable store/server is claimed. The example HTML/JSON/Markdown/Playwright/SKILL files are generated from canonical guide@1 through the actual core exporters, with the original fictional blurred screenshot and never-run verification status. Updated llms.txt, schema download, OG image, docs and stable hooks. No guide/API contract changed. Full runnable server deployment docs remain in M17 after M12–M16; M11 resumes next with scoped capture destination/upload/editor integration.
+
+- Final verification: `pnpm install --frozen-lockfile`, `pnpm verify` and independent `pnpm test:a11y` passed. The full gate retains all 734 unit tests, eight legacy and 36 SPA browser tests, all nine native extension suites, client worker/storage/replay checks and every production build. Four new landing aria snapshots, axe, exact desktop/mobile section geometry, original asset dimensions/painted pixels, 320/768/1024px layouts, keyboard menu/FAQ, script-free reading, working docs/downloads and zero failed/external requests pass. Generated entries/shared CSS/tokens/schema/fonts and byte-for-byte real demo output pass drift checks; CSS/JS fingerprints prevent stale v1 cache reuse, and `.gitattributes` preserves original asset/export bytes on Windows. Final local Lighthouse 13.6.0 scores: mobile 96 performance / 100 accessibility; desktop 100 / 100. The local static fixture mirrors the existing Pages gzip response. Official Scribe/Tango pricing was rechecked on 26 Nov; the comparison preserves the design's 25 Nov stamp. The independent accessibility command passes all 12 cases. Next retains two existing image warnings and Firefox four upstream React DOM warnings; no new lint errors/warnings. Logs: `test-results/landing-full-verify.log`, `test-results/landing-app-a11y.log`, `test-results/landing-static.log` and `test-results/website/` (ignored). Committed/pushed directly to `main`, no PR or deployment/settings/workflow command. M17 remains open for complete runnable target docs; M11 resumes next.
 
 ## Defaults in use
 

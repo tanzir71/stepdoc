@@ -1,0 +1,3 @@
+# Preserve original Figma asset bytes and deterministic exporter output on Windows.
+site/assets/*.svg -text
+site/demo/** -text

@@ -1,0 +1,262 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "StepDoc home":
+    - /url: ./
+    - text: stepdoc
+  - navigation "Main navigation":
+    - link "Product":
+      - /url: "#product"
+    - link "Agents":
+      - /url: "#agents"
+    - link "Self-host":
+      - /url: "#self-host"
+    - link "Compare":
+      - /url: "#compare"
+    - link "Docs":
+      - /url: ./site/docs/
+    - link "GitHub":
+      - /url: https://github.com/tanzir71/stepdoc
+  - link "Add to Chrome":
+    - /url: ./site/docs/#browser
+  - link "Deploy":
+    - /url: ./site/docs/#self-host
+- main:
+  - region "Record it once. People read it. Agents run it.":
+    - paragraph: Open source · Self-hosted · Agent-readable
+    - heading "Record it once. People read it. Agents run it." [level=1]
+    - paragraph: StepDoc turns a browser workflow into a step-by-step guide your team edits and publishes — plus a replay file any browser agent can follow. Run it in your browser, on shared hosting, on Cloudflare, or publish to GitHub Pages.
+    - link "Add to Chrome — free":
+      - /url: ./site/docs/#browser
+    - link "Deploy to your host":
+      - /url: ./site/docs/#self-host
+    - paragraph: No account needed in local mode · Chrome, Edge and Firefox
+  - region "Same guide, two readers":
+    - text: Same guide, two readers
+    - link "northwind.github.io/ops-guides/finance-ops/upgrade-workspace-team":
+      - /url: ./site/demo/
+    - article "Click \"Change plan\"":
+      - text: Human view 3
+      - heading "Click \"Change plan\"" [level=2]
+      - paragraph: Opens the plan picker. Only workspace owners see this button.
+      - link "Read the example guide":
+        - /url: ./site/demo/
+        - img "Fictional Ledgerly billing screen, with invoice email and payment details blurred."
+    - region "Agent view":
+      - text: Agent view
+      - navigation "Example guide downloads":
+        - link "guide.json":
+          - /url: ./site/demo/guide.json
+        - link "replay.spec.ts":
+          - /url: ./site/demo/replay.spec.ts
+        - link "SKILL.md":
+          - /url: ./site/demo/SKILL.md
+      - code: "{ \"index\": 3, \"action\": \"click\", \"title\": \"Click \\\"Change plan\\\"\", \"url\": \"https://app.ledgerly.io/settings/billing\", \"target\": { \"role\": \"button\", \"name\": \"Change plan\", \"locators\": [{ \"strategy\": \"testId\", \"value\": \"billing-change-plan\" }] }, \"expect\": { \"visible\": { \"role\": \"dialog\", \"name\": \"Choose a plan\" } } } // replay.spec.ts await page.getByRole('button', { name: 'Change plan' }).click();"
+  - region "Runs where you already pay.":
+    - heading "Install anywhere" [level=2]
+    - link "This browser Extension only. Guides live in IndexedDB; export when you need to share. Load the extension":
+      - /url: ./site/docs/#browser
+      - heading "This browser" [level=3]
+      - paragraph: Extension only. Guides live in IndexedDB; export when you need to share.
+      - code: Load the extension
+    - link "Shared hosting PHP 8.1 + SQLite. No daemons, no cron, no Node. upload /stepdoc → public_html":
+      - /url: ./site/docs/#php
+      - heading "Shared hosting" [level=3]
+      - paragraph: PHP 8.1 + SQLite. No daemons, no cron, no Node.
+      - code: upload /stepdoc → public_html
+    - link "Cloudflare Workers + D1 + R2 on the free tier. npx wrangler deploy":
+      - /url: ./site/docs/#cloudflare
+      - heading "Cloudflare" [level=3]
+      - paragraph: Workers + D1 + R2 on the free tier.
+      - code: npx wrangler deploy
+    - link "Node + Postgres Docker image or the Supabase stack. docker compose up":
+      - /url: ./site/docs/#node
+      - heading "Node + Postgres" [level=3]
+      - paragraph: Docker image or the Supabase stack.
+      - code: docker compose up
+    - link "GitHub Pages Read-only guide sites with llms.txt and JSON. Publish → repo":
+      - /url: ./site/docs/#pages
+      - heading "GitHub Pages" [level=3]
+      - paragraph: Read-only guide sites with llms.txt and JSON.
+      - code: Publish → repo
+  - region "Capture, edit, redact, publish.":
+    - paragraph: Workflow
+    - heading "Capture, edit, redact, publish." [level=2]
+    - paragraph: Everything Scribe users expect, with the parts that usually cost extra built in.
+    - article:
+      - paragraph: "01"
+      - heading "Capture" [level=3]
+      - paragraph: Clicks, selects and navigation become steps with screenshots. Typed values never do.
+      - figure "Example captured steps":
+        - text: "01"
+        - paragraph: Go to app.ledgerly.io/settings
+        - code: navigate
+        - text: "02"
+        - paragraph: Click "Billing" in the sidebar
+        - code: click · link
+        - text: "03"
+        - paragraph: Click "Change plan"
+        - code: click · button
+    - article:
+      - paragraph: "02"
+      - heading "Edit" [level=3]
+      - paragraph: Rewrite, reorder, merge. Each step keeps role, name and selectors for replay.
+      - figure "Example ranked locators":
+        - code: role
+        - code: button "Change plan"
+        - text: Unique
+        - code: testId
+        - code: billing-change-plan
+        - text: Unique
+        - code: css
+        - code: section.plan > button
+        - text: Fragile
+    - article:
+      - paragraph: "03"
+      - heading "Redact" [level=3]
+      - paragraph: Emails, cards and tokens are pixelated before the screenshot leaves your tab.
+      - figure "Example blurred email":
+        - img "Blurred invoice email"
+        - text: Email · blurred before upload
+    - article:
+      - paragraph: "04"
+      - heading "Publish" [level=3]
+      - paragraph: PDF, HTML, Markdown, DOCX, public links, embeds and static sites.
+      - figure "Publishing interface preview":
+        - text: Public link
+        - img "Enabled in this illustration"
+        - text: GitHub Pages Live Embed
+  - region "Guides a browser agent can actually follow.":
+    - paragraph: Built for agents
+    - heading "Guides a browser agent can actually follow." [level=2]
+    - paragraph: Agents read the accessibility tree, not pixels. Every StepDoc guide and every app screen is built around that.
+    - list:
+      - listitem: Targets stored as role + accessible name first, selectors as fallback
+      - listitem: Expected result per step, so an agent knows it worked
+      - listitem: Typed values become variables or secrets — never stored
+      - listitem: guide.json, guide.md, Playwright spec and SKILL.md on every guide
+      - listitem: llms.txt, JSON-LD and Markdown alternates on published sites
+      - listitem: MCP + WebMCP integration on the v2 roadmap
+    - figure "Planned WebMCP integration example":
+      - text: app.js
+      - code: "// Integration preview; same tools as the planned MCP server const mc = document.modelContext ?? navigator.modelContext; mc?.registerTool({ name: 'export_guide', description: 'Export a guide as pdf, html, md, json or playwright', inputSchema: guideExportSchema, // from @stepdoc/schema execute: ({ id, format }) => stepdoc.export(id, format), }); // Also registered: list_guides · get_guide · create_guide // add_step · update_step · publish_guide"
+  - region "Nothing leaves your storage unless you publish it.":
+    - paragraph: Privacy
+    - heading "Nothing leaves your storage unless you publish it." [level=2]
+    - article:
+      - heading "Typed values never recorded" [level=3]
+      - paragraph: "Inputs are stored as actions: “Fill in the Invoice email field”. Passwords and secrets never touch disk."
+      - code: "value: { kind: \"secret\" }"
+    - article:
+      - heading "Blur before upload" [level=3]
+      - paragraph: Pattern detectors run in the extension. The server only ever receives already-redacted pixels.
+      - code: redactions[] kept as layers
+    - article:
+      - heading "Your storage, your keys" [level=3]
+      - paragraph: SQLite on your host, D1 + R2 on your account, or your browser. AI is optional and bring-your-own-key.
+      - code: no StepDoc cloud in the loop
+  - region "What you get without an Enterprise contract.":
+    - paragraph: Compare
+    - heading "What you get without an Enterprise contract." [level=2]
+    - table "StepDoc v2 feature comparison; planned features are marked. Public pricing checked 25 Nov 2026.":
+      - caption: StepDoc v2 feature comparison; planned features are marked. Public pricing checked 25 Nov 2026.
+      - rowgroup:
+        - row "Feature stepdoc Scribe Tango":
+          - columnheader "Feature"
+          - columnheader "stepdoc"
+          - columnheader "Scribe":
+            - link "Scribe":
+              - /url: https://scribe.com/pricing
+          - columnheader "Tango":
+            - link "Tango":
+              - /url: https://www.tango.ai/pricing
+      - rowgroup:
+        - row "Runs on your own storage Included — —":
+          - rowheader "Runs on your own storage"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+          - cell "—"
+        - row "Works with no server at all Included — —":
+          - rowheader "Works with no server at all"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+          - cell "—"
+        - row "Publish to GitHub Pages Included — —":
+          - rowheader "Publish to GitHub Pages"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+          - cell "—"
+        - row "Agent replay file (guide.json + Playwright) Included — Enterprise (Agents)":
+          - rowheader "Agent replay file (guide.json + Playwright)"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+          - cell "Enterprise (Agents)"
+        - row "MCP server Planned for v2 Planned Enterprise Enterprise":
+          - rowheader "MCP server"
+          - cell "Planned for v2 Planned":
+            - img "Planned for v2"
+            - text: Planned
+          - cell "Enterprise"
+          - cell "Enterprise"
+        - row "Enforced redaction before upload Included Enterprise Enterprise":
+          - rowheader "Enforced redaction before upload"
+          - cell "Included":
+            - img "Included"
+          - cell "Enterprise"
+          - cell "Enterprise"
+        - row "Version history Unlimited 1 week on Pro 14 days on Pro":
+          - rowheader "Version history"
+          - cell "Unlimited"
+          - cell "1 week on Pro"
+          - cell "14 days on Pro"
+        - row "Roles + strong sign-in without Enterprise Passkeys (planned) — —":
+          - rowheader "Roles + strong sign-in without Enterprise"
+          - cell "Passkeys (planned)"
+          - cell "—"
+          - cell "—"
+        - row "Price for 20 creators, per year $0 licence $3,120 (Pro Team) $3,600 (Pro)":
+          - rowheader "Price for 20 creators, per year"
+          - cell "$0 licence"
+          - cell "$3,120 (Pro Team)"
+          - cell "$3,600 (Pro)"
+    - paragraph: From public pricing and plan pages, checked 25 Nov 2026. Prices change; re-check before quoting.
+  - region "Frequently asked questions":
+    - group:
+      - text: Does it work without a server?
+      - paragraph: Yes. Install the extension and choose “This browser”. Guides, screenshots and versions stay in IndexedDB; export a .stepdoc bundle or pair a server later.
+    - group:
+      - text: What actually runs on shared hosting?
+      - paragraph: A static app plus one PHP front controller and a SQLite file outside public_html. Image work happens in the browser, so no Imagick or headless Chrome is needed.
+    - group:
+      - text: How does an agent use a guide?
+      - paragraph: Point it at the guide URL or llms.txt. It gets role + name targets and expected results per step, or run the generated Playwright spec in CI.
+    - group:
+      - text: Is anything sent to an AI provider?
+      - paragraph: Only if you add your own key, and only DOM context (no screenshots). Rules-based step text works with AI switched off.
+  - region "Capture your first guide in two minutes.":
+    - heading "Capture your first guide in two minutes." [level=2]
+    - link "Add to Chrome — free":
+      - /url: ./site/docs/#browser
+    - link "Read the self-host guide":
+      - /url: ./site/docs/#self-host
+- contentinfo:
+  - link "StepDoc home":
+    - /url: ./
+    - text: stepdoc
+  - link "Open source on GitHub":
+    - /url: https://github.com/tanzir71/stepdoc
+  - navigation "Footer":
+    - link "Docs":
+      - /url: ./site/docs/
+    - link "Schema":
+      - /url: ./site/docs/guide.schema.json
+    - link "llms.txt":
+      - /url: ./site/llms.txt
+    - link "Changelog":
+      - /url: https://github.com/tanzir71/stepdoc/commits/main/
+  - link "Built by tanziro.com":
+    - /url: https://tanziro.com

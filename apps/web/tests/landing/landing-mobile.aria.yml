@@ -1,0 +1,136 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "StepDoc home":
+    - /url: ./
+    - text: stepdoc
+  - button "Open menu"
+- main:
+  - region "Record it once. People read it. Agents run it.":
+    - paragraph: Open source · Self-hosted
+    - heading "Record it once. People read it. Agents run it." [level=1]
+    - paragraph: A step-by-step guide for your team and a replay file for any browser agent — from one capture.
+    - link "Add to Chrome — free":
+      - /url: ./site/docs/#browser
+    - link "Deploy to your host":
+      - /url: ./site/docs/#self-host
+  - region "Same guide, two readers":
+    - article "Click \"Change plan\"":
+      - text: Human view 3
+      - heading "Click \"Change plan\"" [level=2]
+      - link "Read the example guide":
+        - /url: ./site/demo/
+        - img "Fictional Ledgerly billing screen, with invoice email and payment details blurred."
+    - region "Agent view":
+      - text: Agent view
+      - code: "\"action\": \"click\", \"target\": { \"role\": \"button\", \"name\": \"Change plan\" }, \"expect\": { \"visible\": { \"role\": \"dialog\" } }"
+  - region "Runs where you already pay.":
+    - paragraph: Self-host
+    - heading "Runs where you already pay." [level=2]
+    - link "This browser Load the extension":
+      - /url: ./site/docs/#browser
+      - heading "This browser" [level=3]
+      - code: Load the extension
+    - link "Shared hosting upload /stepdoc → public_html":
+      - /url: ./site/docs/#php
+      - heading "Shared hosting" [level=3]
+      - code: upload /stepdoc → public_html
+    - link "Cloudflare npx wrangler deploy":
+      - /url: ./site/docs/#cloudflare
+      - heading "Cloudflare" [level=3]
+      - code: npx wrangler deploy
+    - link "Node + Postgres docker compose up":
+      - /url: ./site/docs/#node
+      - heading "Node + Postgres" [level=3]
+      - code: docker compose up
+    - link "GitHub Pages Publish → repo":
+      - /url: ./site/docs/#pages
+      - heading "GitHub Pages" [level=3]
+      - code: Publish → repo
+  - region "Guides an agent can follow.":
+    - paragraph: Built for agents
+    - heading "Guides an agent can follow." [level=2]
+    - list:
+      - listitem: Role + accessible name targets, selectors as fallback
+      - listitem: Expected result per step
+      - listitem: Secrets as variables, never stored
+      - listitem: guide.json · guide.md · Playwright · SKILL.md
+      - listitem: llms.txt; MCP integration on the v2 roadmap
+  - region "Blur happens before upload.":
+    - paragraph: Privacy
+    - heading "Blur happens before upload." [level=2]
+    - article:
+      - heading "Typed values never recorded" [level=3]
+    - article:
+      - heading "Sensitive fields pixelated in the tab" [level=3]
+    - article:
+      - heading "Your storage, your keys" [level=3]
+  - region "Without an Enterprise contract.":
+    - paragraph: Compare
+    - heading "Without an Enterprise contract." [level=2]
+    - table "StepDoc v2 feature comparison; planned features are marked. Public pricing checked 25 Nov 2026.":
+      - caption: StepDoc v2 feature comparison; planned features are marked. Public pricing checked 25 Nov 2026.
+      - rowgroup:
+        - row "Feature StepDoc Scribe":
+          - columnheader "Feature"
+          - columnheader "StepDoc"
+          - columnheader "Scribe":
+            - link "Scribe":
+              - /url: https://scribe.com/pricing
+      - rowgroup:
+        - row "Your own storage Included —":
+          - rowheader "Your own storage"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+        - row "No-server mode Included —":
+          - rowheader "No-server mode"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+        - row "GitHub Pages Included —":
+          - rowheader "GitHub Pages"
+          - cell "Included":
+            - img "Included"
+          - cell "—"
+        - row "MCP server Planned for v2 Planned Enterprise":
+          - rowheader "MCP server"
+          - cell "Planned for v2 Planned":
+            - img "Planned for v2"
+            - text: Planned
+          - cell "Enterprise"
+        - row "Enforced redaction Included Enterprise":
+          - rowheader "Enforced redaction"
+          - cell "Included":
+            - img "Included"
+          - cell "Enterprise"
+        - row "20 creators / yr $0 $3,120":
+          - rowheader "20 creators / yr"
+          - cell "$0"
+          - cell "$3,120"
+    - paragraph: Public pricing, checked 25 Nov 2026.
+  - region "Frequently asked questions":
+    - paragraph: FAQ
+    - group: Does it work without a server?
+    - group: What runs on shared hosting?
+    - group: How does an agent use a guide?
+    - group: Is anything sent to an AI provider?
+  - region "Capture your first guide in two minutes.":
+    - heading "Capture your first guide in two minutes." [level=2]
+    - link "Add to Chrome — free":
+      - /url: ./site/docs/#browser
+- contentinfo:
+  - link "StepDoc home":
+    - /url: ./
+    - text: stepdoc
+  - navigation "Footer":
+    - link "Docs ·":
+      - /url: ./site/docs/
+    - link "Schema ·":
+      - /url: ./site/docs/guide.schema.json
+    - link "llms.txt ·":
+      - /url: ./site/llms.txt
+    - link "GitHub":
+      - /url: https://github.com/tanzir71/stepdoc
+  - link "Built by tanziro.com":
+    - /url: https://tanziro.com

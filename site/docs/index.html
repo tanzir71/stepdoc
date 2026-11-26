@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Install StepDoc locally and understand the self-hosted targets."
+    />
+    <title>StepDoc — installation and self-hosting</title>
+    <link rel="icon" href="../assets/fce33.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../ui/tokens.css" />
+    <link rel="stylesheet" href="../ui/styles.css" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="docs-header shell">
+      <a class="sd-logo" href="../"
+        ><span class="sd-logo-symbol"
+          ><img
+            class="sd-logo-light"
+            src="../assets/fce33.svg"
+            width="32"
+            height="32"
+            alt="" /></span
+        ><span>stepdoc</span></a
+      >
+      <nav aria-label="Documentation">
+        <a href="#browser">Install</a><a href="#self-host">Self-host</a
+        ><a href="../demo/">Example guide</a
+        ><a href="https://github.com/tanzir71/stepdoc">GitHub</a>
+      </nav>
+    </header>
+    <main id="main" class="docs-main shell">
+      <p class="eyebrow">StepDoc documentation</p>
+      <h1>Run it on storage you own.</h1>
+      <p class="docs-lead">
+        Start with the working browser-only extension. Keep guides local, then
+        export them or pair a compatible server. The v2 server targets and
+        integrations are still being built; their status is listed below.
+      </p>
+      <section id="browser">
+        <h2>Install in this browser</h2>
+        <p>
+          The extension is available from source. A Chrome Web Store listing is
+          not available yet. Chrome and Edge use a side panel; Firefox uses a
+          popup and full-tab editor.
+        </p>
+        <ol>
+          <li>
+            Install Node.js and pnpm, then build the extension:
+            <pre
+              tabindex="0"
+              aria-label="Build the Chrome extension"
+            ><code>git clone --branch main https://github.com/tanzir71/stepdoc.git
+cd stepdoc
+pnpm install
+pnpm --filter @stepdoc/extension build -b chrome</code></pre>
+          </li>
+          <li>
+            In Chrome, open <code>chrome://extensions</code>, turn on Developer
+            mode and choose <strong>Load unpacked</strong>. Select
+            <code>apps/extension/.output/chrome-mv3</code>.
+          </li>
+          <li>
+            Open a web page and the StepDoc side panel. Choose
+            <strong>This browser</strong> and start capture. <kbd>Alt</kbd> +
+            <kbd>Shift</kbd> + <kbd>S</kbd> also starts or stops capture.
+          </li>
+          <li>
+            Stop and review the steps, then save to the local editor. Export a
+            portable <code>.stepdoc</code> bundle to move the guide between
+            browsers.
+          </li>
+        </ol>
+        <p>
+          For Edge, build with <code>-b edge</code> and load
+          <code>.output/edge-mv3</code> from <code>edge://extensions</code>. For
+          Firefox, build with <code>-b firefox</code> and load the generated
+          manifest as a temporary add-on from <code>about:debugging</code>.
+          Store installation and signing are separate from the source build.
+        </p>
+      </section>
+      <section id="self-host">
+        <h2>Self-hosting targets</h2>
+        <p>
+          StepDoc v2 uses the same static app and Storage API across the
+          following targets. The browser app and private pairing client work
+          today. PHP/Cloudflare/Node Storage API v1 servers, passkey accounts
+          and MCP services are in development; the commands shown on the landing
+          page describe those target deployment paths.
+        </p>
+        <div class="docs-targets">
+          <article id="php">
+            <h3>Shared hosting — PHP + SQLite</h3>
+            <p>
+              Planned target: PHP 8.1+, a static app and a front controller.
+              Keep the SQLite database and blob storage outside
+              <code>public_html</code>. The installer and
+              <code>stepdoc-php.zip</code> will ship with the PHP milestone; the
+              archive is not available yet.
+            </p>
+          </article>
+          <article id="cloudflare">
+            <h3>Cloudflare — Workers + D1 + R2</h3>
+            <p>
+              Planned target: a Worker serves the same API, with D1 metadata and
+              R2 images. Local Wrangler verification and a deployment
+              configuration are part of the Cloudflare milestone. The v2 Worker
+              is not available to deploy yet.
+            </p>
+          </article>
+          <article id="node">
+            <h3>Node + Postgres</h3>
+            <p>
+              The existing v1 Next.js/Supabase app remains in the repository.
+              The v2 target will serve the static app and Storage API v1. Keep
+              the v1 editor/API private; it is a single-user internal tool
+              without account authentication. Read the repository setup
+              instructions before running it.
+            </p>
+            <a href="https://github.com/tanzir71/stepdoc#readme"
+              >Repository setup instructions</a
+            >
+          </article>
+          <article id="pages">
+            <h3>GitHub Pages and static exports</h3>
+            <p>
+              The generated HTML guide is self-contained and can be hosted as a
+              static file. Download the example HTML or its JSON, Markdown,
+              Playwright and skill companions below. Automated repository
+              publishing and a static guide library are planned in the
+              publishing milestone.
+            </p>
+            <p>
+              <a href="../demo/">Read the generated guide</a> ·
+              <a href="../demo/guide.json">guide.json</a> ·
+              <a href="../demo/guide.md">guide.md</a> ·
+              <a href="../demo/replay.spec.ts">replay.spec.ts</a> ·
+              <a href="../demo/SKILL.md">SKILL.md</a>
+            </p>
+          </article>
+        </div>
+      </section>
+      <section id="agents">
+        <h2>Guides for people and browser agents</h2>
+        <p>
+          Current exports include guide@1 JSON, Markdown, Playwright and
+          SKILL.md. Targets carry accessible roles and names, with selectors as
+          fallbacks. Fill steps reference variables or secrets; replay values
+          are supplied at runtime. The generated replay has automated
+          local-browser coverage. MCP servers and WebMCP registration are
+          planned integrations.
+        </p>
+        <p>
+          The Ledgerly screen in the landing and example guide is fictional
+          screenshot content. It is not a live billing application or a claim
+          that the example replay was run against a third-party service.
+        </p>
+        <p>
+          <a href="./guide.schema.json">Read the guide@1 JSON Schema</a> ·
+          <a href="../llms.txt">Read llms.txt</a>
+        </p>
+      </section>
+    </main>
+    <footer class="site-footer shell">
+      <a href="../">StepDoc</a
+      ><a href="https://github.com/tanzir71/stepdoc">Open source on GitHub</a
+      ><a href="https://tanziro.com">Built by tanziro.com</a>
+    </footer>
+  </body>
+</html>

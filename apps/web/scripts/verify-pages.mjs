@@ -1,10 +1,13 @@
-/* global console, process, document, getComputedStyle, innerWidth */
+/* global console, process */
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { mkdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium, expect } from '@playwright/test'
+import { gzipSync } from 'node:zlib'
+import { chromium } from '@playwright/test'
+import { verifyLanding } from './verify-landing.mjs'
+import { verifyLighthouse } from './verify-lighthouse.mjs'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const output = path.join(root, 'test-results/website')
@@ -18,6 +21,10 @@ const types = {
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain',
   '.woff2': 'font/woff2',
+  '.png': 'image/png',
+  '.json': 'application/json',
+  '.md': 'text/plain',
+  '.ts': 'text/plain',
 }
 const server = createServer(async (req, res) => {
   try {
@@ -42,10 +49,20 @@ const server = createServer(async (req, res) => {
       return
     }
     const target = info.isDirectory() ? path.join(file, 'index.html') : file
+    const contents = await readFile(target)
+    // Pages compresses text resources in transit; mirror that local serving behavior.
+    const compressed =
+      /gzip/.test(req.headers['accept-encoding'] ?? '') &&
+      /\.(html|css|js|svg|txt|json|md|ts)$/.test(target)
+    const body = compressed ? gzipSync(contents) : contents
     res.writeHead(200, {
       'content-type': types[path.extname(target)] ?? 'application/octet-stream',
+      'content-length': body.length,
+      ...(compressed
+        ? { 'content-encoding': 'gzip', vary: 'Accept-Encoding' }
+        : {}),
     })
-    res.end(await readFile(target))
+    res.end(body)
   } catch {
     res.writeHead(404).end('Not found')
   }
@@ -59,7 +76,8 @@ const landing = `${entry}site/`
 const errors = []
 let browser
 try {
-  browser = await chromium.launch()
+  const lighthouseMode = process.argv.includes('--lighthouse')
+  if (!lighthouseMode) browser = await chromium.launch()
   async function pageAt(viewport, javaScriptEnabled = true) {
     const context = await browser.newContext({
       viewport,
@@ -90,159 +108,14 @@ try {
     })
     return { context, page }
   }
-  const desktop = await pageAt({ width: 1440, height: 1000 })
-  await desktop.page.goto(entry)
-  await desktop.page.waitForURL(landing)
-  const hero = desktop.page.getByRole('heading', {
-    name: 'Click record. Do the task. Get the guide.',
-  })
-  await expect(hero).toBeVisible()
-  await desktop.page.evaluate(() => document.fonts.ready)
-  assert.equal(
-    await desktop.page
-      .locator('.hero')
-      .evaluate((element) => getComputedStyle(element).display),
-    'grid',
-    'Landing stylesheet loaded under the project prefix',
-  )
-  assert(
-    await desktop.page.evaluate(
-      () =>
-        document.fonts.check('16px Geist') &&
-        document.fonts.check('16px "Geist Mono"'),
-    ),
-    'Both local fonts load',
-  )
-  for (const resource of [
-    'styles.css',
-    'main.js',
-    'favicon.svg',
-    'og.svg',
-    'fonts/GeistSans.woff2',
-    'fonts/GeistMono.woff2',
-    'fonts/OFL.txt',
-    'llms.txt',
-  ]) {
-    const response = await desktop.page.request.get(
-      new URL(resource, landing).href,
-    )
-    assert.equal(response.status(), 200, `Project resource ${resource}`)
-  }
-  const links = await desktop.page
-    .locator('a[href]')
-    .evaluateAll((links) => links.map((link) => link.href))
-  for (const link of new Set(links.filter((link) => link.startsWith(origin)))) {
-    const url = new URL(link)
-    assert(
-      url.pathname.startsWith(prefix),
-      'Internal links remain in the Pages project',
-    )
-    if (url.hash && url.pathname === new URL(landing).pathname)
-      assert(
-        await desktop.page.locator(`[id="${url.hash.slice(1)}"]`).count(),
-        `Anchor ${url.hash}`,
-      )
-    assert.equal(
-      (await desktop.page.request.get(url.href)).status(),
-      200,
-      `Internal link ${url.pathname}`,
-    )
-  }
-  await desktop.page.screenshot({
-    path: path.join(output, 'home.png'),
-    fullPage: true,
-  })
-  await desktop.page.getByRole('button', { name: 'Start simulation' }).click()
-  await expect(
-    desktop.page.locator('.captured-step', {
-      hasText: 'Fill in the “Administrator email” field',
-    }),
-  ).toBeVisible()
-  await desktop.page
-    .getByRole('button', { name: 'Save preferences', exact: true })
-    .click()
-  await expect(
-    desktop.page.locator('.captured-step', {
-      hasText: 'Click “Save preferences”',
-    }),
-  ).toBeVisible()
-  await desktop.page.getByRole('button', { name: 'Reset', exact: true }).click()
-  await expect(desktop.page.locator('#step-count')).toHaveText('0 steps')
-  await desktop.page
-    .getByRole('link', { name: 'Open a real HTML export', exact: true })
-    .click()
-  await desktop.page.waitForURL(`${landing}demo/`)
-  await expect(
-    desktop.page.getByRole('heading', {
-      name: 'Share an internal guide without exposing your workspace',
-    }),
-  ).toBeVisible()
-  await expect(
-    desktop.page.getByText('This guide was generated by StepDoc.', {
-      exact: true,
-    }),
-  ).toBeVisible()
-  await expect(desktop.page.locator('meta[name="generator"]')).toHaveAttribute(
-    'content',
-    'StepDoc HTML export',
-  )
-  await expect(desktop.page.locator('img')).toHaveCount(5)
-  assert(
-    await desktop.page
-      .locator('img')
-      .evaluateAll((images) =>
-        images.every((image) => image.complete && image.naturalWidth > 0),
-      ),
-    'All five embedded demo images load',
-  )
-  await desktop.page.screenshot({
-    path: path.join(output, 'exported-guide.png'),
-    fullPage: true,
-  })
-  await desktop.context.close()
-  for (const width of [390, 320]) {
-    const mobile = await pageAt({ width, height: 844 })
-    await mobile.page.goto(entry)
-    await mobile.page.waitForURL(landing)
-    await expect(
-      mobile.page.getByRole('heading', {
-        name: 'Click record. Do the task. Get the guide.',
-      }),
-    ).toBeVisible()
-    await mobile.page.screenshot({
-      path: path.join(output, `mobile-${width}.png`),
-    })
-    const overflow = await mobile.page.evaluate(() =>
-      [...document.querySelectorAll('body *')]
-        .map((element) => ({
-          tag: element.tagName,
-          class: element.className,
-          right: element.getBoundingClientRect().right,
-          width: element.getBoundingClientRect().width,
-        }))
-        .filter((element) => element.right > innerWidth + 1)
-        .slice(0, 12),
-    )
-    assert(
-      await mobile.page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-      `Mobile overflow at ${width}px: ${JSON.stringify(overflow)}`,
-    )
-    await mobile.context.close()
-  }
-  const staticPage = await pageAt({ width: 1440, height: 1000 }, false)
-  await staticPage.page.goto(entry)
-  await staticPage.page.waitForURL(landing)
-  await expect(
-    staticPage.page.getByRole('heading', {
-      name: 'Click record. Do the task. Get the guide.',
-    }),
-  ).toBeVisible()
-  await staticPage.context.close()
+  if (lighthouseMode) {
+    await verifyLighthouse({ entry, output, chrome: chromium.executablePath() })
+  } else await verifyLanding({ pageAt, landing, entry, origin, root, output })
   assert.deepEqual(errors, [])
   console.log(
-    'Pages browser verification passed: real /stepdoc/ root entry, project-relative CSS/JS/icons/fonts/links, simulation/reset, five-image export, 390/320px layout, readable without JavaScript and zero failed or external requests.',
+    lighthouseMode
+      ? 'Local Lighthouse gate passed for mobile and desktop.'
+      : 'Pages browser verification passed: Figma L01/L02 geometry/assets, desktop/mobile aria and axe, native menu/FAQ, real guide downloads, docs, project-root navigation and zero failed/external requests.',
   )
 } finally {
   await browser?.close()

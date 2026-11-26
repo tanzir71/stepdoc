@@ -1,24 +1,119 @@
-import { mkdir, writeFile } from 'node:fs/promises'
-import { renderStandaloneHtml } from '../apps/web/src/lib/html-export.ts'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { guideSchema } from '@stepdoc/schema'
+import {
+  exportGuideJson,
+  exportHtml,
+  exportMarkdown,
+  exportPlaywright,
+  exportSkill,
+} from '@stepdoc/core/export'
 
-const svg = (title: string, subtitle: string, screen: string, accent = '#2563eb') => {
-  const markup = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><rect width="1200" height="720" rx="18" fill="#e9eef6"/><rect x="34" y="34" width="1132" height="652" rx="14" fill="#fff" stroke="#cbd5e1"/><rect x="34" y="34" width="1132" height="52" rx="14" fill="#172033"/><circle cx="66" cy="60" r="7" fill="#fb7185"/><circle cx="90" cy="60" r="7" fill="#fbbf24"/><circle cx="114" cy="60" r="7" fill="#34d399"/><rect x="455" y="49" width="290" height="22" rx="11" fill="#2d3a4f"/><text x="600" y="64" fill="#cbd5e1" font-family="monospace" font-size="10" text-anchor="middle">internal.example/${screen}</text><text x="78" y="145" fill="#64748b" font-family="monospace" font-size="12">STEPDOC DEMO WORKSPACE</text><text x="78" y="205" fill="#172033" font-family="Arial,sans-serif" font-weight="700" font-size="42">${title}</text><text x="78" y="244" fill="#64748b" font-family="Arial,sans-serif" font-size="20">${subtitle}</text><rect x="78" y="292" width="1044" height="1" fill="#dbe2ec"/><rect x="78" y="330" width="330" height="250" rx="12" fill="#f4f7fb" stroke="#dbe2ec"/><rect x="445" y="330" width="677" height="58" rx="9" fill="#f8fafc" stroke="#dbe2ec"/><rect x="445" y="412" width="677" height="58" rx="9" fill="#f8fafc" stroke="#dbe2ec"/><rect x="445" y="494" width="430" height="58" rx="9" fill="#f8fafc" stroke="#dbe2ec"/><rect x="920" y="494" width="202" height="58" rx="9" fill="${accent}"/><text x="1021" y="530" fill="#fff" font-family="Arial,sans-serif" font-weight="700" font-size="16" text-anchor="middle">${screen === 'share' ? 'Copy public link' : 'Continue'}</text><circle cx="1018" cy="523" r="30" fill="none" stroke="#ef4444" stroke-width="5"/><circle cx="1018" cy="523" r="7" fill="#ef4444"/></svg>`
-  return `data:image/svg+xml;base64,${Buffer.from(markup).toString('base64')}`
+const root = new URL('../site/demo/', import.meta.url)
+const image = await readFile(
+  new URL('../site/assets/ledgerly-billing.png', import.meta.url),
+)
+const picture = {
+  original: null,
+  rendered: 'img/ledgerly-billing.png',
+  width: 1280,
+  height: 800,
+  devicePixelRatio: 1,
+  alt: 'Fictional Ledgerly billing screen with sensitive fields already blurred.',
 }
-
-const html = renderStandaloneHtml({
-  title: 'Share an internal guide without exposing your workspace',
-  description: 'Capture a short browser workflow, review privacy-sensitive regions, and publish only the read-only guide. This sample uses invented screens and contains no private data.',
-  sourceUrl: 'internal.example (synthetic)',
+const guide = guideSchema.parse({
+  schema: 'stepdoc/guide@1',
+  id: 'upgrade-workspace-team',
+  uuid: '123e4567-e89b-42d3-a456-426614174001',
+  title: 'Upgrade the workspace to Team',
+  description:
+    'An example guide for a fictional billing screen. The same guide supplies the human HTML and agent replay downloads. No private data is included.',
+  app: {
+    name: 'Ledgerly (fictional example)',
+    origin: 'https://app.ledgerly.io',
+  },
+  preconditions: ['Use the fictional example workspace with the Owner role.'],
   steps: [
-    { text: 'Open the StepDoc extension and click “Start capture”', imageDataUrl: svg('Start a new capture', 'The extension records actions, never the values you type.', 'capture') },
-    { text: 'Complete the workflow in the tab you want to document', imageDataUrl: svg('Work through the task', 'Clicks become steps; sensitive fields are pixelated before persistence.', 'workflow', '#1d4ed8') },
-    { text: 'Click “Stop & open” when the workflow is complete', imageDataUrl: svg('Finish the capture', 'The session opens as an editable guide in your private StepDoc app.', 'finish') },
-    { text: 'Review every screenshot and adjust redaction layers', imageDataUrl: svg('Review privacy first', 'Move click markers, add blur regions, and edit the generated instruction.', 'review', '#7c3aed') },
-    { text: 'Enable the read-only link and copy its unguessable URL', imageDataUrl: svg('Publish only the guide', 'The editor stays private. Only /p/{publicId} is intended to be shared.', 'share', '#2563eb') },
+    {
+      id: 'open-settings',
+      index: 1,
+      type: 'navigate',
+      action: 'navigate',
+      title: 'Go to app.ledgerly.io/settings',
+      url: 'https://app.ledgerly.io/settings',
+      screenshot: picture,
+    },
+    {
+      id: 'open-billing',
+      index: 2,
+      type: 'action',
+      action: 'click',
+      title: 'Click "Billing" in the sidebar',
+      url: 'https://app.ledgerly.io/settings',
+      target: {
+        role: 'link',
+        name: 'Billing',
+        locators: [
+          { strategy: 'role', value: 'link', name: 'Billing', unique: true },
+        ],
+      },
+      expect: { urlMatches: '/settings/billing' },
+      screenshot: picture,
+    },
+    {
+      id: 'change-plan',
+      index: 3,
+      type: 'action',
+      action: 'click',
+      title: 'Click "Change plan"',
+      description:
+        'Opens the plan picker. Only workspace owners see this button.',
+      url: 'https://app.ledgerly.io/settings/billing',
+      target: {
+        role: 'button',
+        name: 'Change plan',
+        locators: [
+          {
+            strategy: 'role',
+            value: 'button',
+            name: 'Change plan',
+            unique: true,
+          },
+          { strategy: 'testId', value: 'billing-change-plan', unique: true },
+        ],
+      },
+      expect: { visible: { role: 'dialog', name: 'Choose a plan' } },
+      screenshot: picture,
+    },
   ],
+  version: 1,
+  createdAt: '2026-11-25T00:00:00Z',
+  updatedAt: '2026-11-25T00:00:00Z',
+  verification: { status: 'never-run' },
 })
-
-await mkdir(new URL('../site/demo/', import.meta.url), { recursive: true })
-await writeFile(new URL('../site/demo/index.html', import.meta.url), html)
-console.log('Generated site/demo/index.html with the production StepDoc HTML export renderer.')
+const options = {
+  canonicalUrl: 'https://tanzir71.github.io/stepdoc/site/demo/',
+  images: Object.fromEntries(
+    guide.steps.map((step) => [step.id, 'img/ledgerly-billing.png']),
+  ),
+}
+const dataImages = Object.fromEntries(
+  guide.steps.map((step) => [
+    step.id,
+    `data:image/png;base64,${image.toString('base64')}`,
+  ]),
+)
+export async function demoFiles() {
+  return new Map<string, string | Uint8Array>([
+    ['guide.json', exportGuideJson(guide, options)],
+    ['guide.md', exportMarkdown(guide, options)],
+    ['replay.spec.ts', exportPlaywright(guide, options)],
+    ['SKILL.md', exportSkill(guide, options)],
+    ['index.html', exportHtml(guide, { ...options, images: dataImages })],
+    ['img/ledgerly-billing.png', image],
+  ])
+}
+export async function generateDemo() {
+  await mkdir(new URL('img/', root), { recursive: true })
+  for (const [file, body] of await demoFiles())
+    await writeFile(new URL(file, root), body)
+}

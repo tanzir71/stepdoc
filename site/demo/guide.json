@@ -1,0 +1,121 @@
+{
+  "schema": "stepdoc/guide@1",
+  "id": "upgrade-workspace-team",
+  "uuid": "123e4567-e89b-42d3-a456-426614174001",
+  "title": "Upgrade the workspace to Team",
+  "description": "An example guide for a fictional billing screen. The same guide supplies the human HTML and agent replay downloads. No private data is included.",
+  "app": {
+    "name": "Ledgerly (fictional example)",
+    "origin": "https://app.ledgerly.io/"
+  },
+  "locale": "en",
+  "tags": [],
+  "preconditions": [
+    "Use the fictional example workspace with the Owner role."
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "open-settings",
+      "index": 1,
+      "type": "navigate",
+      "action": "navigate",
+      "title": "Go to app.ledgerly.io/settings",
+      "description": "",
+      "url": "https://app.ledgerly.io/settings",
+      "screenshot": {
+        "rendered": "img/ledgerly-billing.png",
+        "width": 1280,
+        "height": 800,
+        "devicePixelRatio": 1,
+        "alt": "Fictional Ledgerly billing screen with sensitive fields already blurred."
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "open-billing",
+      "index": 2,
+      "type": "action",
+      "action": "click",
+      "title": "Click \"Billing\" in the sidebar",
+      "description": "",
+      "url": "https://app.ledgerly.io/settings",
+      "target": {
+        "role": "link",
+        "name": "Billing",
+        "locators": [
+          {
+            "strategy": "role",
+            "value": "link",
+            "name": "Billing",
+            "exact": true,
+            "unique": true
+          }
+        ]
+      },
+      "expect": {
+        "urlMatches": "/settings/billing"
+      },
+      "screenshot": {
+        "rendered": "img/ledgerly-billing.png",
+        "width": 1280,
+        "height": 800,
+        "devicePixelRatio": 1,
+        "alt": "Fictional Ledgerly billing screen with sensitive fields already blurred."
+      },
+      "redactions": [],
+      "lowConfidence": false
+    },
+    {
+      "id": "change-plan",
+      "index": 3,
+      "type": "action",
+      "action": "click",
+      "title": "Click \"Change plan\"",
+      "description": "Opens the plan picker. Only workspace owners see this button.",
+      "url": "https://app.ledgerly.io/settings/billing",
+      "target": {
+        "role": "button",
+        "name": "Change plan",
+        "locators": [
+          {
+            "strategy": "role",
+            "value": "button",
+            "name": "Change plan",
+            "exact": true,
+            "unique": true
+          },
+          {
+            "strategy": "testId",
+            "value": "billing-change-plan",
+            "exact": true,
+            "unique": true
+          }
+        ]
+      },
+      "expect": {
+        "visible": {
+          "role": "dialog",
+          "name": "Choose a plan"
+        }
+      },
+      "screenshot": {
+        "rendered": "img/ledgerly-billing.png",
+        "width": 1280,
+        "height": 800,
+        "devicePixelRatio": 1,
+        "alt": "Fictional Ledgerly billing screen with sensitive fields already blurred."
+      },
+      "redactions": [],
+      "lowConfidence": false
+    }
+  ],
+  "version": 1,
+  "status": "draft",
+  "createdAt": "2026-11-25T00:00:00Z",
+  "updatedAt": "2026-11-25T00:00:00Z",
+  "verification": {
+    "status": "never-run"
+  }
+}

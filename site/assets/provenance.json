@@ -1,0 +1,540 @@
+{
+  "figma": "lTCFRrrKJb415s0nSxKE3B",
+  "desktop": "32:7455",
+  "mobile": "33:7805",
+  "assets": [
+    {
+      "file": "fce33.svg",
+      "width": 32.0,
+      "height": 32.0,
+      "nodes": [
+        {
+          "node": "32:7456",
+          "variable": "imgLogoMarkA"
+        },
+        {
+          "node": "32:8010",
+          "variable": "imgLogoMarkA"
+        },
+        {
+          "node": "32:8137",
+          "variable": "imgLogoMarkA"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgLogoMarkA"
+        }
+      ],
+      "sha256": "837ae85d8e3953b7f20b17cf84ac3f2889bea2b02dceff9980cf16c134fe7145"
+    },
+    {
+      "file": "0cb95.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:7456",
+          "variable": "imgIconGithub"
+        }
+      ],
+      "sha256": "d7a6a3a34fde6a129a51f640f6de11240aee585672bbab32418a3a6354e049ba"
+    },
+    {
+      "file": "06ea8.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7456",
+          "variable": "imgIcon"
+        }
+      ],
+      "sha256": "332b09c6b1783fcd3e76e17e0e528e7ea510709dd70f6127826d3934d50157eb"
+    },
+    {
+      "file": "0f8c4.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7456",
+          "variable": "imgIcon1"
+        }
+      ],
+      "sha256": "548787d8f0792f892556409babb3506601edf838d7fab0bf5f86a6d19adb3579"
+    },
+    {
+      "file": "9c11a.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:7486",
+          "variable": "imgIcon"
+        },
+        {
+          "node": "32:8122",
+          "variable": "imgIcon"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgIcon1"
+        }
+      ],
+      "sha256": "148a7258352777807656f1bd0d0c8d17566be4471e14c9c28651c4c7e3b35770"
+    },
+    {
+      "file": "aaac0.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:7486",
+          "variable": "imgIcon1"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgIcon2"
+        }
+      ],
+      "sha256": "0e73c8f3f2a038841ab0a6352edce0720fc9e26cc5ebb63170ef24d88d6daf94"
+    },
+    {
+      "file": "a08f2.svg",
+      "width": 6.0,
+      "height": 6.0,
+      "nodes": [
+        {
+          "node": "32:7504",
+          "variable": "imgDot"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgDot"
+        }
+      ],
+      "sha256": "cf50aa3311c748fc9dcffcb469e0f063b9c7dd124a8c1798a4085a0cfa689545"
+    },
+    {
+      "file": "a0d91.svg",
+      "width": 6.0,
+      "height": 6.0,
+      "nodes": [
+        {
+          "node": "32:7504",
+          "variable": "imgDot1"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgDot1"
+        }
+      ],
+      "sha256": "b52ac152e7b4e28a7c88973b79ac72c9ddcfbffa3b18e8f2fb01ee3e87a21ea8"
+    },
+    {
+      "file": "5ba71.svg",
+      "width": 36.0,
+      "height": 36.0,
+      "nodes": [
+        {
+          "node": "32:7504",
+          "variable": "imgClickMarker"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgClickMarker"
+        }
+      ],
+      "sha256": "53873774dcff77f8464417df4a8ceb9dff9c4014c39d3ee9e771696bb39407c4"
+    },
+    {
+      "file": "43d42.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7680",
+          "variable": "imgIconMonitor"
+        }
+      ],
+      "sha256": "73bf5abae1ed5e0dbd5ab533dee33719184efca238ed7c0895e5ca7e46b58e54"
+    },
+    {
+      "file": "2671b.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7680",
+          "variable": "imgIconServer"
+        }
+      ],
+      "sha256": "021c43ba9567edcc2cab94034bba9125e7221cfaf5e825ecb4f1a7de236b72d7"
+    },
+    {
+      "file": "316d1.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7680",
+          "variable": "imgIconCloud"
+        }
+      ],
+      "sha256": "ea584ae1ae2956a2d2378386ef2f5612f34112854e5278924d6f6077f4a9a03f"
+    },
+    {
+      "file": "aa14e.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7680",
+          "variable": "imgIconDatabase"
+        }
+      ],
+      "sha256": "14e2e2425c1fcb814f7772ef274ac6eb1e4694f130b56332bd6fe0ca4f5a4c3e"
+    },
+    {
+      "file": "04235.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7680",
+          "variable": "imgIconGithub"
+        }
+      ],
+      "sha256": "948920faf13f5e075d4152b68fc7cda8bd92ab0fbdcdebd2c59806392b48a2a3"
+    },
+    {
+      "file": "0343e.svg",
+      "width": 6.0,
+      "height": 6.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgDot"
+        }
+      ],
+      "sha256": "943452b21033fef2146aa5d2183262253ae672d2fcff14b1d8490462b609391c"
+    },
+    {
+      "file": "2678d.svg",
+      "width": 6.0,
+      "height": 6.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgDot1"
+        }
+      ],
+      "sha256": "cc009908bd03654beae5beb4de969460dc479a70317c176537c5705fc27cee63",
+      "unusedVariant": "Warning Badge dot; no visible landing instance has showDot enabled."
+    },
+    {
+      "file": "c0302.svg",
+      "width": 32.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgOnTrue"
+        }
+      ],
+      "sha256": "743513c1cd55553f61c810b465a6d52f06ffa320db743645899097ee3b27b1da"
+    },
+    {
+      "file": "52624.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgIconShield"
+        }
+      ],
+      "sha256": "e7a110a98fc011f96b05c7b628b1e19b6afc5cd0b3bacd5130df1a2d5ade2a7f"
+    },
+    {
+      "file": "fac58.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgIconLink"
+        }
+      ],
+      "sha256": "cf942814068691c5145f49e1dfad8933b3a901897aa7906fded629208e13a336"
+    },
+    {
+      "file": "d3e42.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgIconGithub"
+        }
+      ],
+      "sha256": "f74bfccd53a239de06dabfb4df2a5b0664ecef62b90a522f4e71d0a5ae0b3332"
+    },
+    {
+      "file": "7a702.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgIconCode"
+        }
+      ],
+      "sha256": "14b1ff67b1eb76b8fc95541b79f7d4b0b128c2272da2264766697b5683f6f5e3"
+    },
+    {
+      "file": "97bce.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7721",
+          "variable": "imgIconCopy"
+        }
+      ],
+      "sha256": "082b5e39ab7a67d3bb21af8c79f78486871ddc335a7867472ea2352df17639c3"
+    },
+    {
+      "file": "97e56.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:7937",
+          "variable": "imgIconCheck"
+        },
+        {
+          "node": "33:7805",
+          "variable": "imgIconCheck"
+        }
+      ],
+      "sha256": "f0c288fcb4bd34c6f43314cf350b30112ec2debf3d93411c2b07d48767031a83"
+    },
+    {
+      "file": "5f370.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "32:7937",
+          "variable": "imgIconTerminal"
+        }
+      ],
+      "sha256": "7cb8c4910c11cf8725ab7b287cc87854fa5a9ffb57556f28e12841e36271f6b0"
+    },
+    {
+      "file": "16f64.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7983",
+          "variable": "imgIconKeyboard"
+        }
+      ],
+      "sha256": "f2182637d30039c74af1f7fc673547a48ad134020c93ae38930ec9de642fdb95"
+    },
+    {
+      "file": "6ccc5.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7983",
+          "variable": "imgIconBlur"
+        }
+      ],
+      "sha256": "26f78e7caebb51300bd79b9d2233fc12d827cbbde7c053d4a71622e7c4272ae5"
+    },
+    {
+      "file": "6d2aa.svg",
+      "width": 20.0,
+      "height": 20.0,
+      "nodes": [
+        {
+          "node": "32:7983",
+          "variable": "imgIconLock"
+        }
+      ],
+      "sha256": "7a94598563bd41b911623dc37d936601d5fbff72642c4316cf2c9f0aeea2c24b"
+    },
+    {
+      "file": "3e359.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:8010",
+          "variable": "imgIconCheck"
+        }
+      ],
+      "sha256": "decfb4463dc02d1419e90fd10f9b6b3d94cb48d39f677f5310e4ab660b8cca06"
+    },
+    {
+      "file": "b2714.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "32:8122",
+          "variable": "imgIcon1"
+        }
+      ],
+      "sha256": "3d4914f8820901c06f66a9fc349bdb1e7b34e6e557f304a25fb1e41d9e48e100"
+    },
+    {
+      "file": "34833.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIcon"
+        }
+      ],
+      "sha256": "38f769914af2835ea9e339ede49066904df314a2ac3b970d3957bac39fb4ea46"
+    },
+    {
+      "file": "9524a.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconMonitor"
+        }
+      ],
+      "sha256": "d41b431bdbce56e2a5fee0a397f9261b653d9d060170b6aac899facd93c00b51"
+    },
+    {
+      "file": "32c66.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconServer"
+        }
+      ],
+      "sha256": "314b6e56f51de14682686d94131bc056e21ba1ac701ed305a908d45080122f75"
+    },
+    {
+      "file": "c4590.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconCloud"
+        }
+      ],
+      "sha256": "5c902f58e42507945735a62bde49e9310d058268118aaa53d83f8eace91f6b58"
+    },
+    {
+      "file": "26b62.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconDatabase"
+        }
+      ],
+      "sha256": "631c770892382542b26f5c8ac65e6d73ef53f1ecfc61ca829b29ca86a883a60b"
+    },
+    {
+      "file": "aad3f.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconGithub"
+        }
+      ],
+      "sha256": "19b694c8dd9c5131c839d616d2572644943bd88e6d02811759c087e74703c7c4"
+    },
+    {
+      "file": "50237.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconKeyboard"
+        }
+      ],
+      "sha256": "a8de792d8f37769f176bdd40d7c429fecd3232e4e4a60f4a3667945473e89f19"
+    },
+    {
+      "file": "98edf.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconBlur"
+        }
+      ],
+      "sha256": "e04c427db42c9031bd29c320fab729d3fc2b5677be57855bd9aa92e2b98b8936"
+    },
+    {
+      "file": "6cb16.svg",
+      "width": 18.0,
+      "height": 18.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconLock"
+        }
+      ],
+      "sha256": "9a098b828325badefa2ce871d2efdce6d98e779134cf3963e5419dd133bdce0f"
+    },
+    {
+      "file": "6f259.svg",
+      "width": 14.0,
+      "height": 14.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconCheck1"
+        }
+      ],
+      "sha256": "495f8accb6bcf44490240a09791c2696c3f105add09429b909734c9329873736"
+    },
+    {
+      "file": "0c440.svg",
+      "width": 16.0,
+      "height": 16.0,
+      "nodes": [
+        {
+          "node": "33:7805",
+          "variable": "imgIconChevronDown"
+        }
+      ],
+      "sha256": "2e72fe6d7c51a2afa92b222cf08b291d940590b22bdab1519e2dd3ee4e9af3f3"
+    },
+    {
+      "file": "ledgerly-billing.png",
+      "width": 1280,
+      "height": 800,
+      "nodes": [
+        {
+          "node": "13:407",
+          "variable": "Mock/Ledgerly billing"
+        }
+      ],
+      "sha256": "45f389d26df63ed95d490659a7a2684c2162cbb38f97b401ec99f5e82afab778"
+    }
+  ]
+}

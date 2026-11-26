@@ -244,6 +244,13 @@
       "line": 72,
       "tracking": -3.2
     },
+    "display-mobile": {
+      "family": "sans",
+      "weight": 600,
+      "size": 40,
+      "line": 44,
+      "tracking": -1.6
+    },
     "display-l": {
       "family": "sans",
       "weight": 600,

@@ -269,3 +269,60 @@ Local origins/tab numbers are canonicalized in trees; real command tests use
 their actual browser identities. Axe and overflow checks run at 400px and 320px.
 Regenerate with `STEPDOC_UPDATE_SCREENS=1 node apps/extension/scripts/verify-targets.mjs`
 after a Chrome build. Normal runs compare trees and write ignored evidence PNGs.
+
+
+## M17 L01/L02 public landing
+
+`m17-landing-desktop.png` and `m17-landing-mobile.png` are native Chromium
+captures at 1440×900 and 390×900 (full page), compared with L01 (`32:7455`)
+and L02 (`33:7805`). Full high-fidelity context was read for every desktop
+section and the mobile frame. The implemented page is native HTML/CSS/JS.
+Shared Button, Badge, StepPin and Logo CSS, semantic tokens, and licensed
+Geist/Geist Mono are reused. The 40px/44px mobile display style was added
+to the central token source; core HTML snapshots gain only that token.
+
+Desktop assertions cover all eleven section origins/heights: 72px navigation,
+516px hero, 572px preview, 292px hosting, 672px workflow, 568px agent section,
+380px privacy, 780px comparison, 288px FAQ, 312px CTA and 80px footer. Content
+is 1200px wide at x120. The hero uses 68px/72px type; the original billing
+mock sits at (148,770), 540×330, with the original 36px click marker.
+Mobile has 20px gutters and exactly the reference section heights:
+60/424/511/534/320/340/508/328/186/136px. Workflow is hidden as in L02.
+Checks also cover 320/768/1024px layouts.
+
+`site/assets/provenance.json` records unchanged Figma file/node slots,
+intrinsic dimensions and SHA-256 for all 41 downloads (40 SVGs and the
+1280×800 Ledgerly mock). The unused warning-Badge dot is an exported
+component variant; the visible Live badge uses its original success dot.
+Every visible asset callsite is checked for a nonempty local file, original
+effective geometry and painted pixels. The shared Logo keeps its original
+32px SVG transformed into its established 24px slot. Separate original
+18px mobile and 20px desktop icons retain their root dimensions.
+
+Functional adaptations: native keyboard dialog/FAQ and visible focus,
+canonical guide@1 title/locator fields in the code example, real core-exported
+HTML/JSON/Markdown/Playwright/SKILL downloads, source-install documentation
+instead of an unavailable store listing, and explicit planned MCP/passkey
+labels. The code sample is labelled an integration preview. The screenshot
+is fictional content, not a rebuilt Ledgerly app or a verified live replay.
+Navigation/cards retain the surface separation rule; reference preview
+shadows are omitted because repository tokens permit shadows only on
+floating layers. Shared accessible accent/status text and brighter code-panel
+badge/comments satisfy AA; colours otherwise use the original semantic
+tokens. A mobile-only line break preserves the CTA's reference wrapping.
+
+The generated root landing avoids the former redirect while the earlier
+`/site/` entry remains available. Asset links remain inside `/stepdoc/`.
+Four committed aria trees cover desktop/mobile/menu/expanded FAQ; axe also
+checks intermediate widths and mobile docs. Native keyboard tests cover
+Enter, Escape, focus return and actual export navigation. JS-disabled reading
+and all local resources/internal links pass without failed/external requests.
+
+Run `STEPDOC_UPDATE_SITE=1 pnpm website:browser` to regenerate the aria
+trees and the OG image from the actual local page. Normal checks compare
+trees and write ignored PNG/layout/asset evidence under
+`test-results/website/`. `pnpm website:verify` checks generated entries,
+shared CSS/tokens/fonts/schema and byte-for-byte production demo output.
+Local Lighthouse uses gzip text transport, verified against the existing
+Pages response, and requires 95+ performance/accessibility on both mobile
+and desktop. No workflow, deployment, repo setting or owner test is used.

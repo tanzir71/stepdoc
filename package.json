@@ -15,10 +15,12 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:a11y": "pnpm --filter @stepdoc/app test:a11y",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm website:verify && pnpm website:browser",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm website:verify && pnpm website:browser && pnpm website:lighthouse",
     "format": "prettier --write .",
-    "website:guide": "node --no-warnings --experimental-strip-types scripts/generate-demo-guide.ts",
-    "website:verify": "node scripts/verify-website.mjs",
+    "website:build": "node scripts/generate-website.mjs",
+    "website:guide": "pnpm --filter @stepdoc/core exec node scripts/website-demo.mjs",
+    "website:verify": "node scripts/verify-website.mjs && pnpm --filter @stepdoc/core exec node scripts/website-demo.mjs --check",
+    "website:lighthouse": "pnpm --filter @stepdoc/web exec node scripts/verify-public-website.mjs --lighthouse",
     "website:browser": "pnpm --filter @stepdoc/web exec node scripts/verify-public-website.mjs"
   },
   "devDependencies": {

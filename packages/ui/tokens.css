@@ -102,6 +102,8 @@
 --sd-tracking-avatar:0px;
 --sd-type-display-xl:600 68px/72px var(--sd-font-sans);
 --sd-tracking-display-xl:-3.2px;
+--sd-type-display-mobile:600 40px/44px var(--sd-font-sans);
+--sd-tracking-display-mobile:-1.6px;
 --sd-type-display-l:600 48px/52px var(--sd-font-sans);
 --sd-tracking-display-l:-2.2px;
 --sd-type-heading-l:600 30px/36px var(--sd-font-sans);
@@ -170,6 +172,7 @@ color-scheme:dark;
 .sd-type-brand{font:var(--sd-type-brand);letter-spacing:var(--sd-tracking-brand);}
 .sd-type-avatar{font:var(--sd-type-avatar);letter-spacing:var(--sd-tracking-avatar);}
 .sd-type-display-xl{font:var(--sd-type-display-xl);letter-spacing:var(--sd-tracking-display-xl);}
+.sd-type-display-mobile{font:var(--sd-type-display-mobile);letter-spacing:var(--sd-tracking-display-mobile);}
 .sd-type-display-l{font:var(--sd-type-display-l);letter-spacing:var(--sd-tracking-display-l);}
 .sd-type-heading-l{font:var(--sd-type-heading-l);letter-spacing:var(--sd-tracking-heading-l);}
 .sd-type-heading-m{font:var(--sd-type-heading-m);letter-spacing:var(--sd-tracking-heading-m);}

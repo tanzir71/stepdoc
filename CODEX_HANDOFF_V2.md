@@ -240,6 +240,7 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `redaction-continue` | W04 |
 | `pair-submit` / `capture-save` | E05 / E04 |
 | `capture-destination`, `capture-destination-browser`, `capture-destination-server`, `capture-destination-reset` | E01/E06 paired destination segments, E04 native Save to select and invalid-preference recovery |
+| `capture-voice-narration`, `capture-voice-language`, `capture-voice-cancel`, `capture-voice-toggle`, `capture-step-notes` | E01 opt-in local speech, language/setup cancellation, active microphone control and final redacted notes in E02/E04 |
 | `pair-server`, `pair-code-1` … `pair-code-6`, `pair-form` | E05 server address, six labelled code fields with paste/keyboard navigation and claim form |
 | `pair-cancel`, `pair-status`, `pair-test`, `pair-another` | Cancel request, live safe status, check stored connection and repair pairing |
 | `pair-local`, `pair-back`, `pair-devices`, `pair-retry` | Local capture navigation, server Devices & tokens link and private-store retry |

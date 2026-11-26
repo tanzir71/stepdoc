@@ -150,7 +150,10 @@ export function Editor({ initial }: { initial: Guide }) {
           <a className="btn" href={`/guides/${guide.id}`}>
             View guide
           </a>
-          <button className="btn" onClick={() => setGuide((value) => ({ ...value, is_public: !value.is_public }))}>
+          <button className="btn" onClick={() => {
+            setSaveState('saving')
+            setGuide((value) => ({ ...value, is_public: !value.is_public }))
+          }}>
             {guide.is_public ? 'Revoke public link' : 'Enable public link'}
           </button>
           {guide.is_public && (

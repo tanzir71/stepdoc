@@ -156,6 +156,7 @@ describe('capture review privacy and identity', () => {
     expect(capturePreferencesSchema.parse({})).toEqual({
       smartBlur: true,
       agentContext: true,
+      voiceNarration: false,
     })
     expect(() =>
       capturePreferencesSchema.parse({ typedValue: 'private' }),

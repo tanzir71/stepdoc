@@ -1,0 +1,32 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Local
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Save captures to This browser
+  - button "Pair server"
+  - button "Start capture"
+  - heading "Start capture" [level=2]
+  - paragraph: Records clicks, selects, navigation and page structure. Typed values are never recorded.
+  - text: Alt Shift S
+  - region "Capture options":
+    - heading "Smart blur" [level=3]
+    - paragraph: Pixelate detected text before screenshots are stored. Typed fields are always masked.
+    - switch "Smart blur" [checked]
+    - heading "Agent context Agent" [level=3]
+    - paragraph: Save role, accessible name, selectors and expected result per step.
+    - switch "Agent context" [checked]
+    - heading "Voice narration Beta" [level=3]
+    - paragraph: Transcribe what you say into step notes.
+    - switch "Voice narration"
+  - region "Recent captures":
+    - heading "Recent captures" [level=2]
+    - paragraph: No local guides yet. Start a capture to create one.
+- contentinfo:
+  - status: Ready to capture
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: app.html
+- complementary "Capture activity":
+  - group: Activity log

@@ -25,7 +25,7 @@ test('session API, list, search and 30-step viewer', async ({ page, request }) =
 test('editor autosaves text, adds sections, keyboard navigation and persists', async ({ page, request }) => {
   const id = await seed(request, 3)
   await page.goto(`/guides/${id}/edit`)
-  // The first autosave also compiles the PATCH route in the local dev server.
+  // Wait for the actual persisted autosave before reloading.
   const autosaved = page.waitForResponse(
     (response) => response.url().endsWith(`/api/guides/${id}`) && response.request().method() === 'PATCH' && response.ok(),
   )
@@ -50,7 +50,27 @@ test('share can be enabled and revoked immediately', async ({ page, request }) =
   await page.goto(link)
   await expect(page.getByRole('heading', { name: 'Browser onboarding' })).toBeVisible()
   await page.goto(`/guides/${id}/edit`)
-  await page.getByRole('button', { name: 'Revoke public link' }).click()
+  // Hold revocation at the transport boundary. Saved must never describe the
+  // optimistic toggle while its debounced write is still pending.
+  let releaseRevoke!: () => void
+  const held = new Promise<void>((resolve) => { releaseRevoke = resolve })
+  await page.route(`**/api/guides/${id}`, async (route) => {
+    if (route.request().method() === 'PATCH') await held
+    await route.continue()
+  })
+  const revoking = page.waitForRequest((request) =>
+    request.url().endsWith(`/api/guides/${id}`) && request.method() === 'PATCH' && request.postDataJSON().isPublic === false,
+  )
+  const revoked = page.waitForResponse((response) =>
+    response.url().endsWith(`/api/guides/${id}`) && response.request().method() === 'PATCH' && response.ok(),
+  )
+  try {
+    await page.getByRole('button', { name: 'Revoke public link' }).click()
+    await expect(page.getByText('Saving...', { exact: true })).toBeVisible()
+    await revoking
+    await expect(page.getByText('Saved', { exact: true })).not.toBeVisible()
+  } finally { releaseRevoke() }
+  await revoked
   await expect(page.getByText('Saved')).toBeVisible({ timeout: 5000 })
   await page.goto(link)
   await expect(page.getByRole('heading', { name: 'Guide not found' })).toBeVisible()

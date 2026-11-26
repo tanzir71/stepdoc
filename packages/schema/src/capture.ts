@@ -38,7 +38,28 @@ export type CapturePillView = z.output<typeof capturePillViewSchema>
 export const capturePreferencesSchema = z.strictObject({
   smartBlur: z.boolean().default(true),
   agentContext: z.boolean().default(true),
+  voiceNarration: z.boolean().default(false),
 })
+// Private extension controls only. Final, client-redacted text uses Step.notes.
+export const narrationCommandSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('NARRATION_CLAIM'),
+    owner: z.string().uuid(),
+    sessionId: z.string().uuid(),
+  }),
+  z.strictObject({
+    type: z.literal('NARRATION_RELEASE'),
+    owner: z.string().uuid(),
+  }),
+  z.strictObject({
+    type: z.literal('NARRATION_APPEND'),
+    owner: z.string().uuid(),
+    sessionId: z.string().uuid(),
+    stepId: z.string().min(1).max(200),
+    sequence: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    text: z.string().min(1).max(4000),
+  }),
+])
 export const reviewEditSchema = z.discriminatedUnion('operation', [
   z.strictObject({
     operation: z.literal('title'),

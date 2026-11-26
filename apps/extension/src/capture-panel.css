@@ -161,6 +161,30 @@ body {
   margin-top: var(--sd-space-1);
   flex-shrink: 0;
 }
+.capture-voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-2);
+  padding: var(--sd-space-3);
+  background: var(--sd-bg-raised);
+  border-radius: var(--sd-radius-md);
+  color: var(--sd-text-secondary);
+}
+.capture-options > .capture-voice-option {
+  align-items: center;
+  gap: 10px;
+}
+.capture-voice-option h3 {
+  margin-bottom: 2px;
+}
+.capture-voice-option .sd-toggle {
+  margin-top: 0;
+}
+.capture-narration-note {
+  margin-top: var(--sd-space-2);
+  white-space: pre-wrap;
+  color: var(--sd-text-secondary);
+}
 .capture-recent {
   display: flex;
   flex-direction: column;

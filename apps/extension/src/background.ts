@@ -8,6 +8,7 @@ import {
   redactionChangeSchema,
   capturePillControlSchema,
   capturePillViewSchema,
+  narrationCommandSchema,
   FRAME_PROBE,
 } from '@stepdoc/schema/capture'
 import {
@@ -22,6 +23,7 @@ import type { GuideRun } from './guide-run'
 import type { CapturedEvent } from './capture-event'
 import tokens from '../../../docs/v2/design-tokens.json'
 import { startClock, stopClock } from './capture-clock'
+import { narrationText } from './narration-text'
 import { pairingCommandSchema } from '@stepdoc/schema/pairing'
 import { PairingController } from './pairing-controller'
 import { IndexedDbConnectionVault } from './connection-vault'
@@ -164,6 +166,9 @@ export function startBackground() {
   let producerStopped = false
   let commands = Promise.resolve()
   let privateRunning = false
+  let narrationOwner:
+    | { owner: string; sessionId: string; expires: number; sequence: number }
+    | undefined
   let legacyStarting = 0
   let activeSave: { sessionId: string; controller: AbortController } | undefined
   const vault = new IndexedDbConnectionVault()
@@ -689,6 +694,9 @@ export function startBackground() {
       'GUIDE_CLEAR',
       'CAPTURE_PILL_CONTROL',
       'OPEN_CAPTURE_REVIEW',
+      'NARRATION_CLAIM',
+      'NARRATION_RELEASE',
+      'NARRATION_APPEND',
     ]
     const run = async () => {
       await recovered
@@ -758,7 +766,74 @@ export function startBackground() {
           }
         }
       }
-      if (message.type === 'SET_CAPTURE_DESTINATION') {
+      if (message.type.startsWith('NARRATION_')) {
+        const command = narrationCommandSchema.parse(message)
+        if (command.type === 'NARRATION_RELEASE') {
+          if (narrationOwner?.owner === command.owner)
+            narrationOwner = undefined
+          respond({ ok: true })
+          return
+        }
+        await mutate(async () => {
+          const state = await browser.storage.local.get<LegacyStorage>([
+            'recording',
+            'captureSessionId',
+            'captureReview',
+            'capturedSteps',
+          ])
+          if (
+            !state.recording ||
+            state.captureReview?.phase !== 'recording' ||
+            !state.captureReview.preferences?.voiceNarration ||
+            state.captureSessionId !== command.sessionId
+          )
+            throw new Error('Narration inactive')
+          if (command.type === 'NARRATION_CLAIM') {
+            if (
+              narrationOwner &&
+              narrationOwner.expires > Date.now() &&
+              narrationOwner.sessionId === command.sessionId &&
+              narrationOwner.owner !== command.owner
+            )
+              throw new Error('Narration already active')
+            narrationOwner = {
+              owner: command.owner,
+              sessionId: command.sessionId,
+              expires: Date.now() + 8000,
+              sequence:
+                narrationOwner?.owner === command.owner &&
+                narrationOwner.sessionId === command.sessionId
+                  ? narrationOwner.sequence
+                  : 0,
+            }
+          } else {
+            if (
+              !narrationOwner ||
+              narrationOwner.owner !== command.owner ||
+              narrationOwner.sessionId !== command.sessionId ||
+              narrationOwner.expires <= Date.now()
+            )
+              throw new Error('Narration unavailable')
+            if (command.sequence <= narrationOwner.sequence) return
+            const step = state.capturedSteps?.find(
+              (step) => step.id === command.stepId,
+            )
+            const text = narrationText(command.text)
+            if (
+              !step ||
+              !text ||
+              (step.notes?.length ?? 0) + text.length + 1 > 12000
+            )
+              throw new Error('Narration unavailable')
+            step.notes = step.notes ? `${step.notes}\n${text}` : text
+            await browser.storage.local.set({
+              capturedSteps: state.capturedSteps,
+            })
+            narrationOwner.sequence = command.sequence
+          }
+        })
+        respond({ ok: true })
+      } else if (message.type === 'SET_CAPTURE_DESTINATION') {
         const parsed = captureDestinationCommandSchema.safeParse(message)
         if (!parsed.success) throw new DestinationFailure('forbidden')
         const command = parsed.data

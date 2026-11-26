@@ -40,9 +40,20 @@ try {
   browser = await chromium.launch()
   const page = await browser.newPage()
   const failures = []
+  const cancelledImages = new Set()
   page.on('pageerror', () => failures.push('Browser runtime error'))
   page.on('requestfailed', (request) => {
     const url = new URL(request.url())
+    // A route change or OPFS thumbnail replacing its placeholder may cancel an
+    // image fetch. Check those assets independently below; never hide a bad URL.
+    if (
+      url.origin === new URL(base).origin &&
+      request.resourceType() === 'image' &&
+      request.failure()?.errorText === 'net::ERR_ABORTED'
+    ) {
+      cancelledImages.add(url.href)
+      return
+    }
     const resource =
       url.origin === new URL(base).origin ? url.pathname : url.protocol
     failures.push(
@@ -131,6 +142,23 @@ try {
   await page.locator('[data-sd="library-import-copy"]').click()
   await page.locator('[data-sd="library-guide-open"]').nth(1).waitFor()
   assert.equal(await page.locator('[data-sd="library-guide-open"]').count(), 2)
+  await page.waitForFunction(() =>
+    [...document.images].every(
+      (image) => image.complete && image.naturalWidth > 0,
+    ),
+  )
+  for (const url of cancelledImages) {
+    const response = await page.request.get(url)
+    assert(response.ok(), 'Cancelled image URL is unavailable')
+    assert(
+      response.headers()['content-type']?.startsWith('image/'),
+      'Cancelled image URL did not return an image',
+    )
+    assert(
+      (await response.body()).length > 0,
+      'Cancelled image URL returned no bytes',
+    )
+  }
   await page.evaluate(() => document.fonts.ready)
   assert(
     await page.evaluate(() => document.fonts.check('14px Geist')),

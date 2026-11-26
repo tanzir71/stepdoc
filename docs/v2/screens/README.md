@@ -126,9 +126,9 @@ Text on raised/dark surfaces uses the existing secondary-text token for AA
 contrast; the Smart Blur notice keeps a green shield and a readable text token.
 Main lists scroll inside the panel while all rows remain in the accessibility
 tree. Footer status, activity log, native confirmations and discard are functional
-additions. Paired destinations/E05, voice narration, cleanup suggestions, the
-complete fallback evidence remain open in M11; the E02 pill/timer is documented below;
-no fictional host, voice switch or cleanup result is presented as connected.
+additions. Pairing, destinations and fallback evidence are documented below.
+The later narration unit adds the real opt-in voice switch; cleanup suggestions
+remain open in M11. The E02 pill/timer is documented below.
 
 After a Chrome build, regenerate the five evidence captures and aria snapshots:
 
@@ -373,3 +373,30 @@ shared CSS/tokens/fonts/schema and byte-for-byte production demo output.
 Local Lighthouse uses gzip text transport, verified against the existing
 Pages response, and requires 95+ performance/accessibility on both mobile
 and desktop. No workflow, deployment, repo setting or owner test is used.
+
+## M11 on-device narration
+
+`e01-voice-light.png` adds the reference E01 (`26:5543`) Voice narration Beta row:
+existing Badge and 32×18 Toggle, centered in its text row, default off. The design
+copy is “Transcribe what you say into step notes.” No new vector/image is needed:
+original Logo, record, settings, library and switch assets stay at their existing
+intrinsic sizes/callsites. E06 (`27:6897`) keeps its compact two-toggle layout.
+The existing idle/source/paired-idle evidence includes the new E01 row.
+
+`e04-narration-light.png` and `e04-narration-dark.png` show real final redacted
+notes in the existing E04 rows, using the secondary text token. Recording/review
+notes, local speech language/setup/status controls and unavailable-state copy are
+functional additions. Native assertions retain the 400px panel, 52px header,
+16px inset, Geist and 32×18 switch; three aria trees plus light/dark/narrow axe
+cover the new states. The speech hardware/service boundary is simulated; capture,
+runtime guards, native persistence and the downloaded JSON are production code.
+The controls never request cloud transcription, and the checks make no external
+request. Browser/language support remains an explicit beta capability.
+
+Regenerate this evidence after building Chrome:
+
+```powershell
+$env:STEPDOC_UPDATE_SCREENS = '1'
+pnpm --filter @stepdoc/extension exec node scripts/verify-narration.mjs
+Remove-Item Env:STEPDOC_UPDATE_SCREENS
+```

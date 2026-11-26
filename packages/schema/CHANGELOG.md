@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11's opt-in, on-device narration stores only final client-redacted text in the
+existing `Step.notes` field. Private capture preferences gain `voiceNarration`
+(default `false`), and `capture` exports strict private owner/session/sequence
+commands. Older preferences read as narration off; no guide fields, API endpoints,
+database layout or wire identifiers change. No guide migration or package/schema
+version bump is needed. No audio or interim speech is persisted or exported.
+
 M11's input-order correction emits an existing reference-only fill step on the
 first trusted edit and coalesces the remaining typing run. Result observations
 are bounded by subsequent actions, and stale frame guesses are ignored.

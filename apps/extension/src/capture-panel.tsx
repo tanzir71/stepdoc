@@ -35,6 +35,12 @@ import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
 import { CaptureTime } from './capture-time'
+import {
+  Narrator,
+  localSpeech,
+  narrationMessages,
+  type NarrationStatus,
+} from './narration'
 import { PairingPanel } from './pairing-panel'
 import { CaptureTargetPicker, targetMessages } from './capture-target-picker'
 import {
@@ -137,6 +143,18 @@ function CapturePanel() {
   const [title, setTitle] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [confirm, setConfirm] = useState<'discard' | 'merge' | null>(null)
+  const [voiceStatus, setVoiceStatus] = useState<NarrationStatus>('off')
+  const [voiceLanguage, setVoiceLanguage] = useState(
+    navigator.language || 'en-US',
+  )
+  const narrator = useRef<Narrator | null>(null)
+  if (!narrator.current)
+    narrator.current = new Narrator(
+      localSpeech(),
+      (command) => browser.runtime.sendMessage(command),
+      setVoiceStatus,
+    )
+  const voiceSupported = !!localSpeech()
   const review = state.captureReview
   const phase = state.captureError
     ? 'review'
@@ -171,7 +189,12 @@ function CapturePanel() {
   const transition = ['starting', 'pausing', 'stopping', 'saving'].includes(
     phase,
   )
-  const disabled = !ready || busy || transition || !!pairState?.pending
+  const disabled =
+    !ready ||
+    busy ||
+    transition ||
+    !!pairState?.pending ||
+    (phase === 'idle' && voiceStatus === 'preparing')
   const announce = (text: string) => {
     const current = latest.current
     setNotice({
@@ -183,6 +206,31 @@ function CapturePanel() {
     })
     setActivity((items) => [...items.slice(-99), text])
   }
+  useEffect(() => {
+    narrator.current!.sync({
+      phase,
+      enabled: preferences.voiceNarration,
+      sessionId: state.captureSessionId,
+      stepId: steps.at(-1)?.id,
+    })
+    if (!preferences.voiceNarration) narrator.current!.cancel()
+  }, [
+    phase,
+    preferences.voiceNarration,
+    state.captureSessionId,
+    steps.at(-1)?.id,
+  ])
+  useEffect(() => {
+    if (voiceStatus !== 'off') announce(narrationMessages[voiceStatus])
+  }, [voiceStatus])
+  useEffect(() => {
+    const stop = () => narrator.current!.cancel()
+    window.addEventListener('pagehide', stop)
+    return () => {
+      window.removeEventListener('pagehide', stop)
+      stop()
+    }
+  }, [])
   async function refresh() {
     const n = ++refreshNumber.current
     const next: LegacyStorage = await browser.runtime.sendMessage({
@@ -359,7 +407,7 @@ function CapturePanel() {
       await invoke(type, extra)
       if (compact && type === 'STOP_REVIEW') await invoke('OPEN_CAPTURE_REVIEW')
       announce(message)
-      if (fullTab && type === 'START_CAPTURE') {
+      if (fullTab && type === 'START_CAPTURE' && !preferences.voiceNarration) {
         try {
           const current = await browser.tabs.getCurrent()
           if (!current?.id) throw new Error()
@@ -384,6 +432,45 @@ function CapturePanel() {
   }
   const edit = (edit: ReviewEdit) =>
     command('EDIT_REVIEW', 'Review updated.', { edit })
+  async function startCapture() {
+    if (compact && preferences.voiceNarration && voiceSupported) {
+      setBusy(true)
+      try {
+        const reply: { ok: boolean; state?: unknown } =
+          await browser.runtime.sendMessage({ type: 'CAPTURE_TARGETS' })
+        const parsed = captureTargetListSchema.safeParse(reply.state)
+        if (!reply.ok || !parsed.success) throw new Error()
+        const url = new URL(
+          browser.runtime.getURL('/popup.html') + '?surface=tab&view=idle',
+        )
+        writeTargetChoice(url, {
+          target: parsed.data.suggested,
+          explicit: true,
+          invalid: false,
+        })
+        await browser.tabs.create({ url: url.href })
+        announce(
+          'Continue in the controls tab to capture with narration. Keep that tab open.',
+        )
+      } catch {
+        announce('Narration controls could not open. Retry opening them.')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+    if (
+      preferences.voiceNarration &&
+      voiceSupported &&
+      !(await narrator.current!.prepare(voiceLanguage))
+    )
+      return
+    await command(
+      'START_CAPTURE',
+      'Capture started.',
+      fullTab ? { target: targetChoice.target } : {},
+    )
+  }
   async function save(openEditor: boolean, keepLocal = false) {
     setBusy(true)
     try {
@@ -595,11 +682,7 @@ function CapturePanel() {
                 }
                 onClick={() => {
                   setNotice(null)
-                  void command(
-                    'START_CAPTURE',
-                    'Capture started.',
-                    fullTab ? { target: targetChoice.target } : {},
-                  )
+                  void startCapture()
                 }}
               >
                 <Icon name={compact ? 'popup-record' : 'capture-record'} />
@@ -679,7 +762,73 @@ function CapturePanel() {
                   }
                 />
               </div>
+              {!compact ? (
+                <div className="capture-voice-option">
+                  <div>
+                    <h3>
+                      Voice narration{' '}
+                      {!compact ? <Badge dot={false}>Beta</Badge> : null}
+                    </h3>
+                    {!compact ? (
+                      <p id="voice-help">
+                        Transcribe what you say into step notes.
+                        {!voiceSupported
+                          ? ' On-device recognition is unavailable in this browser.'
+                          : ''}
+                      </p>
+                    ) : null}
+                  </div>
+                  <Toggle
+                    on={preferences.voiceNarration}
+                    aria-label="Voice narration"
+                    aria-describedby={!compact ? 'voice-help' : undefined}
+                    data-sd="capture-voice-narration"
+                    disabled={
+                      disabled ||
+                      (!voiceSupported && !preferences.voiceNarration)
+                    }
+                    onChange={(on) =>
+                      void command(
+                        'SET_CAPTURE_PREFERENCES',
+                        'Voice narration preference updated.',
+                        {
+                          preferences: { ...preferences, voiceNarration: on },
+                        },
+                      )
+                    }
+                  />
+                </div>
+              ) : null}
             </section>
+            {preferences.voiceNarration && voiceSupported && !compact ? (
+              <section
+                className="capture-voice"
+                aria-label="Narration settings"
+              >
+                <Input
+                  label="Narration language"
+                  value={voiceLanguage}
+                  maxLength={35}
+                  data-sd="capture-voice-language"
+                  disabled={disabled}
+                  onChange={(event) => setVoiceLanguage(event.target.value)}
+                />
+                <p>
+                  Use a language tag such as en-US. Starting may download its
+                  language pack. Audio stays on this device. Keep these controls
+                  open while narrating.
+                </p>
+              </section>
+            ) : null}
+            {voiceStatus === 'preparing' ? (
+              <Button
+                kind="secondary"
+                data-sd="capture-voice-cancel"
+                onClick={() => narrator.current!.cancel(true)}
+              >
+                Cancel narration setup
+              </Button>
+            ) : null}
             <section className="capture-recent" aria-labelledby="recent-title">
               <div className="capture-section-label">
                 <h2 id="recent-title">
@@ -730,6 +879,44 @@ function CapturePanel() {
         ) : null}
         {recording || phase === 'pausing' || phase === 'stopping' ? (
           <>
+            {preferences.voiceNarration ? (
+              <section className="capture-voice" aria-label="Voice narration">
+                <p>
+                  {compact && voiceSupported
+                    ? 'Narration runs in the controls tab. Keep that tab open.'
+                    : voiceSupported
+                      ? narrationMessages[voiceStatus]
+                      : narrationMessages.unsupported}
+                </p>
+                {voiceSupported && !compact ? (
+                  <Button
+                    kind="secondary"
+                    size="s"
+                    data-sd="capture-voice-toggle"
+                    disabled={phase !== 'recording'}
+                    onClick={() =>
+                      [
+                        'preparing',
+                        'listening',
+                        'ready',
+                        'added',
+                        'skipped',
+                      ].includes(voiceStatus)
+                        ? narrator.current!.cancel(true)
+                        : void narrator.current!.prepare(voiceLanguage)
+                    }
+                  >
+                    {voiceStatus === 'preparing'
+                      ? 'Cancel narration setup'
+                      : ['listening', 'ready', 'added', 'skipped'].includes(
+                            voiceStatus,
+                          )
+                        ? 'Stop narration'
+                        : 'Start narration'}
+                  </Button>
+                ) : null}
+              </section>
+            ) : null}
             <aside className="capture-privacy" aria-label="Capture privacy">
               <Icon name="export-shield" />
               <span>
@@ -768,6 +955,14 @@ function CapturePanel() {
                       {step.action ?? step.type}
                       {step.target?.role ? ` · ${step.target.role}` : ''}
                     </small>
+                    {step.notes ? (
+                      <p
+                        className="capture-narration-note"
+                        data-sd="capture-step-notes"
+                      >
+                        {step.notes}
+                      </p>
+                    ) : null}
                   </span>
                 </li>
               ))}
@@ -895,6 +1090,14 @@ function CapturePanel() {
                             ? ` · ${step.target.role}`
                             : ''}
                     </small>
+                    {step.notes ? (
+                      <p
+                        className="capture-narration-note"
+                        data-sd="capture-step-notes"
+                      >
+                        {step.notes}
+                      </p>
+                    ) : null}
                   </span>
                   {step.lowConfidence ? (
                     <Badge tone="warning" dot={false}>

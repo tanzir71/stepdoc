@@ -335,7 +335,7 @@ review can suggest its previous source while that binding remains valid.
 `source`, `origin` and `browser-session` preserve a selection through pairing and
 reload. `source=none` preserves an explicit empty choice. Start resolves the exact
 tab, focuses/restores its actual window, rechecks identity/readiness, then primes
-capture. A successful full-tab start closes its controls tab, leaving the in-page
+capture. A successful full-tab start without narration closes its controls tab, leaving the in-page
 recording pill available. A failed close reports the running capture accurately.
 Closed, loading, changed or expired selections require another explicit choice;
 they never silently select another page. Private commands reject content senders.
@@ -355,6 +355,41 @@ origin/session/closed-tab failures, failed controls closure, browser restart wit
 the same profile, retained processed images and light/dark/narrow aria/axe.
 Unit tests also cover tab moves, loading state and identity changes during focus.
 The actual action-popup suite verifies source handoff to E05.
+
+## Voice narration (beta)
+
+E01 offers an off-by-default Voice narration switch and the designed Beta badge.
+Speech is transcribed into the current captured step's existing notes. Speak after
+a step appears; an utterance stays assigned to the step where speaking began.
+Final notes appear in recording/review and remain editable in the SPA. Merge,
+local/server saves and existing note-aware exports retain them.
+
+The controls require `SpeechRecognition` with `processLocally`, `install` and
+`available`. Starting explicitly prepares the selected BCP 47 language (default:
+browser language); its pack may download, and microphone permission is handled by
+the browser. Every recognition instance requires `processLocally = true`.
+There is no remote fallback, audio recording, audio upload or interim-result
+storage. Email/card/token and other enabled built-in detectors redact final text
+before runtime messaging, then the background validates/redacts it again before
+storage. Unsupported browsers/languages have an explicit beta limitation while
+ordinary capture remains usable. See the [on-device API specification](https://wicg.github.io/speech-api/).
+
+Keep the controls open while narrating. Pause, stop, close and session changes
+abort recognition and reject late results. Reload preserves the capture but
+requires Start narration to rearm the microphone. A private expiring owner lease
+prevents simultaneous control documents from writing speech; sequence numbers
+deduplicate final acknowledgements. Setup cancellation and microphone/model errors
+retain the capture. Unfinished speech is discarded at a pause/stop boundary.
+E06 retains its designed compact layout: when narration was enabled in full
+controls, Start opens a source-bound controls tab, which stays open after start.
+
+`verify-narration.mjs` runs the real built extension against a local page, with
+only the speech API replaced at its hardware/service boundary. It verifies final
+redacted runtime messages and stored notes, source-world denial with a valid
+owner/session, duplicate/stale/unknown-step rejection, pause/resume/reload,
+model-failure/cancel recovery, review, native local save/editor/JSON download,
+compact-to-tab handoff, close retention and light/dark/narrow aria/axe. No real
+microphone, language download or live speech service is used by verification.
 
 ## Frame graph transitions
 

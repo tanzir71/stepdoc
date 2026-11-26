@@ -158,6 +158,7 @@ try {
     ),
     viewport: { width: 1440, height: 900 },
     args: [
+      '--disable-gpu',
       `--disable-extensions-except=${extensionDir}`,
       `--load-extension=${extensionDir}`,
     ],

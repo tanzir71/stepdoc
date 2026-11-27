@@ -1,5 +1,18 @@
 import { defineConfig } from 'vitest/config'
 export default defineConfig({
+  base: './',
+  plugins: [
+    {
+      name: 'stepdoc-root-html-entry',
+      // Bundled modules/workers stay relative to themselves; root HTML also works
+      // after a static-host deep-link reload. Server targets prefix these entries.
+      transformIndexHtml: {
+        order: 'post',
+        handler: (html, context) =>
+          context.server ? html : html.replace(/((?:src|href)=")\.\//g, '$1/'),
+      },
+    },
+  ],
   optimizeDeps: { include: ['@stepdoc/core > docx'] },
   worker: { format: 'es' },
   server: {

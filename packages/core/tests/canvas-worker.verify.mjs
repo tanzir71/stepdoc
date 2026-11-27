@@ -24,8 +24,8 @@ const bundle = await build({
       },
       load(id) {
         if (id === `\0${entry}`)
-          return `import * as core from ${JSON.stringify(core)}; import { composite } from ${JSON.stringify(adapter)}; import { verifyCanvas } from ${JSON.stringify(fixture)};
-      self.onmessage = async () => { try { self.postMessage({ checks: await verifyCanvas(core, composite) }); } catch (error) { self.postMessage({ failure: error.message }); } };`
+          return `import * as core from ${JSON.stringify(core)}; import { composite, compositeFrame } from ${JSON.stringify(adapter)}; import { verifyCanvas } from ${JSON.stringify(fixture)};
+      self.onmessage = async () => { try { self.postMessage({ checks: await verifyCanvas(core, composite, compositeFrame) }); } catch (error) { self.postMessage({ failure: error.message }); } };`
       },
     },
   ],

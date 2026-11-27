@@ -609,7 +609,9 @@ try {
   await expect(panel).toHaveURL(/view=idle/)
   await hook('capture-pair').click()
   await expect(panel).toHaveURL(/view=pair/)
-  await hook('pair-back').click()
+  await hook('pair-back').focus()
+  await expect(hook('pair-back')).toBeFocused()
+  await hook('pair-back').press('Enter')
   await expect(panel).toHaveURL(/view=idle/)
 
   // The compact entry opens a private full-tab E05 instead of squeezing the form.

@@ -17,6 +17,7 @@ export async function compositeFrame(
   const image = await flattenImage(input, {
     sensitiveRects: masks.map((item) => item.rect),
     devicePixelRatio: dpr,
+    preview: CAPTURE_PREVIEW,
   })
   const redactions: Redaction[] = []
   for (const mask of masks) {
@@ -25,7 +26,7 @@ export async function compositeFrame(
   }
   return {
     dataUrl: await blobToDataUrl(image.blob),
-    preview: await previewImage(image.blob).catch(() => undefined),
+    preview: image.preview,
     width: image.width,
     height: image.height,
     redactions,

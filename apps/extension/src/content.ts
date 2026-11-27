@@ -97,6 +97,7 @@ export function startContent() {
   let sessionId = ''
   let pillView: unknown
   let previousUrl = ''
+  let stateSequence = 0
   let editedInputs = new WeakSet<Element>()
   let observation:
     | { element: Element; kind: Step['action']; finish: () => void }
@@ -180,6 +181,10 @@ export function startContent() {
     paused = false,
     view?: unknown,
   ) => {
+    // Same-session broadcasts can arrive between pushState and the URL poll.
+    // Only starting/resuming establishes a baseline; refreshes cannot consume it.
+    if (nonce !== sessionId || (active && !recording))
+      previousUrl = localDocumentUrl(document) ?? ''
     if (nonce !== sessionId || !active || mode !== blurMode) {
       observation = undefined
       editedInputs = new WeakSet()
@@ -328,6 +333,7 @@ export function startContent() {
       return
     }
     if (message.type === 'STATE') {
+      stateSequence++
       installListeners()
       stateChanged(
         !!message.recording && !message.producerStopped,
@@ -337,7 +343,6 @@ export function startContent() {
         !!message.paused,
         message.capturePill,
       )
-      previousUrl = localDocumentUrl(document) ?? ''
       respond({ ok: true })
     }
     if (message.type === 'CAPTURE_PAGE') {
@@ -348,9 +353,12 @@ export function startContent() {
       }
     }
   })
+  const initialStateSequence = stateSequence
   void browser.runtime
     .sendMessage({ type: 'CONTENT_STATE' })
     .then((state) => {
+      // A late initial read cannot undo a newer Start, Pause or Cancel broadcast.
+      if (initialStateSequence !== stateSequence) return
       stateChanged(
         !!state.recording && !state.producerStopped,
         state.captureSessionId ?? '',
@@ -359,7 +367,6 @@ export function startContent() {
         !!state.paused,
         state.capturePill,
       )
-      previousUrl = localDocumentUrl(document) ?? ''
     })
     .catch(() => {})
   void browser.runtime.sendMessage({ type: 'GUIDE_READY' }).catch(() => {})

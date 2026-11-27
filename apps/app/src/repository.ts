@@ -2,14 +2,37 @@ import {
   IndexedDbAdapter,
   type GuideQuery,
   type GuideSummary,
+  type StorageAdapter,
 } from '@stepdoc/storage'
-let pending: Promise<IndexedDbAdapter> | undefined
+import { HttpAdapter } from '@stepdoc/storage/http'
+import { hostedConfig } from './hosted-config'
+let pending: Promise<StorageAdapter> | undefined
+let sessionEpoch = 0
+/** Ignore authorization failures from requests issued before a cookie rotation. */
+export function renewStorageSession() {
+  sessionEpoch++
+}
 export function getStorage() {
-  if (!pending)
-    pending = IndexedDbAdapter.open().catch((error) => {
+  if (!pending) {
+    const config = hostedConfig()
+    pending = (
+      config
+        ? HttpAdapter.open(config.api, {
+            auth: { kind: 'session' },
+            fetch: async (...args) => {
+              const epoch = sessionEpoch
+              const response = await fetch(...args)
+              if (response.status === 401 && epoch === sessionEpoch)
+                window.dispatchEvent(new Event('stepdoc:unauthorized'))
+              return response
+            },
+          })
+        : IndexedDbAdapter.open()
+    ).catch((error) => {
       pending = undefined
       throw error
     })
+  }
   return pending
 }
 export function resetStorage() {

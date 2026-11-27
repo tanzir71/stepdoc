@@ -1,0 +1,15 @@
+- banner:
+  - navigation "StepDoc": stepdoc
+  - text: Your workspace
+- main:
+  - heading "Sign in to your workspace" [level=1]
+  - paragraph: Use a passkey, or a one-time code if your passkey is unavailable.
+  - navigation "Sign-in method":
+    - button "Passkey" [pressed]
+    - button "Email code"
+    - button "Recovery code"
+  - paragraph: Use the passkey saved on this device or another device you trust.
+  - button "Sign in with a passkey"
+  - status
+  - complementary "Sign-in help": Your saved guides stay on this server. A sign-in code can be used once.
+- contentinfo: Guides on your own server.

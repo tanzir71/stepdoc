@@ -114,7 +114,10 @@ try {
           }
         }),
         panel: await panel.evaluate(() => ({
-          startedNotice: document.body.textContent.includes('Capture started.'),
+          startedNotice: [...document.querySelectorAll('[role=status]')].some(
+            (element) => element.textContent?.includes('Capture started.'),
+          ),
+          phase: document.querySelector('[data-phase]')?.dataset.phase,
         })),
       })
       throw error

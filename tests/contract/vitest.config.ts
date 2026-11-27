@@ -9,6 +9,7 @@ export default defineConfig({
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.contract.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.auth.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.capture.test.ts`,
+      `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.hosted.test.ts`,
     ],
     fileParallelism: false,
     // Contract cases include durable disk writes and process restart, not UI latency measurements.

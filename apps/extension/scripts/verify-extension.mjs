@@ -357,20 +357,75 @@ try {
     (url) => chrome.storage.local.set({ appUrl: url }),
     base,
   )
-  await panel.evaluate(
-    (url) => chrome.runtime.sendMessage({ type: 'START', url }),
-    fixture.url(),
+  // START chooses the active source tab, not the URL in the legacy message.
+  // Focus that source explicitly after the preceding editor/download checks.
+  await fixture.bringToFront()
+  assert.deepEqual(
+    await panel.evaluate(
+      (url) => chrome.runtime.sendMessage({ type: 'START', url }),
+      fixture.url(),
+    ),
+    { ok: true },
+  )
+  assert.deepEqual(
+    await worker.evaluate(async () => {
+      const state = await chrome.storage.local.get([
+        'recording',
+        'captureReview',
+        'captureTabId',
+        'captureError',
+      ])
+      const [active] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      })
+      return {
+        recording: state.recording,
+        phase: state.captureReview?.phase,
+        activeSource: state.captureTabId === active?.id,
+        failed: !!state.captureError,
+      }
+    }),
+    {
+      recording: true,
+      phase: 'recording',
+      activeSource: true,
+      failed: false,
+    },
   )
   await fixture.bringToFront()
   await fixture.getByRole('button', { name: 'Save fixture' }).click()
-  await expect
-    .poll(async () =>
-      worker.evaluate(
-        async () =>
-          (await chrome.storage.local.get('steps')).steps?.length ?? 0,
-      ),
+  try {
+    await expect
+      .poll(async () =>
+        worker.evaluate(
+          async () =>
+            (await chrome.storage.local.get('steps')).steps?.length ?? 0,
+        ),
+      )
+      .toBeGreaterThan(0)
+  } catch (error) {
+    console.error(
+      'Legacy capture metadata',
+      await worker.evaluate(async () => {
+        const state = await chrome.storage.local.get([
+          'recording',
+          'captureReview',
+          'captureError',
+          'steps',
+          'capturedSteps',
+        ])
+        return {
+          recording: state.recording,
+          phase: state.captureReview?.phase,
+          failed: !!state.captureError,
+          legacyCount: state.steps?.length ?? 0,
+          guideCount: state.capturedSteps?.length ?? 0,
+        }
+      }),
     )
-    .toBeGreaterThan(0)
+    throw error
+  }
   const captured = await worker.evaluate(
     async () => (await chrome.storage.local.get('steps')).steps,
   )
@@ -477,6 +532,36 @@ try {
     .getByRole('button', { name: 'Frame action' })
     .click()
   await fixture.getByRole('button', { name: 'Next screen' }).click()
+  // A queued capture can broadcast recorder state immediately after pushState,
+  // before the source's URL timer runs. That refresh must not consume navigation.
+  await worker.evaluate(async () => {
+    const state = await chrome.storage.local.get([
+      'recording',
+      'captureSessionId',
+      'captureTabId',
+      'captureBlurMode',
+      'captureManualCount',
+      'captureReview',
+      'capturedSteps',
+    ])
+    await chrome.tabs.sendMessage(
+      state.captureTabId,
+      {
+        type: 'STATE',
+        recording: state.recording,
+        sessionId: state.captureSessionId,
+        blurMode: state.captureBlurMode,
+        manualCount: state.captureManualCount,
+        capturePill: {
+          sessionId: state.captureSessionId,
+          phase: state.captureReview.phase,
+          count: state.capturedSteps.length,
+          clock: state.captureReview.clock,
+        },
+      },
+      { frameId: 0 },
+    )
+  })
   await expect
     .poll(
       async () =>

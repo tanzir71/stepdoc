@@ -39,21 +39,28 @@ export function useEditor(id: string, attempt = 0) {
   }, [id, attempt])
   return state.id === id ? state : { id }
 }
-export function useEditorState(controller: EditorController) {
+export function useEditorState(controller: EditorController, enabled = true) {
   const state = useSyncExternalStore(
     controller.subscribe,
     controller.snapshot,
     controller.snapshot,
   )
   useEffect(() => {
-    if (!state.dirty || state.error || state.saving) return
+    if (!enabled || !state.dirty || state.error || state.saving) return
     const timer = setTimeout(() => {
       void controller.flush().then((ok) => {
         if (ok) changed()
       })
     }, 600)
     return () => clearTimeout(timer)
-  }, [controller, state.dirty, state.error, state.saving, state.revision])
+  }, [
+    controller,
+    state.dirty,
+    state.error,
+    state.saving,
+    state.revision,
+    enabled,
+  ])
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (controller.snapshot().dirty) {

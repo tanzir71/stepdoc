@@ -237,6 +237,8 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `guide-me` | Extension-origin W03 topbar; starts the native E03 walkthrough after saving edits |
 | `guide-me-overlay`, `guide-me-back`, `guide-me-skip`, `guide-me-confirm`, `guide-me-close`, `guide-me-retry`, `guide-me-editor` | E03 live page dialog and private panel; step navigation, manual confirmation, safe report retry and editor link |
 | `setup-continue` | W01 |
+| `auth-method-passkey`, `auth-method-email`, `auth-method-recovery`, `auth-email`, `auth-code`, `auth-submit`, `auth-cancel`, `auth-retry` | Hosted app sign-in, cancellation and unavailable-session recovery; the requested library/editor URL is retained. |
+| `auth-enroll`, `auth-recovery-codes`, `auth-recovery-saved`, `auth-continue`, `auth-logout` | Native passkey enrollment, shown-once recovery acknowledgment, workspace entry and server-session sign-out. |
 | `redaction-continue` | W04 |
 | `pair-submit` / `capture-save` | E05 / E04 |
 | `capture-destination`, `capture-destination-browser`, `capture-destination-server`, `capture-destination-reset` | E01/E06 paired destination segments, E04 native Save to select and invalid-preference recovery |

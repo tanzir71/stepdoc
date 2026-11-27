@@ -33,12 +33,15 @@ import {
   type Theme,
 } from './preferences'
 import { resetStorage } from './repository'
+import { useHostedSession } from './hosted-session'
 
 const Editor = lazy(() =>
   import('./editor/Editor').then((module) => ({ default: module.Editor })),
 )
 
 export function App() {
+  const hosted = useHostedSession()
+  const active = hosted?.active ?? true
   const url = useLocation()
   const [pathname, rawSearch = ''] = url.split('?')
   const search = `?${rawSearch}`
@@ -55,7 +58,7 @@ export function App() {
   const state = useLibrary(
     pathname === '/' ? route.query : {},
     refresh,
-    !editor,
+    !editor && active,
   )
   const collections = [
     ...new Set(
@@ -79,9 +82,12 @@ export function App() {
     else createDialog.current?.close()
   }, [creating])
   useEffect(() => {
-    const changed = () => setRefresh((value) => value + 1)
+    const changed = () => {
+      if (active) setRefresh((value) => value + 1)
+    }
     const connection = () => setOnline(navigator.onLine)
     const keyboard = (event: KeyboardEvent) => {
+      if (!active) return
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         if (document.querySelector('dialog[open]')) return
@@ -101,7 +107,7 @@ export function App() {
       window.removeEventListener('offline', connection)
       window.removeEventListener('keydown', keyboard)
     }
-  }, [pathname])
+  }, [pathname, active])
   useEffect(() => {
     applyPreferences(preferences)
     const media = matchMedia('(prefers-color-scheme: dark)')
@@ -209,13 +215,17 @@ export function App() {
         <button
           className="workspace-switcher"
           data-sd="storage-info"
-          aria-label="Browser storage details"
+          aria-label={
+            hosted ? 'Server storage details' : 'Browser storage details'
+          }
           onClick={() => storageDialog.current?.showModal()}
         >
-          <span className="workspace-tile">B</span>
+          <span className="workspace-tile">
+            {hosted ? hosted.session.workspace.name.slice(0, 1) : 'B'}
+          </span>
           <span className="workspace-copy">
-            <strong>This browser</strong>
-            <span>Local storage</span>
+            <strong>{hosted?.session.workspace.name ?? 'This browser'}</strong>
+            <span>{hosted ? 'Shared hosting · PHP' : 'Local storage'}</span>
           </span>
           <Icon name="chevron-down" />
         </button>
@@ -319,10 +329,16 @@ export function App() {
           <p>Guide data exports, ready for your local tools.</p>
         </aside>
         <div className="sidebar-footer">
-          <Avatar initials="YO" />
+          <Avatar
+            initials={
+              hosted
+                ? hosted.session.member.name.slice(0, 2).toUpperCase()
+                : 'YO'
+            }
+          />
           <div className="owner-copy">
-            <strong>You</strong>
-            <span>This device</span>
+            <strong>{hosted?.session.member.name ?? 'You'}</strong>
+            <span>{hosted?.session.member.role ?? 'This device'}</span>
           </div>
           <IconButton
             data-sd="settings-open"
@@ -331,12 +347,25 @@ export function App() {
             onClick={() => navigate('/settings/general')}
           />
         </div>
+        {hosted ? (
+          <Button
+            data-sd="auth-logout"
+            kind="ghost"
+            onClick={() => {
+              void hosted.logout()
+            }}
+          >
+            Sign out
+          </Button>
+        ) : null}
       </aside>
       <div className="app-workspace">
         {!online ? (
           <p role="status" className="offline-banner">
             <Icon name="offline" />
-            Offline · browser storage remains available.
+            {hosted
+              ? 'Offline · reconnect to save changes to the server.'
+              : 'Offline · browser storage remains available.'}
           </p>
         ) : null}
         {pathname === '/' ? (
@@ -434,14 +463,18 @@ export function App() {
         className="app-dialog"
         aria-labelledby="storage-dialog-heading"
       >
-        <h2 id="storage-dialog-heading">Stored in this browser</h2>
+        <h2 id="storage-dialog-heading">
+          {hosted ? 'Stored on your server' : 'Stored in this browser'}
+        </h2>
         <p>
-          Your library contains {state.all.length} guides on this device. There
-          is no cloud account connected.
+          {hosted
+            ? `${hosted.session.workspace.name} contains ${state.all.length} guides on this server.`
+            : `Your library contains ${state.all.length} guides on this device. There is no cloud account connected.`}
         </p>
         <p>
-          Export guides you want to keep before clearing browser data or moving
-          to another device.
+          {hosted
+            ? 'Sign in on another device to use this workspace. Export a .stepdoc bundle to move a guide to another target.'
+            : 'Export guides you want to keep before clearing browser data or moving to another device.'}
         </p>
         <div className="dialog-actions">
           <Button

@@ -25,12 +25,15 @@ export interface FlattenOptions {
   theme?: 'light' | 'dark'
   strokeWidth?: number
   fontFamily?: string
+  /** Disposable WebP from the final redacted canvas, without decoding its encoded output. */
+  preview?: { width: number; height: number; maxBytes: number }
 }
 
 export interface EncodedImage {
   readonly blob: Blob
   readonly width: number
   readonly height: number
+  readonly preview?: Blob
 }
 export interface PreparedCapture {
   readonly original: EncodedImage
@@ -38,6 +41,19 @@ export interface PreparedCapture {
 }
 
 function validateOptions(options: FlattenOptions): void {
+  if (
+    options.preview &&
+    (!Number.isInteger(options.preview.width) ||
+      options.preview.width < 1 ||
+      options.preview.width > 1024 ||
+      !Number.isInteger(options.preview.height) ||
+      options.preview.height < 1 ||
+      options.preview.height > 1024 ||
+      !Number.isInteger(options.preview.maxBytes) ||
+      options.preview.maxBytes < 1 ||
+      options.preview.maxBytes > CANVAS_LIMITS.maxBytes)
+  )
+    throw new CanvasImageError('invalid_options')
   const layers =
     (options.redactions?.length ?? 0) +
     (options.sensitiveRects?.length ?? 0) +
@@ -408,6 +424,33 @@ async function encode(
   }
 }
 
+async function canvasPreview(
+  canvas: OffscreenCanvas,
+  bounds: NonNullable<FlattenOptions['preview']>,
+): Promise<Blob> {
+  const ratio = Math.min(
+    1,
+    bounds.width / canvas.width,
+    bounds.height / canvas.height,
+  )
+  const preview = new OffscreenCanvas(
+    Math.max(1, Math.round(canvas.width * ratio)),
+    Math.max(1, Math.round(canvas.height * ratio)),
+  )
+  try {
+    context(preview).drawImage(canvas, 0, 0, preview.width, preview.height)
+    const blob = await preview.convertToBlob({
+      type: 'image/webp',
+      quality: 0.8,
+    })
+    if (!blob.size || blob.type !== 'image/webp' || blob.size > bounds.maxBytes)
+      throw new CanvasImageError('encode_failed')
+    return blob
+  } finally {
+    preview.width = preview.height = 1
+  }
+}
+
 async function processImage(
   input: Blob,
   options: FlattenOptions,
@@ -445,7 +488,11 @@ async function processImage(
     const original = keepOriginal ? await encode(base, options) : undefined
     rendered = drawRendered(base, options)
     base.width = base.height = 1
-    const output = await encode(rendered, options)
+    const preview = options.preview
+      ? await canvasPreview(rendered, options.preview).catch(() => undefined)
+      : undefined
+    const encoded = await encode(rendered, options)
+    const output = preview ? { ...encoded, preview } : encoded
     return original ? { original, rendered: output } : output
   } catch (error) {
     if (error instanceof CanvasImageError) throw error

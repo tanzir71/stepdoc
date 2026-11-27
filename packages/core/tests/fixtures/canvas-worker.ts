@@ -1,9 +1,11 @@
 import type * as CanvasCore from '../../src/canvas'
 import type { composite as Composite } from '../../../../apps/extension/src/image'
+import type { compositeFrame as CompositeFrame } from '../../../../apps/extension/src/image'
 
 export async function verifyCanvas(
   core: typeof CanvasCore,
   composite: typeof Composite,
+  compositeFrame: typeof CompositeFrame,
 ): Promise<number> {
   let checks = 0
   function check(condition: boolean, name: string) {
@@ -82,6 +84,47 @@ export async function verifyCanvas(
     devicePixelRatio: 2,
     sensitiveRects: [{ x: -2, y: 2, width: 5, height: 3 }],
   })
+  const withPreview = await core.flattenImage(input, {
+    format: 'image/png',
+    redactionMode: 'solid',
+    redactions: [{ x: 0, y: 0, width: 16, height: 16 }],
+    preview: { width: 48, height: 32, maxBytes: 65536 },
+  })
+  check(
+    !!withPreview.preview &&
+      withPreview.preview.type === 'image/webp' &&
+      withPreview.preview.size <= 65536,
+    'preview is bounded WebP',
+  )
+  const previewPixels = await pixels({
+    blob: withPreview.preview!,
+    width: 48,
+    height: 32,
+  })
+  check(
+    previewPixels(2, 2)
+      .slice(0, 3)
+      .every((value) => value < 50),
+    'preview contains the applied mask, not the raw red source',
+  )
+  const nativePreviewEncode = OffscreenCanvas.prototype.convertToBlob
+  OffscreenCanvas.prototype.convertToBlob = function (options) {
+    if (this.width === 48 && this.height === 32)
+      return Promise.reject(new Error('private-preview-error'))
+    return nativePreviewEncode.call(this, options)
+  }
+  try {
+    const recovered = await core.flattenImage(input, {
+      format: 'image/png',
+      preview: { width: 48, height: 32, maxBytes: 65536 },
+    })
+    check(
+      recovered.blob.size > 0 && !recovered.preview,
+      'optional preview failure retains the full encoded image',
+    )
+  } finally {
+    OffscreenCanvas.prototype.convertToBlob = nativePreviewEncode
+  }
   const scalePixels = await pixels(scaled)
   eq(scalePixels(5, 5), [20, 20, 22, 255], 'CSS mask scaled and clipped')
   eq(
@@ -313,6 +356,31 @@ export async function verifyCanvas(
   let binary = ''
   for (const byte of new Uint8Array(await patternBlob.arrayBuffer()))
     binary += String.fromCharCode(byte)
+  const nativeDecode = createImageBitmap
+  const decodeDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'createImageBitmap')
+  let decodes = 0
+  Object.defineProperty(globalThis, 'createImageBitmap', {
+    configurable: true,
+    writable: true,
+    value: (...args: Parameters<typeof createImageBitmap>) => {
+      decodes++
+      return nativeDecode(...args)
+    },
+  })
+  try {
+    const frame = await compositeFrame(
+      `data:image/png;base64,${btoa(binary)}`,
+      [],
+      1,
+    )
+    check(
+      decodes === 1 && !!frame.preview,
+      'capture frame and its masked preview use one source decode',
+    )
+  } finally {
+    if (decodeDescriptor) Object.defineProperty(globalThis, 'createImageBitmap', decodeDescriptor)
+    else Reflect.deleteProperty(globalThis, 'createImageBitmap')
+  }
   const legacy = await composite(
     `data:image/png;base64,${btoa(binary)}`,
     [{ x: 0, y: 0, width: 8, height: 8 }],

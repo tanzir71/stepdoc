@@ -5,7 +5,7 @@ export default defineConfig({
     include: ['extension.integration.test.ts'],
     fileParallelism: false,
     hookTimeout: 90000,
-    // One native UI flow includes pairing, private-store reopen, read and revoke.
-    testTimeout: 120000,
+    // Real large capture/pairing plus hosted sign-in, editor reload, DOCX and revoke.
+    testTimeout: 180000,
   },
 })

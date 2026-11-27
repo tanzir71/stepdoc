@@ -3,8 +3,9 @@
 This M12 server implements the existing Storage API v1
 health, guide CRUD/list, version history, private raster-blob paths, passkey and
 email/recovery sign-in, cookie sessions, pairing/devices, scoped API tokens and
-capture ingestion with private large-image staging. Public publishing, MCP, the SPA setup/sign-in interface,
-distribution and the shared-hosting installer remain unfinished. `/health`
+capture ingestion with private large-image staging. It serves the shared SPA with
+cookie-session sign-in and HTTP-backed library/editor storage. Public publishing,
+MCP, first-owner setup, distribution and the shared-hosting installer remain unfinished. `/health`
 reports current capabilities and configuration. This is not the deploy ZIP.
 
 The PHP runtime uses PDO SQLite and validates guide@1 against
@@ -45,6 +46,7 @@ implement them; they never claim contract coverage from this PHP run.
 | `STEPDOC_DATA_DIR` | SQLite, WAL and blobs; defaults to `servers/php/data/`, outside `public/`. A location inside the public root is rejected. |
 | `STEPDOC_ORIGIN` | Canonical frontend origin without a trailing slash; HTTPS, or loopback HTTP. Defaults to `https://localhost` for an unconfigured development install. |
 | `STEPDOC_API_PATH` | Defaults to `/api/v1`; a subdirectory installation can use `/tools/api/v1`. |
+| `STEPDOC_APP_DIR` | Compiled SPA directory; defaults to the repository's `apps/app/dist`. Build with `pnpm --filter @stepdoc/app build`. The distribution installer will provide its packaged path. |
 | `STEPDOC_MAX_UPLOAD_BYTES` | Defaults to 64 MiB; capped by `upload_max_filesize` and `post_max_size` with multipart overhead reserved. The effective cap is returned by `/health`. |
 | `STEPDOC_PAGE_SIZE` | 1–100, default 100; cursors bind to the active filter. |
 
@@ -53,6 +55,23 @@ JSON error. Blob bytes have a separate effective limit. Static files and PHP's
 `public/` directory must be the only web root; the DB and blob directory stay
 private. `.htaccess` routes API requests through the front controller and disables
 directory indexes. The local router applies the same root boundary.
+
+The frontend root is derived from the API path: `/tools/api/v1` serves the app at
+`/tools/`. Direct editor/export links and reloads use the same root. PHP injects
+only the installation's API path in a non-script HTML meta element; no bearer,
+cookie, workspace data or setup secret is serialized into HTML. Static modules,
+workers, CSS, original SVGs and self-hosted fonts resolve inside that root.
+Unknown assets and private filesystem paths return a JSON 404 instead of the SPA.
+
+The hosted client uses the existing session cookie and Storage API. It never
+falls back to IndexedDB when sign-in or the server is unavailable. Passkeys are
+the default sign-in method, with configured email codes and one-use recovery
+codes as alternatives. Code sign-in prompts passkey enrollment; first enrollment
+shows recovery codes once in memory. A session expiry hides the existing editor
+while the same member signs in again, retaining its unsaved draft for explicit
+save retry. Sign-out clears that app instance; a different identity replaces it.
+Initial workspace/owner provisioning still uses local administration below;
+the W01 first-run flow and deploy ZIP are not complete.
 
 For this foundation, server operators can create workspaces and scoped tokens
 through `bin/stepdoc.php`. Commands read a JSON object from stdin and return JSON.
@@ -190,5 +209,9 @@ lazily by visible rows. Older retained captures recover previews on demand witho
 changing their original bytes. This avoids Chrome's
 [64 MiB runtime-message limit](https://developer.chrome.com/docs/extensions/develop/concepts/messaging);
 control metadata itself is bounded below that limit before serialization.
-The PHP hosted SPA/editor, first-run screens and installer remain the next M12
-runtime/distribution unit; the returned editor route is not yet served here.
+New frames create previews directly from their already-redacted canvas, avoiding
+a second decode of the full-size WebP before recording can start. Preview failure
+still preserves the full-resolution capture. Older-cache recovery remains lazy.
+The PHP editor route now opens this hosted client and requests user sign-in;
+extension credentials never enter the URL or the hosted page. First-run screens
+and the shared-hosting installer remain the next M12 distribution work.

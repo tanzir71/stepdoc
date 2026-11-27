@@ -5,9 +5,11 @@ ini_set('display_errors', '0');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 try {
-    $db = require __DIR__ . '/../bootstrap.php';
+    require __DIR__ . '/../vendor/autoload.php';
+    $config = new \StepDoc\Config();
     \StepDoc\Application::headers();
-    (new \StepDoc\Application($db))->run();
+    (new \StepDoc\HostedApp($config))->serve();
+    (new \StepDoc\Application(new \StepDoc\Database($config)))->run();
 } catch (Throwable $error) {
     $known = $error instanceof \StepDoc\ApiError;
     http_response_code($known ? $error->status : 503);

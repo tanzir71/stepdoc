@@ -6,6 +6,7 @@ import {
 } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { guideSchema } from '@stepdoc/schema'
 import {
   apiDevicesSchema,
@@ -13,9 +14,12 @@ import {
 } from '@stepdoc/schema/storage-api'
 import { phpFixture } from './php-fixture'
 import { extensionWorker } from '../../apps/extension/scripts/extension-worker.mjs'
+import { smtpFixture } from './smtp-fixture'
 
 let fixture: Awaited<ReturnType<typeof phpFixture>>
 let context: BrowserContext | undefined
+let smtp: Awaited<ReturnType<typeof smtpFixture>>
+const ownerEmail = 'owner@native-fixture.test'
 interface FixtureBrowserApi {
   storage: { local: { get(keys: string[]): Promise<Record<string, unknown>> } }
   tabs: {
@@ -27,11 +31,18 @@ interface FixtureBrowserApi {
   windows: { update(id: number, options: object): Promise<unknown> }
 }
 beforeAll(async () => {
-  fixture = await phpFixture({ maxUploadBytes: 16 * 1024 * 1024 })
+  smtp = await smtpFixture()
+  fixture = await phpFixture({
+    hostname: 'localhost',
+    smtpPort: smtp.port,
+    maxUploadBytes: 16 * 1024 * 1024,
+  })
+  fixture.member(ownerEmail, 'owner', 'Native owner')
 })
 afterAll(async () => {
   await context?.close()
   await fixture?.close()
+  await smtp?.close()
 })
 
 it('pairs the real extension to PHP, saves a large masked capture with scoped uploads, reopens and revokes its connection', async () => {
@@ -50,6 +61,87 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
   })
   context.setDefaultTimeout(15000)
   const worker = await extensionWorker(context)
+  await worker.evaluate(() => {
+    const root = globalThis as unknown as Record<string, unknown>
+    const chromeApi = root.chrome as {
+      tabs: Record<string, (...args: unknown[]) => Promise<unknown>>
+    }
+    const trace: Array<{ label: string; started: number; elapsed?: number }> =
+      []
+    const restore: Array<() => void> = []
+    root.restoreCaptureStartupTrace = () => {
+      for (const operation of restore) operation()
+    }
+    root.captureStartupTrace = () =>
+      trace.map((item) => ({
+        label: item.label,
+        elapsed: item.elapsed ?? Date.now() - item.started,
+        pending: item.elapsed === undefined,
+      }))
+    for (const method of ['sendMessage', 'captureVisibleTab', 'create']) {
+      const raw = chromeApi.tabs[method]!
+      const original = raw.bind(chromeApi.tabs)
+      restore.push(() => {
+        chromeApi.tabs[method] = raw
+      })
+      chromeApi.tabs[method] = async (...args) => {
+        const record = {
+          label:
+            method === 'sendMessage'
+              ? String((args[1] as { type?: string })?.type)
+              : method,
+          started: Date.now(),
+          elapsed: undefined as number | undefined,
+        }
+        trace.push(record)
+        if (trace.length > 64) trace.shift()
+        try {
+          return await original(...args)
+        } finally {
+          record.elapsed = Date.now() - record.started
+        }
+      }
+    }
+    const rawBitmap = createImageBitmap
+    const bitmap = rawBitmap.bind(globalThis)
+    restore.push(() => {
+      root.createImageBitmap = rawBitmap
+    })
+    root.createImageBitmap = async (
+      ...args: Parameters<typeof createImageBitmap>
+    ) => {
+      const record = {
+        label: 'bitmap',
+        started: Date.now(),
+        elapsed: undefined as number | undefined,
+      }
+      trace.push(record)
+      if (trace.length > 64) trace.shift()
+      try {
+        return await bitmap(...args)
+      } finally {
+        record.elapsed = Date.now() - record.started
+      }
+    }
+    const convert = OffscreenCanvas.prototype.convertToBlob
+    restore.push(() => {
+      OffscreenCanvas.prototype.convertToBlob = convert
+    })
+    OffscreenCanvas.prototype.convertToBlob = async function (options) {
+      const record = {
+        label: 'encode:' + options?.type,
+        started: Date.now(),
+        elapsed: undefined as number | undefined,
+      }
+      trace.push(record)
+      if (trace.length > 64) trace.shift()
+      try {
+        return await convert.call(this, options)
+      } finally {
+        record.elapsed = Date.now() - record.started
+      }
+    }
+  })
   const workerUrl = new URL(worker.url()),
     origin = `${workerUrl.protocol}//${workerUrl.host}`
   const sourceUrl = 'http://127.0.0.1:48931/source'
@@ -161,6 +253,23 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
   await browserExpect
     .poll(async () => (await phase())?.phase, { timeout: 20000 })
     .toBe('recording')
+    .catch(async (error) => {
+      console.log('Capture startup metadata', {
+        trace: await worker.evaluate(() =>
+          (
+            globalThis as unknown as { captureStartupTrace: () => unknown }
+          ).captureStartupTrace(),
+        ),
+        source: await source.evaluate(() => ({
+          visibility: document.visibilityState,
+          focused: document.hasFocus(),
+        })),
+      })
+      throw error
+    })
+  await panel.bringToFront()
+  await browserExpect(panel.locator('[data-sd=capture-review]')).toBeEnabled()
+  await source.bringToFront()
   await source.locator('#email').fill('PRIVATE_TYPED_NATIVE_CAPTURE')
   let expected = 1
   for (const button of ['one', 'two', 'three', 'four', 'five']) {
@@ -219,6 +328,11 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
       'captureReview',
     ])
     const frames = state.steps as Array<{ screenshot: string }>
+    const firstImage = (
+      state.capturedSteps as Array<{
+        screenshot?: { width: number; height: number }
+      }>
+    )[0]?.screenshot
     const hashes: string[] = []
     for (const frame of frames) {
       const file = await (await fetch(frame.screenshot)).blob()
@@ -233,6 +347,8 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
       sessionId: state.captureSessionId as string,
       total: frames.reduce((sum, frame) => sum + frame.screenshot.length, 0),
       hashes,
+      imageWidth: firstImage?.width,
+      imageHeight: firstImage?.height,
       privateText: JSON.stringify(state).includes(
         'PRIVATE_TYPED_NATIVE_CAPTURE',
       ),
@@ -246,10 +362,35 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
   expect(retained.total).toBeGreaterThan(10 * 1024 * 1024)
   const id = `capture-${retained.sessionId}`
   expect(id).toMatch(/^capture-[a-f0-9-]{36}$/)
+  // Six noisy full-resolution pairs are prepared/uploaded sequentially. The
+  // native trace showed 10/12 uploads at 30s, including a six-second encode.
+  const opened = context.waitForEvent('page', { timeout: 60000 })
+  void opened.catch(() => {})
   await press('capture-save')
   await browserExpect
-    .poll(async () => (await phase())?.phase, { timeout: 30000 })
+    .poll(async () => (await phase())?.phase, { timeout: 60000 })
     .toBe('idle')
+    .catch(async (error) => {
+      console.log('Save boundary metadata', {
+        trace: await worker.evaluate(() =>
+          (
+            globalThis as unknown as { captureStartupTrace: () => unknown }
+          ).captureStartupTrace(),
+        ),
+        hasEditor: context!
+          .pages()
+          .some((page) =>
+            page.url().startsWith(fixture.server.origin + '/tools/g/'),
+          ),
+      })
+      throw error
+    })
+  await worker.evaluate(() =>
+    (
+      globalThis as unknown as { restoreCaptureStartupTrace: () => void }
+    ).restoreCaptureStartupTrace(),
+  )
+  const editor = await opened
   const stored = await admin(`guides/${id}`)
   expect(stored.status).toBe(200)
   const saved = guideSchema.parse(await stored.json())
@@ -283,8 +424,77 @@ it('pairs the real extension to PHP, saves a large masked capture with scoped up
       `SELECT COUNT(*) AS n FROM guide_versions WHERE guide_id='${id}'`,
     ),
   ).toEqual([{ n: 1 }])
-  // Hosted editor serving/sign-in is the next runtime/installer unit. This case
-  // verifies the actual extension save, stored bytes and returned route only.
+  // Follow the extension-created editor tab through actual hosted sign-in.
+  // The extension's scoped token stays private; the page uses its own cookie.
+  await browserExpect(editor).toHaveURL(
+    `${fixture.server.origin}/tools/g/${id}/edit`,
+  )
+  await browserExpect(editor.locator('[data-sd=auth-submit]')).toBeVisible()
+  await editor.locator('[data-sd=auth-method-email]').click()
+  await editor.locator('[data-sd=auth-email]').fill(ownerEmail)
+  await editor.locator('[data-sd=auth-submit]').click()
+  await browserExpect(editor.locator('[data-sd=auth-code]')).toBeVisible()
+  await editor.locator('[data-sd=auth-code]').fill(smtp.code(ownerEmail))
+  await editor.locator('[data-sd=auth-submit]').click()
+  await browserExpect(editor.locator('[data-sd=auth-continue]')).toBeEnabled()
+  await editor.locator('[data-sd=auth-continue]').click()
+  await browserExpect(editor.locator('[data-sd=step-title]')).toBeVisible()
+  await browserExpect(
+    editor.locator('[data-sd=canvas-image] img'),
+  ).toBeVisible()
+  await editor.locator('[data-sd=export-open]').click()
+  await editor.locator('[data-sd=export-format-docx]').check()
+  for (const format of await editor
+    .locator('[data-sd^=export-format-]')
+    .all()) {
+    if (
+      (await format.getAttribute('data-sd')) !== 'export-format-docx' &&
+      (await format.isChecked())
+    )
+      await format.uncheck()
+  }
+  const downloaded = editor.waitForEvent('download', { timeout: 30000 })
+  await editor.locator('[data-sd=export-download]').click()
+  const documentPath = await (await downloaded).path()
+  expect(documentPath).toBeTruthy()
+  const docxBytes = await readFile(documentPath!)
+  expect(docxBytes.subarray(0, 4).toString('hex')).toBe('504b0304')
+  expect(docxBytes.includes(Buffer.from('word/document.xml'))).toBe(true)
+  await editor.locator('[data-sd=export-close]').click()
+  expect(retained.imageWidth).toBeGreaterThan(1700)
+  expect(saved.steps[0]!.screenshot?.width).toBe(retained.imageWidth)
+  expect(saved.steps[0]!.screenshot?.height).toBe(retained.imageHeight)
+  expect(
+    await editor
+      .locator('[data-sd=canvas-image] img')
+      .evaluate((node) => (node as HTMLImageElement).naturalWidth),
+  ).toBe(retained.imageWidth)
+  expect(
+    await editor
+      .locator('[data-sd=canvas-image] img')
+      .evaluate((node) => (node as HTMLImageElement).naturalHeight),
+  ).toBe(retained.imageHeight)
+  await editor
+    .locator('[data-sd=step-title]')
+    .fill('Edited in the PHP-hosted app')
+  await editor.keyboard.press('Control+s')
+  await browserExpect(
+    editor.locator('[data-sd=editor-save-status]'),
+  ).toContainText('Saved ·')
+  await browserExpect
+    .poll(
+      async () =>
+        guideSchema.parse(await (await admin(`guides/${id}`)).json()).steps[0]!
+          .title,
+    )
+    .toBe('Edited in the PHP-hosted app')
+  await editor.reload()
+  await browserExpect(editor.locator('[data-sd=step-title]')).toHaveValue(
+    'Edited in the PHP-hosted app',
+  )
+  await browserExpect(
+    editor.locator('[data-sd=canvas-image] img'),
+  ).toBeVisible()
   await browserExpect(
     panel.locator('[data-sd=capture-recent]'),
   ).toHaveAttribute('href', `${fixture.server.origin}/tools/g/${id}/edit`)

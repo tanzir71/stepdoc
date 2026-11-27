@@ -39,6 +39,7 @@ import { CanvasPanel } from './canvas'
 import { ExportDialog } from '../exports/ExportDialog'
 import './styles.css'
 import type {} from '../extension'
+import { useHostedSession } from '../hosted-session'
 
 function Row({
   step,
@@ -177,10 +178,11 @@ function EditorLoaded({
   exportOpen: boolean
 }) {
   const { controller, processor } = runtime
+  const active = useHostedSession()?.active ?? true
   useLayoutEffect(() => {
     document.getElementById('main')?.focus({ preventScroll: true })
   }, [])
-  const state = useEditorState(controller)
+  const state = useEditorState(controller, active)
   const guide = state.guide
   const selected = editorRoute(search)
   const step = guide.steps[Math.min(selected.step, guide.steps.length) - 1]!
@@ -288,6 +290,7 @@ function EditorLoaded({
   }, [state.error, announce])
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
+      if (!active) return
       if (document.querySelector('dialog[open]')) return
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
         event.preventDefault()
@@ -309,7 +312,7 @@ function EditorLoaded({
     }
     window.addEventListener('keydown', shortcut)
     return () => window.removeEventListener('keydown', shortcut)
-  }, [controller])
+  }, [controller, active])
   useEffect(() => {
     if (selected.panel !== 'history') return
     let active = true

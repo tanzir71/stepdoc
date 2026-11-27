@@ -16,6 +16,7 @@ export async function phpFixture(
     hostname?: string
     smtpPort?: number
     maxUploadBytes?: number
+    apiPath?: string
   } = {},
 ) {
   const runtime = phpRuntime()
@@ -25,7 +26,7 @@ export async function phpFixture(
   const env = {
     ...process.env,
     STEPDOC_DATA_DIR: dataDir,
-    STEPDOC_API_PATH: '/tools/api/v1',
+    STEPDOC_API_PATH: options.apiPath ?? '/tools/api/v1',
     STEPDOC_PAGE_SIZE: '3',
     STEPDOC_MAX_UPLOAD_BYTES: String(options.maxUploadBytes ?? 4096),
     // Fixtures never inherit a developer's real mail configuration.
@@ -113,7 +114,7 @@ export async function phpFixture(
     })
     // Drain PHP's local access log without logging requests, headers or fixture tokens.
     child.stderr?.resume()
-    const api = `${origin}/tools/api/v1/`
+    const api = `${origin}${env.STEPDOC_API_PATH}/`
     const deadline = Date.now() + 15000
     while (Date.now() < deadline) {
       if (ended) throw new Error('PHP fixture exited during startup')
@@ -156,7 +157,7 @@ export async function phpFixture(
       member: (
         email: string,
         role: 'owner' | 'editor' | 'viewer',
-        name = role,
+        name: string = role,
       ) => ({
         ...(cli(role === 'owner' ? 'owner:create' : 'member:add', {
           workspaceId: first.id,

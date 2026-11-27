@@ -75,6 +75,16 @@ describe('fail-closed image processing options', () => {
   })
   it.each([
     { quality: NaN },
+    { preview: { width: 0, height: 144, maxBytes: 65536 } },
+    { preview: { width: 1025, height: 144, maxBytes: 65536 } },
+    { preview: { width: 224, height: 144, maxBytes: 0 } },
+    {
+      preview: {
+        width: 224,
+        height: 144,
+        maxBytes: CANVAS_LIMITS.maxBytes + 1,
+      },
+    },
     { quality: 2 },
     { pixelSize: 1 },
     { pixelSize: 2.5 },

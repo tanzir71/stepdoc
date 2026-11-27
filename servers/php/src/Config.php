@@ -10,6 +10,7 @@ final class Config
     public readonly int $maxJsonBytes;
     public readonly string $origin;
     public readonly int $pageSize;
+    public readonly string $appDir;
 
     public function __construct()
     {
@@ -25,6 +26,7 @@ final class Config
             throw new ApiError('invalid_options', 503);
         }
         $this->dataDir = $resolved;
+        $this->appDir = getenv('STEPDOC_APP_DIR') ?: dirname(__DIR__, 3) . '/apps/app/dist';
         $path = getenv('STEPDOC_API_PATH') ?: '/api/v1';
         if (!preg_match('~^/(?:[a-zA-Z0-9_-]+/)*api/v1$~D', $path)) {
             throw new ApiError('invalid_options', 503);

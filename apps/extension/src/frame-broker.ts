@@ -32,6 +32,16 @@ export interface FrameScene {
   masks: Redaction[]
 }
 const failure = () => new Error('Frame metadata unavailable')
+const graph = (items: BrowserFrame[]) =>
+  JSON.stringify(
+    [...items]
+      .sort((a, b) => a.frameId - b.frameId)
+      .map(({ frameId, parentFrameId, documentId }) => ({
+        frameId,
+        parentFrameId,
+        documentId,
+      })),
+  )
 export class FrameSceneChangedError extends Error {
   constructor() {
     super('Frame metadata unavailable')
@@ -97,7 +107,10 @@ export class FrameBroker {
     const request = this.pending.get(link.nonce)
     if (!request || request.tabId !== tabId) return false
     const frame = request.frames.find((item) => item.frameId === frameId)
-    if (!frame || (frame.documentId && frame.documentId !== browserDocumentId))
+    if (
+      !frame ||
+      (frame.documentId && frame.documentId !== browserDocumentId)
+    )
       return false
     const child = request.snapshots.get(frameId)
     const parent = request.snapshots.get(frame.parentFrameId)
@@ -147,7 +160,8 @@ export class FrameBroker {
             return
           } // No receiver: the parent element stays fully masked.
           const parsed = frameSnapshotSchema.safeParse(raw)
-          if (!parsed.success || parsed.data.nonce !== nonce) throw failure()
+          if (!parsed.success || parsed.data.nonce !== nonce)
+            throw failure()
           const snapshot = parsed.data
           if (snapshot.url !== null) {
             const url = new URL(snapshot.url)
@@ -208,17 +222,8 @@ export class FrameBroker {
       )
       if (probing) await new Promise((resolve) => setTimeout(resolve, 100))
       const current = await this.io.frames(tabId)
-      const graph = (items: BrowserFrame[]) =>
-        JSON.stringify(
-          [...items]
-            .sort((a, b) => a.frameId - b.frameId)
-            .map(({ frameId, parentFrameId, documentId }) => ({
-              frameId,
-              parentFrameId,
-              documentId,
-            })),
-        )
-      if (graph(frames) !== graph(current)) throw new FrameSceneChangedError()
+      if (graph(frames) !== graph(current))
+        throw new FrameSceneChangedError()
       const contexts = new Map<string, FrameContext>()
       const frameIds = new Map<string, number>()
       const masks: Redaction[] = []
@@ -239,7 +244,10 @@ export class FrameBroker {
         for (const mask of snapshot.masks) add(mask, context)
         if (snapshot.geometryMotion)
           add(
-            policy({ x: 0, y: 0, ...snapshot.viewport }, 'animated-geometry'),
+            policy(
+              { x: 0, y: 0, ...snapshot.viewport },
+              'animated-geometry',
+            ),
             context,
           )
         const mapped = new Set<number>()
@@ -290,11 +298,15 @@ export class FrameBroker {
         // Cover the parent viewport instead of guessing an element by URL/order.
         if (
           frames.some(
-            (frame) => frame.parentFrameId === id && !mapped.has(frame.frameId),
+            (frame) =>
+              frame.parentFrameId === id && !mapped.has(frame.frameId),
           )
         )
           add(
-            policy({ x: 0, y: 0, ...snapshot.viewport }, 'frame-unavailable'),
+            policy(
+              { x: 0, y: 0, ...snapshot.viewport },
+              'frame-unavailable',
+            ),
             context,
           )
       }
@@ -322,6 +334,21 @@ export class FrameBroker {
         links: [...links].sort(([a], [b]) => a.localeCompare(b)),
       })
       return { signature, top, contexts, frameIds, masks }
+    } catch (error) {
+      if (!(error instanceof FrameSceneChangedError)) {
+        // A reload can destroy the old receiver before snapshots/probes return.
+        // Retry only a browser-confirmed graph replacement, never unavailable
+        // metadata in an unchanged document, and never a partial/raw frame.
+        let current: BrowserFrame[] | undefined
+        try {
+          current = await this.io.frames(tabId)
+        } catch {
+          /* Preserve the original closed-tab/transport failure. */
+        }
+        if (current && graph(frames) !== graph(current))
+          throw new FrameSceneChangedError()
+      }
+      throw error
     } finally {
       this.pending.delete(nonce)
     }

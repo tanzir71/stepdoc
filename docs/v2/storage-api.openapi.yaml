@@ -32,6 +32,10 @@ paths:
       tags: [meta]
       security: []
       summary: Target, version and capabilities (used by the setup host check and Settings → Storage)
+      description: |
+        Checks use the existing generic id/status/message shape. PHP includes the last
+        daily private backup result; a backup warning does not make live storage unavailable.
+        No backup files, filesystem paths, credentials or backup administration are exposed here.
       responses:
         '200':
           description: ok

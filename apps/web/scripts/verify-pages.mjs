@@ -25,6 +25,7 @@ const types = {
   '.json': 'application/json',
   '.md': 'text/plain',
   '.ts': 'text/plain',
+  '.zip': 'application/zip',
 }
 const server = createServer(async (req, res) => {
   try {
@@ -45,7 +46,9 @@ const server = createServer(async (req, res) => {
       throw new Error('Outside root')
     const info = await stat(file)
     if (info.isDirectory() && !url.pathname.endsWith('/')) {
-      res.writeHead(308, { location: `${url.pathname}/${url.search}` }).end()
+      res
+        .writeHead(308, { location: `${url.pathname}/${url.search}` })
+        .end()
       return
     }
     const target = info.isDirectory() ? path.join(file, 'index.html') : file
@@ -56,7 +59,8 @@ const server = createServer(async (req, res) => {
       /\.(html|css|js|svg|txt|json|md|ts)$/.test(target)
     const body = compressed ? gzipSync(contents) : contents
     res.writeHead(200, {
-      'content-type': types[path.extname(target)] ?? 'application/octet-stream',
+      'content-type':
+        types[path.extname(target)] ?? 'application/octet-stream',
       'content-length': body.length,
       ...(compressed
         ? { 'content-encoding': 'gzip', vary: 'Accept-Encoding' }
@@ -109,8 +113,13 @@ try {
     return { context, page }
   }
   if (lighthouseMode) {
-    await verifyLighthouse({ entry, output, chrome: chromium.executablePath() })
-  } else await verifyLanding({ pageAt, landing, entry, origin, root, output })
+    await verifyLighthouse({
+      entry,
+      output,
+      chrome: chromium.executablePath(),
+    })
+  } else
+    await verifyLanding({ pageAt, landing, entry, origin, root, output })
   assert.deepEqual(errors, [])
   console.log(
     lighthouseMode

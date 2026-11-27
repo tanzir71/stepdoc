@@ -72,7 +72,11 @@ function fixture() {
   const io: FrameTransport = {
     frames: async () => frames,
     send: async (tabId, frameId, raw) => {
-      const message = raw as { type: string; nonce: string; tokens?: string[] }
+      const message = raw as {
+        type: string
+        nonce: string
+        tokens?: string[]
+      }
       if (message.type === 'FRAME_SNAPSHOT')
         return { ...snapshots.get(frameId), nonce: message.nonce }
       for (const probeToken of message.tokens ?? []) {
@@ -203,7 +207,9 @@ describe('authenticated frame collection', () => {
                 nonce: mode === 'nonce' ? id() : message.nonce,
                 token: mode === 'token' ? id() : token,
                 documentId:
-                  mode === 'uuid' ? id() : f.snapshots.get(childId)!.documentId,
+                  mode === 'uuid'
+                    ? id()
+                    : f.snapshots.get(childId)!.documentId,
               },
               mode === 'tab' ? 99 : tabId,
               mode === 'frame' ? 99 : childId,
@@ -231,7 +237,9 @@ describe('authenticated frame collection', () => {
       return original(tab, frame, message)
     }
     expect(
-      (await f.broker.collect(1)).masks.some((mask) => mask.rect.width === 800),
+      (await f.broker.collect(1)).masks.some(
+        (mask) => mask.rect.width === 800,
+      ),
     ).toBe(true)
     f.io.send = async (tab, frame, message) =>
       frame === 4
@@ -252,6 +260,40 @@ describe('authenticated frame collection', () => {
       FrameSceneChangedError,
     )
   })
+  it.each(['missing receiver', 'collector error'] as const)(
+    'restarts the whole operation when a document is replaced before a %s response',
+    async (failure) => {
+      const f = fixture(),
+        original = f.io.send
+      f.io.frames = async () => f.frames.map((frame) => ({ ...frame }))
+      let replaced = false,
+        attempts = 0
+      const current = id()
+      f.io.send = async (tab, frame, message) => {
+        if (
+          frame === 0 &&
+          !replaced &&
+          (message as { type: string }).type === 'FRAME_SNAPSHOT'
+        ) {
+          replaced = true
+          f.frames[0]!.documentId = 'replacement-browser-document'
+          f.top.documentId = current
+          if (failure === 'missing receiver')
+            throw new Error('Old document receiver closed')
+          return { ok: false, error: 'Old document collector stopped' }
+        }
+        return original(tab, frame, message)
+      }
+      const result = await withStableFrameScene(async () => {
+        const candidate = ++attempts
+        const scene = await f.broker.collect(1)
+        return { candidate, scene }
+      })
+      expect(result.candidate).toBe(2)
+      expect(result.scene.top.documentId).toBe(current)
+      expect(result.scene.masks.length).toBeGreaterThan(0)
+    },
+  )
   it('restarts the entire operation after a changed graph without returning its first candidate', async () => {
     let calls = 0
     const result = await withStableFrameScene(async () => {
@@ -289,9 +331,9 @@ describe('authenticated frame collection', () => {
     f.child.geometryMotion = true
     const scene = await f.broker.collect(1)
     expect(scene.contexts.get(f.child.documentId)?.precise).toBe(false)
-    expect(scene.masks.some((mask) => mask.rule === 'animated-geometry')).toBe(
-      true,
-    )
+    expect(
+      scene.masks.some((mask) => mask.rule === 'animated-geometry'),
+    ).toBe(true)
   })
   it('changes the stability signature for scroll/layout/mutation and preserves it across nonce changes', async () => {
     const f = fixture(),

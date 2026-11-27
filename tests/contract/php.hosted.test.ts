@@ -222,7 +222,10 @@ describe('PHP hosted production app', () => {
         request.url().startsWith(fixture.server.api)
       )
         cancelled.push(request)
-      else failures.push('Asset or transport request failed')
+      else
+        failures.push(
+          `Asset or transport request failed: ${new URL(request.url()).pathname} (${request.failure()?.errorText ?? 'unknown'})`,
+        )
     })
     page.on('request', (request) => {
       if (

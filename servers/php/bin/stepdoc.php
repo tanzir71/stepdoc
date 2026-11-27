@@ -10,6 +10,16 @@ try {
     $tokens = new \StepDoc\Tokens($db);
     $sessions = new \StepDoc\Sessions($db, new \StepDoc\AuthState($db), $tokens);
     switch ($argv[1] ?? '') {
+        case 'backup:create':
+        case 'backup:list':
+            if ($input !== []) throw new \StepDoc\ApiError('invalid_options');
+            $backups = new \StepDoc\Backups($db);
+            $output = $argv[1] === 'backup:create' ? $backups->create() : ['backups' => $backups->list()];
+            break;
+        case 'backup:verify':
+            if (array_keys($input) !== ['id'] || !is_string($input['id'])) throw new \StepDoc\ApiError('invalid_options');
+            $output = (new \StepDoc\Backups($db))->verify($input['id']);
+            break;
         case 'workspace:create':
             if (!is_string($input['name'] ?? null) || !trim($input['name']) || strlen($input['name']) > 200) throw new \StepDoc\ApiError('invalid_options');
             $id = \StepDoc\Database::id();

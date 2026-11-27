@@ -72,6 +72,7 @@ export async function buildPhp({
     )
     await cp(join(workspace, 'LICENSE'), join(directory, 'LICENSE'))
     await cp(join(phpRoot, 'INSTALL.md'), join(directory, 'README.md'))
+    await cp(join(phpRoot, 'BACKUPS.md'), join(directory, 'BACKUPS.md'))
     await writeFile(join(directory, '.htaccess'), 'Require all denied\n')
     const key = randomBytes(32).toString('base64url')
     await writeFile(

@@ -4,7 +4,13 @@
 
 The `main` branch implements [CODEX_HANDOFF_V2.md](CODEX_HANDOFF_V2.md), with direct commits and no PRs per the owner's instruction. See [PROGRESS_V2.md](PROGRESS_V2.md) for the current milestone and local verification evidence.
 
-The v2 browser library runs with `pnpm install` followed by `pnpm dev` at <http://127.0.0.1:3200>. It supports local guide creation, guide@1 JSON import/download, search, collections and theme settings using IndexedDB/OPFS, with no account or credentials. The v2 editor, capture integration and portable image bundles are still in progress. See [apps/app/README.md](apps/app/README.md).
+Use the compiled extension: [Chrome ZIP](site/downloads/stepdoc-chrome.zip), [Edge ZIP](site/downloads/stepdoc-edge.zip), or [Firefox ZIP](site/downloads/stepdoc-firefox.zip). Unzip it and load the compiled manifest/folder as described in the [install guide](site/docs/index.html#browser). Node.js, build tools and a backend are not needed. These are unsigned local builds; store signing/listings remain separate.
+
+The v2 extension includes the full local library and editor, capture, redaction and portable image bundles using IndexedDB/OPFS. Export **PDF** through native **Print / Save as PDF**, self-contained **HTML** with embedded fonts/images, Markdown, DOCX, `.stepdoc`, guide.json, Playwright and SKILL.md. These exports work on-device without a backend, including offline. [Version and SHA-256 metadata](site/downloads/extensions.json) accompanies each compiled ZIP.
+
+Contributors can run `pnpm install --frozen-lockfile` and `pnpm build:extension` to compile all three browser packages. ZIPs are written to `dist/` and `site/downloads/`. The browser SPA also runs with `pnpm dev` at <http://127.0.0.1:3200>; see [apps/app/README.md](apps/app/README.md). Remaining v2 parity work is tracked in the handoff and progress log.
+
+## Legacy v1 reference
 
 The setup and product documentation below describe the shipped v1 app, available with `pnpm dev:legacy`, until the v2 targets reach parity.
 

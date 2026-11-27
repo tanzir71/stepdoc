@@ -3,9 +3,12 @@ import assert from 'node:assert/strict'
 import { readFile, stat } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { websiteFiles } from './generate-website.mjs'
+import { verifyDistribution } from '../apps/extension/scripts/package.mjs'
 
-const read = (file) => readFile(new URL('../' + file, import.meta.url), 'utf8')
+const read = (file) =>
+  readFile(new URL('../' + file, import.meta.url), 'utf8')
 const normalize = (text) => text.replaceAll('\r\n', '\n')
+await verifyDistribution()
 assert(
   (await stat(new URL('../.nojekyll', import.meta.url))).isFile(),
   'Pages must serve Markdown/skill companions without Jekyll transformation',
@@ -39,6 +42,17 @@ assert(
   'Native project-root landing without redirect',
 )
 const home = await read('site/index.html')
+const documentation = await read('site/docs/index.html')
+for (const browser of ['chrome', 'edge', 'firefox'])
+  assert(
+    documentation.includes(`../downloads/stepdoc-${browser}.zip`),
+    `Compiled ${browser} install link`,
+  )
+assert(
+  documentation.includes('Print / Save as PDF') &&
+    documentation.includes('self-contained HTML'),
+  'Backend-free PDF/HTML documentation',
+)
 for (const file of ['site/index.html', 'site/docs/index.html']) {
   const html = await read(file)
   for (const token of [

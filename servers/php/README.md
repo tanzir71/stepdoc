@@ -8,7 +8,9 @@ cookie-session sign-in and HTTP-backed library/editor storage. The W01 installer
 enrolls its first owner with a passkey, recovery codes and extension pairing.
 Build the self-contained archive with `pnpm build:php`; follow [INSTALL.md](INSTALL.md)
 for its public document root, private setup key and subdirectory configuration.
-Public publishing, MCP, remaining API operations and lazy backups remain unfinished.
+Private daily recovery points and local create/list/verify commands are documented
+in [BACKUPS.md](BACKUPS.md). Public publishing, MCP and remaining API operations
+remain unfinished.
 `/health` reports current capabilities and configuration.
 
 The PHP runtime uses PDO SQLite and validates guide@1 against
@@ -97,7 +99,7 @@ scope in SQLite; observational `last_seen_at` writes are limited to once per
 minute. CORS permits the configured same origin and registered extension origins,
 never a wildcard. A registered revoked origin may receive its 401 response, while
 its token remains unusable. Capture-only tokens cannot mutate general guides or
-upload through the editor blob path; capture ingestion remains a later M12 unit.
+upload through the editor blob path; capture uses the dedicated staging/commit path below.
 Chrome's privileged extension GET requests omit Origin. These reads still require
 the valid scoped bearer; any supplied Origin must match the registered extension,
 and extension mutations require it. Cookie-authenticated mutations retain their

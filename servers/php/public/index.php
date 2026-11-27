@@ -9,8 +9,11 @@ try {
     \StepDoc\Application::headers();
     \StepDoc\Installer::intercept();
     $config = new \StepDoc\Config();
+    $db = new \StepDoc\Database($config);
+    $backups = new \StepDoc\Backups($db);
+    $backups->daily();
     (new \StepDoc\HostedApp($config))->serve();
-    (new \StepDoc\Application(new \StepDoc\Database($config)))->run();
+    (new \StepDoc\Application($db, $backups))->run();
 } catch (Throwable $error) {
     $known = $error instanceof \StepDoc\ApiError;
     http_response_code($known ? $error->status : 503);

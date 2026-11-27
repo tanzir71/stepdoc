@@ -1,11 +1,15 @@
 import { defineConfig } from 'wxt'
+import { recordBuild, runtimeSource } from './scripts/runtime-source.mjs'
+
+let compilingSource: string | undefined
 
 export default defineConfig({
   manifestVersion: 3,
   imports: false,
   manifest: ({ browser }) => ({
     name: 'StepDoc Capture',
-    description: 'Capture browser workflows as private step-by-step guides.',
+    description:
+      'Capture browser workflows as private step-by-step guides.',
     permissions: [
       'activeTab',
       'tabs',
@@ -46,6 +50,16 @@ export default defineConfig({
     build: { assetsInlineLimit: 0 },
   }),
   hooks: {
+    async 'build:before'() {
+      compilingSource = await runtimeSource()
+    },
+    async 'build:done'(wxt) {
+      await recordBuild(
+        wxt.config.outDir,
+        wxt.config.browser,
+        compilingSource,
+      )
+    },
     'build:manifestGenerated'(wxt, manifest) {
       // Keep the same private fallback entrypoint in every build. Chrome/Edge
       // still open their side panel; Firefox uses the action popup.
@@ -54,7 +68,9 @@ export default defineConfig({
     },
     'vite:build:extendConfig'(entrypoints, config) {
       if (
-        !entrypoints.some((entrypoint) => entrypoint.type === 'content-script')
+        !entrypoints.some(
+          (entrypoint) => entrypoint.type === 'content-script',
+        )
       )
         return
       const output = config.build?.rollupOptions?.output

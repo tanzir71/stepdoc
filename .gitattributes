@@ -1,3 +1,7 @@
 # Preserve original Figma asset bytes and deterministic exporter output on Windows.
 site/assets/*.svg -text
+packages/ui/assets/*.svg -text
+packages/ui/assets/fonts/OFL.txt -text
+apps/app/public/assets/fonts/OFL.txt -text
+site/downloads/*.zip -text
 site/demo/** -text

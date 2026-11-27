@@ -6,6 +6,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "build:all": "pnpm build -b chrome && pnpm build -b edge && pnpm build -b firefox",
+    "test:offline": "node scripts/verify-offline-exports.mjs",
     "lint": "wxt prepare && tsc --noEmit",
     "typecheck": "wxt prepare && tsc --noEmit",
     "test": "vitest run && pnpm test:browser",

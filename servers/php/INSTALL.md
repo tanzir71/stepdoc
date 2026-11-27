@@ -51,9 +51,11 @@ Configure SMTP outside the web root with `STEPDOC_MAIL_FROM`, `STEPDOC_SMTP_HOST
 `STEPDOC_SMTP_SECURITY=starttls|smtps`. Without configured email delivery, passkeys and
 the saved recovery codes remain available. No secrets are written to app logs.
 
-Preserve `data/` and `stepdoc.config.json` when upgrading. The SQLite file, WAL,
-`auth.key` and original blobs belong together; stop writes when making a manual
-filesystem copy. Lazy backup/restore management remains in the M12 backlog.
+Preserve `data/` and `stepdoc.config.json` when upgrading. Daily private recovery
+points run lazily after midnight UTC and keep seven successful points. Use the
+local `backup:create`, `backup:list` and `backup:verify` commands; see
+[BACKUPS.md](BACKUPS.md) for the complete layout and fresh-directory recovery.
+Never copy or overwrite a live database/WAL when restoring.
 
 `manifest.json` records packaged file hashes. Runtime credentials, configuration,
 databases, uploaded images, development fixtures and Node dependencies are excluded.

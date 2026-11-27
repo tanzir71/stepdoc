@@ -1,5 +1,5 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
-import { mkdir, mkdtemp } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -17,12 +17,20 @@ export async function phpFixture(
     smtpPort?: number
     maxUploadBytes?: number
     apiPath?: string
+    restoreFrom?: string
   } = {},
 ) {
   const runtime = phpRuntime()
   await dependencies(runtime)
   await mkdir(join(workspace, 'test-results'), { recursive: true })
-  const dataDir = await mkdtemp(join(workspace, 'test-results/php-contract-'))
+  const dataDir = await mkdtemp(
+    join(workspace, 'test-results/php-contract-'),
+  )
+  if (options.restoreFrom)
+    await cp(options.restoreFrom, dataDir, {
+      recursive: true,
+      dereference: false,
+    })
   const env = {
     ...process.env,
     STEPDOC_DATA_DIR: dataDir,
@@ -37,6 +45,7 @@ export async function phpFixture(
     STEPDOC_SMTP_USERNAME: '',
     STEPDOC_SMTP_PASSWORD: '',
   }
+  let canonicalOrigin = 'https://localhost'
   const cli = (command: string, input: object): unknown =>
     JSON.parse(
       execFileSync(
@@ -45,15 +54,19 @@ export async function phpFixture(
         {
           input: JSON.stringify(input),
           encoding: 'utf8',
-          env,
+          env: { ...env, STEPDOC_ORIGIN: canonicalOrigin },
           windowsHide: true,
         },
       ),
     ) as unknown
-  const first = cli('workspace:create', { name: 'Contract workspace A' }) as {
+  const first = cli('workspace:create', {
+    name: 'Contract workspace A',
+  }) as {
     id: string
   }
-  const second = cli('workspace:create', { name: 'Contract workspace B' }) as {
+  const second = cli('workspace:create', {
+    name: 'Contract workspace B',
+  }) as {
     id: string
   }
   const issue = (workspaceId: string, scopes: string[], origin?: string) =>
@@ -69,7 +82,8 @@ export async function phpFixture(
   const other = issue(second.id, ['admin'])
   const reader = issue(first.id, ['guides:read'])
   const capture = issue(first.id, ['capture:write', 'guides:read'])
-  const extensionOrigin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop'
+  const extensionOrigin =
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop'
   const extension = issue(
     first.id,
     ['guides:read', 'guides:write'],
@@ -139,6 +153,7 @@ export async function phpFixture(
   }
   try {
     const server = await start()
+    canonicalOrigin = server.origin
     const peer = await start()
     return {
       server,
@@ -152,6 +167,7 @@ export async function phpFixture(
       extension,
       extensionOrigin,
       maxUploadBytes: options.maxUploadBytes ?? 4096,
+      command: cli,
       revoke: (id: string) => cli('token:revoke', { id }),
       issue: (scopes: string[]) => issue(first.id, scopes),
       member: (
@@ -171,6 +187,7 @@ export async function phpFixture(
       restart: async () => {
         await stop(server.child)
         Object.assign(server, await start())
+        canonicalOrigin = server.origin
       },
       inspect: (sql: string): unknown =>
         JSON.parse(

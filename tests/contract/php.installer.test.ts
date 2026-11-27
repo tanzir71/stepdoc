@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto'
 import { readFile, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { installationStatusSchema } from '@stepdoc/schema/installation'
+import { apiHealthSchema } from '@stepdoc/schema/storage-api'
 import {
   installationArtifact,
   installerFixture,
@@ -36,6 +37,9 @@ async function fixture(
 }
 const hook = (page: Page, name: string) =>
   page.locator(`[data-sd="${name}"]`)
+// Native enrollment performs real HTTP/filesystem work. Match the existing
+// client's 25-second request bound; this is not a five-second UI latency test.
+const installerNetwork = { timeout: 25000 }
 async function native(f: InstallerFixture) {
   const browser = await chromium.launch({ args: ['--disable-gpu'] })
   browsers.push(browser)
@@ -101,8 +105,35 @@ async function unlock(page: Page, f: InstallerFixture) {
   await browserExpect(page).toHaveURL(/view=authorize/)
   await accessible(page)
   await privateFill(hook(page, 'setup-key'), f.key)
+  const began = performance.now()
+  const exchange = page
+    .waitForResponse(
+      (response) =>
+        new URL(response.url()).searchParams.get('action') === 'claim',
+      { timeout: 25000 },
+    )
+    .then(async (response) => ({
+      status: response.status(),
+      finished: (await response.finished()) === null,
+      milliseconds: Math.round(performance.now() - began),
+    }))
+    .catch(() => null)
   await hook(page, 'setup-unlock').click()
-  await browserExpect(hook(page, 'setup-owner-email')).toBeVisible()
+  try {
+    await browserExpect(hook(page, 'setup-owner-email')).toBeVisible(
+      installerNetwork,
+    )
+  } catch (error) {
+    const response = await exchange
+    console.log('Installation key transition', {
+      response,
+      elapsed: Math.round(performance.now() - began),
+      heading: await page.locator('h1').textContent(),
+      feedback: await hook(page, 'setup-feedback').textContent(),
+      ownerVisible: await hook(page, 'setup-owner-email').isVisible(),
+    })
+    throw error
+  }
 }
 async function details(page: Page) {
   await hook(page, 'setup-workspace').fill('Installed workspace')
@@ -164,6 +195,8 @@ describe('extracted PHP distribution and first-owner setup', () => {
         'app/index.html',
         'schema/guide.schema.json',
         'src/Installer.php',
+        'src/Backups.php',
+        'BACKUPS.md',
       ]),
     )
     const status = installationStatusSchema.parse(
@@ -382,15 +415,13 @@ describe('extracted PHP distribution and first-owner setup', () => {
         ).toEqual([280, 880])
         expect(Math.abs((card?.y ?? 0) - 68)).toBeLessThanOrEqual(6)
         expect(Math.abs((card?.height ?? 0) - 764)).toBeLessThanOrEqual(12)
-        const images = await page
-          .locator('.setup-card')
-          .evaluate((card) =>
-            [...card.querySelectorAll('img')].map((image) => ({
-              loaded: image.complete && image.naturalWidth > 0,
-              width: image.getBoundingClientRect().width,
-              height: image.getBoundingClientRect().height,
-            })),
-          )
+        const images = await page.locator('.setup-card').evaluate((card) =>
+          [...card.querySelectorAll('img')].map((image) => ({
+            loaded: image.complete && image.naturalWidth > 0,
+            width: image.getBoundingClientRect().width,
+            height: image.getBoundingClientRect().height,
+          })),
+        )
         expect(
           images
             .filter((image) => image.height !== 0)
@@ -474,7 +505,9 @@ describe('extracted PHP distribution and first-owner setup', () => {
       ).toBe(true)
       await details(page)
       await hook(page, 'setup-continue').click()
-      await browserExpect(hook(page, 'setup-recovery-codes')).toBeVisible()
+      await browserExpect(hook(page, 'setup-recovery-codes')).toBeVisible(
+        installerNetwork,
+      )
       const codes = (await hook(page, 'setup-recovery-codes').innerText())
         .trim()
         .split(/\s+/)
@@ -578,7 +611,9 @@ describe('extracted PHP distribution and first-owner setup', () => {
       .toBe(1)
     await hook(n.page, 'setup-cancel').click()
     await n.page.reload()
-    await browserExpect(hook(n.page, 'setup-owner-email')).toBeVisible()
+    await browserExpect(hook(n.page, 'setup-owner-email')).toBeVisible(
+      installerNetwork,
+    )
     await browserExpect(hook(n.page, 'setup-owner-email')).toBeDisabled()
     f.sql('UPDATE installation SET expires_at=0')
     await n.page.reload()
@@ -589,7 +624,9 @@ describe('extracted PHP distribution and first-owner setup', () => {
       enabled: true,
     })
     await hook(n.page, 'setup-continue').click()
-    await browserExpect(hook(n.page, 'setup-recovery-codes')).toBeVisible()
+    await browserExpect(hook(n.page, 'setup-recovery-codes')).toBeVisible(
+      installerNetwork,
+    )
     expect(
       f.sql<{ n: number }[]>('SELECT count(*) AS n FROM members')[0]?.n,
     ).toBe(1)
@@ -652,12 +689,54 @@ describe('extracted PHP distribution and first-owner setup', () => {
     async () => {
       const f = await fixture({ base: '/tools', apache: true })
       const n = await native(f)
+      const enrollment: Array<{
+        action: string
+        status?: number
+        milliseconds: number
+      }> = []
+      const started = performance.now()
+      n.page.on('request', (request) => {
+        const action = new URL(request.url()).searchParams.get('action')
+        if (action === 'owner-options' || action === 'owner-verify')
+          enrollment.push({
+            action,
+            milliseconds: Math.round(performance.now() - started),
+          })
+      })
+      n.page.on('response', (response) => {
+        const action = new URL(response.url()).searchParams.get('action')
+        if (action === 'owner-options' || action === 'owner-verify')
+          enrollment.push({
+            action,
+            status: response.status(),
+            milliseconds: Math.round(performance.now() - started),
+          })
+      })
       await unlock(n.page, f)
       await details(n.page)
       await hook(n.page, 'setup-continue').click()
-      await browserExpect(
-        hook(n.page, 'setup-recovery-codes'),
-      ).toBeVisible()
+      try {
+        await browserExpect(
+          hook(n.page, 'setup-recovery-codes'),
+        ).toBeVisible(installerNetwork)
+      } catch (error) {
+        console.log('Apache enrollment boundary', {
+          enrollment,
+          heading: await n.page.locator('h1').textContent(),
+          feedback: await hook(n.page, 'setup-feedback').textContent(),
+          browser: await n.page.evaluate(() => ({
+            focus: document.hasFocus(),
+            visibility: document.visibilityState,
+            secure: isSecureContext,
+          })),
+          credentialCount: (
+            await n.cdp.send('WebAuthn.getCredentials', {
+              authenticatorId: n.authenticatorId,
+            })
+          ).credentials.length,
+        })
+        throw error
+      }
       await hook(n.page, 'setup-recovery-saved').check()
       await hook(n.page, 'setup-continue').click()
       await hook(n.page, 'setup-continue').click()
@@ -666,6 +745,11 @@ describe('extracted PHP distribution and first-owner setup', () => {
       ).toBeVisible()
       const health = await fetch(f.api + 'health')
       expect(health.status).toBe(200)
+      expect(
+        apiHealthSchema
+          .parse(await health.json())
+          .checks?.find((item) => item.id === 'backup')?.status,
+      ).toBe('ok')
       for (const path of [
         '/setup-key.sha256',
         '/data/stepdoc.sqlite',

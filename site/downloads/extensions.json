@@ -1,0 +1,28 @@
+{
+  "format": "stepdoc/extension-distribution@1",
+  "version": "0.2.0",
+  "sourceSha256": "ab3addfdedc1628f902317ed1eac355905636ce397c370607ff31e0ab5444543",
+  "browsers": {
+    "chrome": {
+      "file": "stepdoc-chrome.zip",
+      "sha256": "dc179925956bf7e77ccdcff2ac70b261fb6862c3223051575c9039593c4b221b",
+      "bytes": 1210959,
+      "files": 121,
+      "signed": false
+    },
+    "edge": {
+      "file": "stepdoc-edge.zip",
+      "sha256": "44c2f8438f92ec6ab1fb6050fddadbfc6d02607c7f34b5db449c1ca895b41038",
+      "bytes": 1210957,
+      "files": 121,
+      "signed": false
+    },
+    "firefox": {
+      "file": "stepdoc-firefox.zip",
+      "sha256": "4b35ff8e95434e8d1a1261b129dbe7c3cd39a250b1e7917437d992d765f5b839",
+      "bytes": 1209953,
+      "files": 118,
+      "signed": false
+    }
+  }
+}

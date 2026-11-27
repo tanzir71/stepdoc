@@ -1,5 +1,6 @@
 /* global process, document, getComputedStyle, innerWidth, scrollY, OffscreenCanvas, createImageBitmap */
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { mkdir, readFile, writeFile, stat } from 'node:fs/promises'
 import { expect } from '@playwright/test'
@@ -139,7 +140,10 @@ export async function verifyLanding({
         painted.every((asset) => asset.painted),
         `Every original SVG paints ${name}: ${JSON.stringify(painted.filter((asset) => !asset.painted))}`,
       )
-      assert(assets.length >= 30, `Complete visible asset inventory ${name}`)
+      assert(
+        assets.length >= 30,
+        `Complete visible asset inventory ${name}`,
+      )
     }
     return layout
   }
@@ -248,10 +252,9 @@ export async function verifyLanding({
   await expect(desktop.page.getByRole('heading', { level: 1 })).toHaveText(
     guide.title,
   )
-  await expect(desktop.page.locator('meta[name=generator]')).toHaveAttribute(
-    'content',
-    'StepDoc',
-  )
+  await expect(
+    desktop.page.locator('meta[name=generator]'),
+  ).toHaveAttribute('content', 'StepDoc')
   await expect(desktop.page.locator('figure img')).toHaveCount(3)
   assert(
     await desktop.page
@@ -298,7 +301,10 @@ export async function verifyLanding({
         mobile.page.getByRole('dialog', { name: 'Menu' }),
       ).toBeVisible()
       await expect(open).toHaveAttribute('aria-expanded', 'true')
-      assert.equal(new URL(mobile.page.url()).searchParams.get('menu'), 'open')
+      assert.equal(
+        new URL(mobile.page.url()).searchParams.get('menu'),
+        'open',
+      )
       await inspect(mobile.page, 'landing-menu')
       await mobile.page.keyboard.press('Escape')
       await expect(mobile.page.getByRole('dialog')).toBeHidden()
@@ -318,9 +324,9 @@ export async function verifyLanding({
         `Responsive overflow ${width}`,
       )
       assert.deepEqual(
-        (await new AxeBuilder({ page: mobile.page }).analyze()).violations.map(
-          (v) => v.id,
-        ),
+        (
+          await new AxeBuilder({ page: mobile.page }).analyze()
+        ).violations.map((v) => v.id),
         [],
         `Responsive axe ${width}`,
       )
@@ -349,13 +355,40 @@ export async function verifyLanding({
     [],
     'Docs axe',
   )
+  const distributions = JSON.parse(
+    await readFile(
+      path.join(root, 'site/downloads/extensions.json'),
+      'utf8',
+    ),
+  )
+  for (const browser of ['chrome', 'edge', 'firefox']) {
+    const link = docs.page.locator(`[data-sd="docs-download-${browser}"]`)
+    await expect(link).toHaveAttribute('download', `stepdoc-${browser}.zip`)
+    const pending = docs.page.waitForEvent('download')
+    if (browser === 'edge') {
+      await link.focus()
+      await docs.page.keyboard.press('Enter')
+    } else await link.click()
+    const file = await pending
+    assert.equal(file.suggestedFilename(), `stepdoc-${browser}.zip`)
+    const bytes = await readFile(await file.path())
+    assert.equal(
+      createHash('sha256').update(bytes).digest('hex'),
+      distributions.browsers[browser].sha256,
+      `Compiled ${browser} download`,
+    )
+  }
   await docs.context.close()
   const staticPage = await pageAt({ width: 390, height: 844 }, false)
   await staticPage.page.goto(entry)
   await staticPage.page.waitForURL(entry)
-  await expect(staticPage.page.getByRole('heading', { level: 1 })).toBeVisible()
   await expect(
-    staticPage.page.getByText('Yes. Install the extension', { exact: false }),
+    staticPage.page.getByRole('heading', { level: 1 }),
+  ).toBeVisible()
+  await expect(
+    staticPage.page.getByText('Yes. Install the extension', {
+      exact: false,
+    }),
   ).toBeVisible()
   await staticPage.context.close()
 }

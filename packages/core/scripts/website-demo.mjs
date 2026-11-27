@@ -24,6 +24,8 @@ const server = await createServer({
     ],
   },
   server: { middlewareMode: true },
+  // This is an SSR-only exporter; never scan ignored HTML/extension test artifacts.
+  optimizeDeps: { noDiscovery: true },
   appType: 'custom',
   ssr: { noExternal: ['@stepdoc/core', '@stepdoc/schema'] },
 })

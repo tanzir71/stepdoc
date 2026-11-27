@@ -13,11 +13,14 @@ final class Application
     private readonly SignInCodes $codes;
     private readonly Mailer $mailer;
     private readonly Devices $devices;
+    private readonly Captures $captures;
     public function __construct(private readonly Database $db)
     {
         $this->tokens = new Tokens($db);
-        $this->guides = new Guides($db, new GuideValidator());
+        $validator = new GuideValidator();
+        $this->guides = new Guides($db, $validator);
         $this->blobs = new Blobs($db, $this->guides);
+        $this->captures = new Captures($db, $this->guides, $this->blobs, $validator);
         $this->authState = new AuthState($db);
         $this->sessions = new Sessions($db, $this->authState, $this->tokens);
         $this->passkeys = new Passkeys($db, $this->authState, $this->sessions);
@@ -85,7 +88,8 @@ final class Application
         $method = $_SERVER['REQUEST_METHOD'];
         if ($relative === 'health') {
             if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
-            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => ['members' => false, 'passkeys' => $this->passkeys->available(), 'emailCodes' => $this->mailer->enabled(), 'publicLinks' => false, 'githubPages' => false, 'mcp' => false, 'maxUploadBytes' => $this->db->config->maxUploadBytes], 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'Passkey, recovery and configured email sign-in are available. Initial owner enrollment uses local administration; the setup UI and installer remain unfinished.']]]);
+            $capabilities = ['members' => false, 'passkeys' => $this->passkeys->available(), 'emailCodes' => $this->mailer->enabled(), 'publicLinks' => false, 'githubPages' => false, 'mcp' => false, 'maxUploadBytes' => $this->db->config->maxUploadBytes, 'maxJsonBytes' => $this->db->config->maxJsonBytes, 'captureBlobUpload' => true];
+            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => $capabilities, 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'Passkey, recovery and configured email sign-in are available. Initial owner enrollment uses local administration; the setup UI and installer remain unfinished.']]]);
         }
         if ($relative === 'auth/session') {
             if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
@@ -104,6 +108,11 @@ final class Application
         }
         $token = $this->sessions->authenticate();
         $workspace = $token['workspace_id'];
+        if ($relative === 'sessions') {
+            if ($method !== 'POST') throw new ApiError('method_not_allowed', 405);
+            Tokens::requireScope($token, 'capture:write');
+            self::json($this->captures->commit($token, $this->body()), 201);
+        }
         if ($relative === 'pairing/codes') {
             if ($method !== 'POST') throw new ApiError('method_not_allowed', 405);
             self::json($this->devices->code($token), 201);
@@ -138,8 +147,9 @@ final class Application
                 self::json($version !== '' ? $this->guides->historical($workspace, $id, $version) : $this->guides->versions($workspace, $id));
             }
             if ($operation === 'blobs' && $version === '' && $method === 'POST') {
-                Tokens::requireScope($token, 'guides:write');
+                Tokens::requireScope($token, array_key_exists('captureUuid', $_POST) ? 'capture:write' : 'guides:write');
                 if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > $this->db->config->maxUploadBytes + 65536) throw new ApiError('upload_too_large', 413);
+                if (array_key_exists('captureUuid', $_POST)) self::json($this->captures->stage($token, $id, $_POST, $_FILES), 201);
                 self::json($this->blobs->put($token, $id, $_POST, $_FILES), 201);
             }
             throw new ApiError('method_not_allowed', 405);

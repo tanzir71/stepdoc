@@ -30,19 +30,24 @@ final class Guides
             }
         }
     }
-    public function create(array $token, mixed $input): object
+    public function create(array $token, mixed $input, array $pendingBlobs = []): object
     {
         $guide = $this->validator->parse($input);
         self::id($guide->id);
-        return $this->db->transaction(function () use ($token, $guide): object {
+        return $this->db->transaction(function () use ($token, $guide, $pendingBlobs): object {
             if ($this->db->one('SELECT id FROM guides WHERE workspace_id=? AND id=?', [$token['workspace_id'], $guide->id])) throw new ApiError('conflict', 409);
-            $this->validateBlobs($token['workspace_id'], $guide);
             $guide->version = 1;
             $guide->updatedAt = Database::now();
             // Public-state changes belong to the policy-gated publish endpoint.
             if (isset($guide->publish) && (($guide->publish->isPublic ?? false) || ($guide->publish->publicId ?? null) !== null || ($guide->publish->targets ?? []))) throw new ApiError('forbidden', 403);
             $json = json_encode($guide, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $this->db->execute('INSERT INTO guides(workspace_id,id,slug,title,status,collection_id,version,doc_json,updated_at,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)', [$token['workspace_id'], $guide->id, $guide->id, $guide->title, $guide->status, $guide->collectionId ?? null, 1, $json, $guide->updatedAt, $guide->createdAt]);
+            // Capture bytes become reachable only in this same guide transaction.
+            foreach ($pendingBlobs as $blob) {
+                if ($blob['workspace_id'] !== $token['workspace_id'] || $blob['guide_id'] !== $guide->id) throw new ApiError('invalid_blob');
+                $this->db->execute('INSERT INTO blobs VALUES(?,?,?,?,?,?,?,?,?)', array_values($blob));
+            }
+            $this->validateBlobs($token['workspace_id'], $guide);
             $this->version($token, $guide, $json, 'Created');
             return $guide;
         });

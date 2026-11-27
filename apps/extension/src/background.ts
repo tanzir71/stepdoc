@@ -576,11 +576,18 @@ export function startBackground() {
   async function abort(
     sessionId: string,
     reason: 'metadata' | 'tab_changed' = 'metadata',
+    recordingOnly = false,
   ) {
     await mutate(async () => {
-      const state =
-        await browser.storage.local.get<LegacyStorage>('captureSessionId')
-      if (state.captureSessionId !== sessionId) return
+      const state = await browser.storage.local.get<LegacyStorage>([
+        'captureSessionId',
+        'recording',
+      ])
+      if (
+        state.captureSessionId !== sessionId ||
+        (recordingOnly && !state.recording)
+      )
+        return
       queue.clear()
       await browser.storage.local.set({
         recording: false,
@@ -1479,13 +1486,22 @@ export function startBackground() {
           id: event.step.id,
           frameId: sender.frameId ?? 0,
         }
-        await queue.enqueue({
+        const pending: Pending = {
           event,
           sessionId: message.sessionId,
           tabId: sender.tab.id!,
           windowId: sender.tab.windowId,
           frameId: sender.frameId ?? 0,
-        })
+        }
+        // Acknowledge acceptance without holding a source message channel open
+        // through the entire image queue. Large captures can outlive that channel.
+        // Controls still drain the queue before pause, review or save; a failed
+        // queued capture stops an active matching session through the same privacy
+        // gate, preserving any specific error already reported by the camera path.
+        void queue
+          .enqueue(pending)
+          .catch(() => abort(pending.sessionId, 'metadata', true))
+          .catch(() => {})
         respond({ ok: true })
       } else if (message.type === 'STOP') {
         await queue.drain()

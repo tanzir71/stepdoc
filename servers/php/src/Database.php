@@ -20,6 +20,10 @@ final class Database
                 $this->pdo->exec(file_get_contents(__DIR__ . '/../migrations/002-auth.sql'));
                 $this->execute('INSERT INTO migrations VALUES(2,?)', [self::now()]);
             }
+            if (!$this->one('SELECT version FROM migrations WHERE version=3')) {
+                $this->pdo->exec(file_get_contents(__DIR__ . '/../migrations/003-captures.sql'));
+                $this->execute('INSERT INTO migrations VALUES(3,?)', [self::now()]);
+            }
         });
         @chmod($config->dataDir . '/stepdoc.sqlite', 0600);
     }

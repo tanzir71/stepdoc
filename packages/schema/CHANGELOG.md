@@ -5,6 +5,15 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M12 adds optional Storage API health projections (`maxJsonBytes` and
+`captureBlobUpload`) and strict multipart capture metadata on the existing blob
+route. Completed captures continue to use existing guide@1 UUID, step and
+screenshot fields. Private staging/receipt tables use PHP SQLite migration 003;
+they are not guide data. PHP's validator now accepts UUID URNs already accepted
+by the shared Ajv/Zod validators, preserving their original representation.
+No guide field, serialized default or wire identifier changes; no guide-data
+migration or schema/package version bump is needed.
+
 M11's opt-in, on-device narration stores only final client-redacted text in the
 existing `Step.notes` field. Private capture preferences gain `voiceNarration`
 (default `false`), and `capture` exports strict private owner/session/sequence

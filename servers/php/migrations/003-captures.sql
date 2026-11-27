@@ -1,0 +1,3 @@
+CREATE TABLE capture_uploads (workspace_id TEXT NOT NULL REFERENCES workspaces(id), guide_id TEXT NOT NULL, uuid TEXT NOT NULL, actor TEXT NOT NULL, updated_at INTEGER NOT NULL, committed_at INTEGER, PRIMARY KEY(workspace_id,guide_id), UNIQUE(workspace_id,uuid));
+CREATE TABLE capture_blobs (key TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, guide_id TEXT NOT NULL, step_id TEXT NOT NULL, kind TEXT NOT NULL CHECK(kind IN ('original','rendered')), mime TEXT NOT NULL, bytes INTEGER NOT NULL, sha256 TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(workspace_id,guide_id,step_id,kind), FOREIGN KEY(workspace_id,guide_id) REFERENCES capture_uploads(workspace_id,guide_id) ON DELETE CASCADE);
+CREATE INDEX capture_expiry ON capture_uploads(committed_at,updated_at);

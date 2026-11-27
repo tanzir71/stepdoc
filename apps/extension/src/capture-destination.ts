@@ -13,7 +13,7 @@ import {
 } from '@stepdoc/storage/http'
 import { StorageError, type GuideSummary } from '@stepdoc/storage'
 import type { ConnectionVault } from './connection-vault'
-import { captureUploadGuide, type CaptureDraft } from './review'
+import { captureUploadSource, type CaptureDraft } from './review'
 
 export class DestinationFailure extends Error {
   constructor(readonly code: CaptureDestinationErrorCode) {
@@ -138,7 +138,7 @@ export class CaptureDestinations {
       lookupFailure: DestinationFailure | undefined
     try {
       await guard()
-      const guide = await captureUploadGuide(draft)
+      const source = captureUploadSource(draft)
       await guard()
       client = await CaptureHttpClient.open(choice.server, {
         signal: operation.signal,
@@ -152,10 +152,14 @@ export class CaptureDestinations {
           }
         },
       })
-      const result = await client.upload(guide, async () => {
-        await guard()
-        await operation.started()
-      })
+      const result = await client.uploadPrepared(
+        source.guide,
+        source.images,
+        async () => {
+          await guard()
+          await operation.started()
+        },
+      )
       await guard()
       return { id: result.guide.id, destination: choice }
     } catch (error) {

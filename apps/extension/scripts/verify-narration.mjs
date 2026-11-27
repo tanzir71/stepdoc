@@ -492,8 +492,26 @@ try {
   await context.addInitScript(speechStandIn)
   const popup = await context.newPage()
   await popup.goto(`${origin}/popup.html`)
+  await expect(popup.locator('[data-sd=capture-start]'))
+    .toBeEnabled()
+    .catch(async (error) => {
+      console.log(
+        'Popup narration readiness',
+        await popup.evaluate(() => ({
+          ready: document.readyState,
+          localSpeech: typeof globalThis.SpeechRecognition?.available,
+          mock: !!globalThis.testSpeech,
+          startDisabled: document.querySelector('[data-sd=capture-start]')
+            ?.disabled,
+        })),
+        {
+          phase: (await state()).captureReview?.phase,
+          recording: (await state()).recording,
+        },
+      )
+      throw error
+    })
   await source.bringToFront()
-  await expect(popup.locator('[data-sd=capture-start]')).toBeEnabled()
   const opened = context.waitForEvent('page')
   await popup
     .locator('[data-sd=capture-start]')
@@ -521,6 +539,17 @@ try {
   )
   await source.locator('#first').click()
   await count(1)
+  // Persisted capture state can precede the controls' render/recognition claim.
+  // Simulate speech only once the microphone stand-in is actually listening
+  // and its target step has appeared, as the product instructions require.
+  await expect(controls.locator('[data-sd-step="1"]')).toBeVisible()
+  await expect
+    .poll(() =>
+      controls.evaluate(
+        () => testSpeech.calls.filter(([type]) => type === 'start').length,
+      ),
+    )
+    .toBe(1)
   await controls.evaluate(() =>
     testSpeech.speak('Narrated after popup closure', 0),
   )

@@ -16,6 +16,8 @@ export const apiHealthSchema = z.object({
     githubPages: z.boolean().optional(),
     mcp: z.boolean().optional(),
     maxUploadBytes: count,
+    maxJsonBytes: count.min(1).optional(),
+    captureBlobUpload: z.boolean().optional(),
   }),
   checks: z
     .array(
@@ -85,6 +87,15 @@ export const apiCaptureResultSchema = z.object({
   editUrl: z.string().min(1).max(4096),
 })
 export type ApiCaptureResult = z.output<typeof apiCaptureResultSchema>
+// Multipart metadata for private, capture-scoped staging on the existing blob route.
+export const apiCaptureBlobSchema = z.strictObject({
+  captureUuid: guideSchema.shape.uuid.unwrap(),
+  stepId: z
+    .string()
+    .min(1)
+    .refine((value) => [...value].length <= 200),
+  kind: z.enum(['original', 'rendered']),
+})
 
 // Authentication/device projections of Storage API v1. These are not guide fields.
 export const apiSessionSchema = z.object({

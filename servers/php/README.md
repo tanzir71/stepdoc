@@ -2,8 +2,8 @@
 
 This M12 server implements the existing Storage API v1
 health, guide CRUD/list, version history, private raster-blob paths, passkey and
-email/recovery sign-in, cookie sessions, pairing/devices and scoped API tokens.
-Capture ingestion, public publishing, MCP, the SPA setup/sign-in interface,
+email/recovery sign-in, cookie sessions, pairing/devices, scoped API tokens and
+capture ingestion with private large-image staging. Public publishing, MCP, the SPA setup/sign-in interface,
 distribution and the shared-hosting installer remain unfinished. `/health`
 reports current capabilities and configuration. This is not the deploy ZIP.
 
@@ -150,3 +150,40 @@ HTTP authentication bypass.
 PHP after the Chrome build. The default loaded-extension gate invokes it after
 building the actual extension, proving pair/check/reopen/revoke with the real
 private bearer client and PHP API rather than a protocol stub.
+
+## Capture uploads
+
+`POST /sessions` requires `capture:write` and a private draft guide@1 with stable
+ID/UUID, version 1, and no unresolved redactions. Small captures may carry
+client-prepared PNG/WebP data URLs (8 MiB each and an 8 MiB total JSON budget).
+The server validates transport signatures, copies bytes unchanged and atomically
+creates the guide, immutable first version and image references. It does no image
+decoding, redaction, annotation, thumbnailing or rendering.
+
+`/health` advertises `captureBlobUpload: true`, `maxJsonBytes` and the effective
+per-file `maxUploadBytes`. Larger captures first send multipart files to the
+existing `/guides/{id}/blobs` route with `captureUuid`, `stepId` and `kind`.
+Capture-scoped staging accepts only `original`/`rendered`, binds the capture to
+its workspace/ID/UUID/authenticated issuer, and cannot alter an existing guide.
+Pending guides and bytes are not readable through the guide/blob APIs. The final
+`POST /sessions` replaces URLs with staged keys and promotes only matching
+step/image roles in the same transaction as the new guide.
+
+Identical stage retries return their previous key; changed bytes replace the
+private step/role stage, including repair of missing/corrupt files. Pending
+captures expire after 24 hours of inactivity and are collected lazily. Committed
+receipts and guide versions are retained. Same-issuer commit retries return the
+current saved guide without overwriting later editor changes; trash is never
+resurrected. Private filenames, inline data URLs and rejected typed literals do
+not enter database/audit records. General guide/blob mutations still require
+`guides:write`.
+
+The extension prepares one redacted source/render pair at a time and uploads it
+with its private scoped bearer; it does not build a second large JSON image
+document. `unlimitedStorage` permits retained captures beyond Chrome's local
+10 MiB quota ([Chrome Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage)). The bounded inline protocol remains supported for older servers.
+The controls still receive full retained images through their state RPC; Chrome's
+[64 MiB message limit](https://developer.chrome.com/docs/extensions/develop/concepts/messaging)
+is a separate remaining M11 projection/preview task for larger retained captures.
+The PHP hosted SPA/editor, first-run screens and installer remain the next M12
+runtime/distribution unit; the returned editor route is not yet served here.

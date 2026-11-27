@@ -12,7 +12,11 @@ import {
 
 const workspace = fileURLToPath(new URL('../../', import.meta.url))
 export async function phpFixture(
-  options: { hostname?: string; smtpPort?: number } = {},
+  options: {
+    hostname?: string
+    smtpPort?: number
+    maxUploadBytes?: number
+  } = {},
 ) {
   const runtime = phpRuntime()
   await dependencies(runtime)
@@ -23,7 +27,7 @@ export async function phpFixture(
     STEPDOC_DATA_DIR: dataDir,
     STEPDOC_API_PATH: '/tools/api/v1',
     STEPDOC_PAGE_SIZE: '3',
-    STEPDOC_MAX_UPLOAD_BYTES: '4096',
+    STEPDOC_MAX_UPLOAD_BYTES: String(options.maxUploadBytes ?? 4096),
     // Fixtures never inherit a developer's real mail configuration.
     STEPDOC_MAIL_FROM: options.smtpPort ? 'stepdoc@fixture.test' : '',
     STEPDOC_SMTP_HOST: '127.0.0.1',
@@ -146,7 +150,7 @@ export async function phpFixture(
       capture,
       extension,
       extensionOrigin,
-      maxUploadBytes: 4096,
+      maxUploadBytes: options.maxUploadBytes ?? 4096,
       revoke: (id: string) => cli('token:revoke', { id }),
       issue: (scopes: string[]) => issue(first.id, scopes),
       member: (

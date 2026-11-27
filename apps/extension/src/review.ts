@@ -13,6 +13,7 @@ import {
   IndexedDbAdapter,
   StorageError,
   type BlobUpload,
+  MAX_BLOB_BYTES,
 } from '@stepdoc/storage'
 import { flattenImage } from '@stepdoc/core/canvas'
 import { captureUrl } from '@stepdoc/core/capture'
@@ -26,6 +27,7 @@ import {
   captureImageBlob,
   MAX_API_JSON_BYTES,
   MAX_CAPTURE_INLINE_BYTES,
+  type CaptureImageProvider,
 } from '@stepdoc/storage/http'
 
 // Private extension state. Existing guide@1 fields carry the completed capture.
@@ -211,7 +213,63 @@ async function captureDataUrl(file: Blob): Promise<string> {
   return prefix + btoa(chunks.join(''))
 }
 
-/** Prepare the existing /sessions inline-image path entirely in the client. */
+/** Retain metadata plus a sequential provider, without another capture-sized JSON allocation. */
+export function captureUploadSource(draft: CaptureDraft): {
+  guide: Guide
+  images: CaptureImageProvider
+} {
+  if (draft.steps.length !== draft.images.length)
+    throw new StorageError('invalid_guide')
+  let guide: Guide
+  try {
+    guide = capturedGuide(draft)
+  } catch {
+    throw new StorageError('invalid_guide')
+  }
+  if (
+    guide.steps.some((step) =>
+      step.redactions.some((item) => item.status === 'open'),
+    )
+  )
+    throw new StorageError('redaction_open')
+  const sources = draft.images.map((image) => image.screenshot)
+  for (const step of guide.steps)
+    step.screenshot = {
+      original: null,
+      rendered: '',
+      width: step.screenshot?.width ?? 1,
+      height: step.screenshot?.height ?? 1,
+      devicePixelRatio: step.screenshot?.devicePixelRatio ?? 1,
+      alt: step.title,
+    }
+  return {
+    guide,
+    images: async (step, index) => {
+      if (guide.steps[index]?.id !== step.id)
+        throw new StorageError('invalid_guide')
+      try {
+        const original = await captureImageBlob(
+          sources[index]!,
+          MAX_BLOB_BYTES,
+          true,
+        )
+        const rendered = await flattenImage(original, { click: step.click })
+        return {
+          original,
+          rendered: rendered.blob,
+          width: rendered.width,
+          height: rendered.height,
+          devicePixelRatio: step.screenshot?.devicePixelRatio ?? 1,
+        }
+      } catch (error) {
+        if (error instanceof StorageError) throw error
+        throw new StorageError('invalid_blob')
+      }
+    },
+  }
+}
+
+/** Compatibility helper for servers with the existing bounded inline path. */
 export async function captureUploadGuide(draft: CaptureDraft): Promise<Guide> {
   if (draft.steps.length !== draft.images.length)
     throw new StorageError('invalid_guide')

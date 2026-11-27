@@ -11,9 +11,9 @@ import {
 } from '@stepdoc/schema/capture-destination'
 import type { ConnectionVaultState } from '@stepdoc/schema/pairing'
 import type { ConnectionVault } from './connection-vault'
-import { captureUploadGuide, type CaptureDraft } from './review'
+import { captureUploadSource, type CaptureDraft } from './review'
 
-vi.mock('./review', () => ({ captureUploadGuide: vi.fn() }))
+vi.mock('./review', () => ({ captureUploadSource: vi.fn() }))
 const session = '123e4567-e89b-42d3-a456-426614174001'
 const png = 'data:image/png;base64,iVBORw0KGgoAAAAA'
 const guide = () =>
@@ -71,7 +71,20 @@ function setup() {
   }
   const controller = new CaptureDestinations(vault)
   const calls: Array<{ url: string; init: RequestInit }> = []
-  vi.mocked(captureUploadGuide).mockResolvedValue(guide())
+  vi.mocked(captureUploadSource).mockReturnValue({
+    guide: guide(),
+    images: async () => {
+      const file = new Blob(
+        [
+          Uint8Array.from(atob(png.split(',')[1]!), (char) =>
+            char.charCodeAt(0),
+          ),
+        ],
+        { type: 'image/png' },
+      )
+      return { original: file, rendered: file, width: 1, height: 1 }
+    },
+  })
   const json = (value: unknown, status = 200) =>
     new Response(JSON.stringify(value), {
       status,
@@ -167,7 +180,7 @@ describe('private capture destination binding', () => {
       expect(f.calls.map((call) => call.init.method)).toEqual(['GET', 'GET'])
     })
     const receipt = await f.controller.upload(draft, f.choice, f.operation)
-    expect(captureUploadGuide).toHaveBeenCalledOnce()
+    expect(captureUploadSource).toHaveBeenCalledOnce()
     expect(f.operation.started).toHaveBeenCalledOnce()
     expect(receipt).toEqual({ id: guide().id, destination: f.choice })
     expect(JSON.stringify(receipt)).not.toContain('PRIVATE')
@@ -195,9 +208,9 @@ describe('private capture destination binding', () => {
   })
   it('does not mark an upload attempt when image preparation fails', async () => {
     const f = setup()
-    vi.mocked(captureUploadGuide).mockRejectedValue(
-      new DestinationFailure('too_large'),
-    )
+    vi.mocked(captureUploadSource).mockImplementation(() => {
+      throw new DestinationFailure('too_large')
+    })
     await expect(
       f.controller.upload(draft, f.choice, f.operation),
     ).rejects.toMatchObject({ code: 'too_large' })

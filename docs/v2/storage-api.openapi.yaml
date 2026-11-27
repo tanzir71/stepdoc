@@ -154,17 +154,35 @@ paths:
     post:
       tags: [guides]
       summary: Extension capture upload (v1-compatible). Requires capture:write.
-      description: Steps arrive with blob keys from /guides/{id}/blobs or as inline data URLs (≤ 8 MB each). Returns the new guide and its editor URL.
+      description: >-
+        Accepts a private draft guide@1 with a stable id and uuid, version 1 and no open
+        redactions. Screenshots are client-redacted PNG/WebP data URLs (≤ 8 MB each,
+        also subject to maxJsonBytes), or keys staged through /guides/{id}/blobs with
+        captureUuid. The issuer, workspace, guide, uuid, step and image kind must match.
+        The guide, immutable first version and referenced bytes commit atomically;
+        staged bytes are unreadable and absent from the library until commit. A retry
+        by the same issuer and identity returns its saved guide, including newer edits,
+        without overwriting it. A different identity/issuer conflicts; a trashed guide
+        remains unavailable and is never resurrected.
+        Uncommitted staging expires after 24 hours of inactivity and is lazily collected.
+        Returns the saved guide and the installation-relative editor URL.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: 'guide.schema.json' } } }
       responses:
         '201':
-          description: created
+          description: created, or an idempotent receipt for this issuer and identity
           content:
             application/json:
               schema:
                 type: object
+                required: [guide, editUrl]
                 properties:
                   guide: { $ref: 'guide.schema.json' }
                   editUrl: { type: string }
+        '409': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '423': { $ref: '#/components/responses/Error' }
   /guides/{id}:
     parameters: [ { $ref: '#/components/parameters/GuideId' } ]
     get:
@@ -218,6 +236,16 @@ paths:
     post:
       tags: [blobs]
       summary: Upload a redacted original or a flattened render (image/webp or image/png)
+      description: >-
+        Normal guide uploads require guides:write and an existing guide/step.
+        When captureUuid is supplied, requires capture:write and stages only original
+        or rendered bytes for that new capture, bound to this authenticated issuer.
+        It cannot modify an existing guide. Identical stage retries return the same key;
+        replacement bytes for a pending step/kind replace the private stage. Up to
+        1000 pending images are allowed per capture, with capture step IDs limited
+        to 200 Unicode code points. Commit through POST /sessions.
+        Servers advertise support as health.capabilities.captureBlobUpload and their
+        JSON request budget as maxJsonBytes. Image bytes are never processed server-side.
       requestBody:
         content:
           multipart/form-data:
@@ -226,8 +254,9 @@ paths:
               required: [file, stepId, kind]
               properties:
                 file: { type: string, format: binary }
-                stepId: { type: string }
+                stepId: { type: string, minLength: 1 }
                 kind: { enum: [original, rendered, thumb] }
+                captureUuid: { type: string, format: uuid }
       responses:
         '201':
           description: stored
@@ -457,6 +486,8 @@ components:
             githubPages: { type: boolean }
             mcp: { type: boolean }
             maxUploadBytes: { type: integer }
+            maxJsonBytes: { type: integer, minimum: 1 }
+            captureBlobUpload: { type: boolean }
         checks:
           type: array
           items:

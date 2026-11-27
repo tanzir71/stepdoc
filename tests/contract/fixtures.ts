@@ -17,8 +17,11 @@ export interface ContractFixture {
   restart(): Promise<void>
   close(): Promise<void>
 }
-export async function provision(): Promise<ContractFixture> {
+export async function provision(
+  options: { maxUploadBytes?: number } = {},
+): Promise<ContractFixture> {
   const target = process.env.STEPDOC_CONTRACT_TARGET ?? 'php'
-  if (target === 'php') return { ...(await phpFixture()), target: 'php-sqlite' }
+  if (target === 'php')
+    return { ...(await phpFixture(options)), target: 'php-sqlite' }
   throw new Error(`The ${target} contract fixture is not implemented yet`)
 }

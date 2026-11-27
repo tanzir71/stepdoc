@@ -1,4 +1,4 @@
-import type { Guide, GuideInput } from '@stepdoc/schema'
+import type { Guide, GuideInput, Step } from '@stepdoc/schema'
 import { guideSchema } from '@stepdoc/schema'
 import {
   apiHealthSchema,
@@ -12,6 +12,7 @@ import {
   type ApiCaptureResult,
   type PairingClaim,
   type IssuedToken,
+  apiCaptureBlobSchema,
 } from '@stepdoc/schema/storage-api'
 import {
   StorageError,
@@ -377,14 +378,29 @@ class HttpClient {
 export interface CaptureHttpOptions extends HttpRequestOptions {
   token: () => string | Promise<string>
 }
+export interface CapturePreparedImage {
+  original?: Blob | null
+  rendered: Blob
+  width: number
+  height: number
+  devicePixelRatio?: number
+}
+export type CaptureImageProvider = (
+  step: Step,
+  index: number,
+) => Promise<CapturePreparedImage>
 export async function captureImageBlob(
   url: string,
   maximum = MAX_BLOB_BYTES,
+  allowLarge = false,
 ): Promise<Blob> {
   if (typeof url !== 'string') throw new StorageError('invalid_blob')
   if (!Number.isSafeInteger(maximum) || maximum < 0 || maximum > MAX_BLOB_BYTES)
     throw new StorageError('invalid_options')
-  if (url.length > MAX_CAPTURE_INLINE_BYTES)
+  if (
+    url.length >
+    (allowLarge ? Math.ceil(maximum / 3) * 4 + 32 : MAX_CAPTURE_INLINE_BYTES)
+  )
     throw new StorageError('upload_too_large')
   const match =
     /^data:(image\/(?:png|webp));base64,([A-Za-z0-9+/]*={0,2})$/.exec(url)
@@ -412,16 +428,28 @@ export async function captureImageBlob(
 export class CaptureHttpClient {
   #client: HttpClient
   #root: string
+  #captureJsonLimit: number
+  #blobUpload: boolean
   readonly capabilities: Readonly<
     Pick<StorageCapabilities, 'target' | 'maxUploadBytes'>
   >
   private constructor(
     client: HttpClient,
     base: string,
-    health: { target: StorageCapabilities['target']; maximum: number },
+    health: {
+      target: StorageCapabilities['target']
+      maximum: number
+      maxJson?: number
+      blobUpload?: boolean
+    },
   ) {
     this.#client = client
     this.#root = new URL('../../', base).href
+    this.#captureJsonLimit = Math.min(
+      client.jsonLimit,
+      health.maxJson ?? MAX_API_JSON_BYTES,
+    )
+    this.#blobUpload = health.blobUpload ?? false
     this.capabilities = Object.freeze({
       target: health.target,
       maxUploadBytes: Math.min(MAX_BLOB_BYTES, health.maximum),
@@ -451,6 +479,8 @@ export class CaptureHttpClient {
       return new CaptureHttpClient(client, base, {
         target: health.target,
         maximum: health.capabilities.maxUploadBytes,
+        maxJson: health.capabilities.maxJsonBytes,
+        blobUpload: health.capabilities.captureBlobUpload,
       })
     } catch (error) {
       client?.close()
@@ -510,7 +540,18 @@ export class CaptureHttpClient {
       )
     )
       throw new StorageError('redaction_open')
-    const body = this.#client.body(guide, 'upload_too_large')
+    let body: string | undefined
+    try {
+      body = jsonBody(guide, this.#captureJsonLimit, 'upload_too_large')
+    } catch (error) {
+      if (
+        !this.#blobUpload ||
+        !(error instanceof StorageError) ||
+        error.code !== 'upload_too_large'
+      )
+        throw error
+    }
+    let large = body === undefined
     for (const step of guide.steps)
       if (step.screenshot) {
         this.#client.ready()
@@ -523,15 +564,189 @@ export class CaptureHttpClient {
         )
           throw new StorageError('invalid_blob')
         for (const url of [step.screenshot.original, step.screenshot.rendered])
-          if (url !== undefined && url !== null)
-            await captureImageBlob(url, this.capabilities.maxUploadBytes)
+          if (url !== undefined && url !== null) {
+            await captureImageBlob(
+              url,
+              this.capabilities.maxUploadBytes,
+              this.#blobUpload,
+            )
+            if (url.length > MAX_CAPTURE_INLINE_BYTES) large = true
+          }
       }
+    if (large)
+      return this.uploadPrepared(
+        guide,
+        async (_step, index) => {
+          const screenshot = guide.steps[index]!.screenshot!
+          return {
+            ...screenshot,
+            original:
+              screenshot.original == null
+                ? null
+                : await captureImageBlob(
+                    screenshot.original,
+                    this.capabilities.maxUploadBytes,
+                    true,
+                  ),
+            rendered: await captureImageBlob(
+              screenshot.rendered,
+              this.capabilities.maxUploadBytes,
+              true,
+            ),
+          }
+        },
+        beforePost,
+      )
     // A worker may stop after the server commit but before it can acknowledge it.
     // Read the stable capture ID first; never overwrite a later editor revision.
     const existing = await this.#existing(guide)
     if (existing) return existing
     await beforePost?.()
     this.#client.ready()
+    return this.#post(guide, body!)
+  }
+  /** Prepare/upload one image pair at a time; never construct a large inline JSON body. */
+  async uploadPrepared(
+    input: GuideInput,
+    images: CaptureImageProvider,
+    beforeWrite?: () => Promise<void>,
+  ): Promise<ApiCaptureResult> {
+    this.#client.ready()
+    const guide = validateGuide(input)
+    if (
+      typeof images !== 'function' ||
+      !guide.uuid ||
+      guide.version !== 1 ||
+      guide.status !== 'draft' ||
+      guide.publish?.isPublic ||
+      guide.publish?.publicId ||
+      guide.publish?.targets.length
+    )
+      throw new StorageError('invalid_guide')
+    if (
+      guide.steps.some((step) =>
+        step.redactions.some((item) => item.status === 'open'),
+      )
+    )
+      throw new StorageError('redaction_open')
+    for (const step of guide.steps)
+      if (step.screenshot)
+        step.screenshot = { ...step.screenshot, original: null, rendered: '' }
+    jsonBody(guide, this.#captureJsonLimit, 'upload_too_large')
+    const existing = await this.#existing(guide)
+    if (existing) return existing
+    let intentStored = false
+    let intentFailure: { error: unknown } | undefined
+    const persistIntent = async () => {
+      if (intentStored) return
+      try {
+        await beforeWrite?.()
+      } catch (error) {
+        intentFailure = { error }
+        throw error
+      }
+      intentStored = true
+    }
+    let inlineBytes = 0
+    let body: string
+    try {
+      for (const [index, step] of guide.steps.entries()) {
+        if (!step.screenshot) continue
+        this.#client.ready()
+        // The image provider observes metadata; it cannot change the validated guide.
+        const pair = await images(structuredClone(step), index)
+        if (
+          ![pair.width, pair.height].every(
+            (size) => Number.isSafeInteger(size) && size > 0 && size <= 16384,
+          ) ||
+          !Number.isFinite(pair.devicePixelRatio ?? 1) ||
+          (pair.devicePixelRatio ?? 1) <= 0 ||
+          (pair.devicePixelRatio ?? 1) > 8
+        )
+          throw new StorageError('invalid_blob')
+        step.screenshot.width = pair.width
+        step.screenshot.height = pair.height
+        step.screenshot.devicePixelRatio = pair.devicePixelRatio ?? 1
+        for (const kind of ['original', 'rendered'] as const) {
+          const file = pair[kind]
+          if (kind === 'original' && file == null) continue
+          if (!(file instanceof Blob)) throw new StorageError('invalid_blob')
+          if (file.size > this.capabilities.maxUploadBytes)
+            throw new StorageError('upload_too_large')
+          await validateBlob(
+            { file, kind, stepId: step.id },
+            this.capabilities.maxUploadBytes,
+          )
+          this.#client.ready()
+          if (this.#blobUpload) {
+            const metadata = apiCaptureBlobSchema.parse({
+              captureUuid: guide.uuid,
+              stepId: step.id,
+              kind,
+            })
+            const form = new FormData()
+            for (const [name, value] of Object.entries(metadata))
+              form.set(name, value)
+            form.set(
+              'file',
+              file,
+              file.type === 'image/png' ? 'capture.png' : 'capture.webp',
+            )
+            await persistIntent()
+            const stored = await this.#client.json(
+              `guides/${guide.id}/blobs`,
+              apiBlobKeySchema,
+              {
+                method: 'POST',
+                body: form,
+                expected: 201,
+                invalid: 'invalid_blob',
+              },
+            )
+            if (/^(?:data|https?|blob):/i.test(stored.key))
+              throw new StorageError('corrupt_data')
+            try {
+              keyPath(stored.key)
+            } catch {
+              throw new StorageError('corrupt_data')
+            }
+            step.screenshot[kind] = stored.key
+          } else {
+            const prefix = `data:${file.type};base64,`
+            if (
+              prefix.length + Math.ceil(file.size / 3) * 4 >
+              MAX_CAPTURE_INLINE_BYTES
+            )
+              throw new StorageError('upload_too_large')
+            const bytes = new Uint8Array(await file.arrayBuffer()),
+              chunks: string[] = []
+            for (let at = 0; at < bytes.length; at += 0x8000)
+              chunks.push(
+                String.fromCharCode(...bytes.subarray(at, at + 0x8000)),
+              )
+            const url = prefix + btoa(chunks.join(''))
+            inlineBytes += url.length
+            if (inlineBytes > this.#captureJsonLimit)
+              throw new StorageError('upload_too_large')
+            step.screenshot[kind] = url
+          }
+        }
+      }
+      body = jsonBody(guide, this.#captureJsonLimit, 'upload_too_large')
+    } catch (error) {
+      if (intentFailure && error === intentFailure.error) throw error
+      if (error instanceof StorageError && error.code === 'conflict') {
+        const winner = await this.#existing(guide)
+        if (winner) return winner
+      }
+      if (error instanceof StorageError) throw error
+      throw new StorageError('invalid_blob')
+    }
+    await persistIntent()
+    this.#client.ready()
+    return this.#post(guide, body)
+  }
+  async #post(guide: Guide, body: string): Promise<ApiCaptureResult> {
     let result: ApiCaptureResult
     try {
       result = await this.#client.json('sessions', apiCaptureResultSchema, {

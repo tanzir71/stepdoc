@@ -243,6 +243,14 @@ body {
   object-fit: cover;
   border-radius: var(--sd-radius-sm);
 }
+.capture-thumbnail {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: var(--sd-radius-sm);
+  background: var(--sd-bg-raised);
+}
 .capture-panel small {
   display: block;
   color: var(--sd-text-secondary);

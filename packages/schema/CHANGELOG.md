@@ -5,6 +5,15 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds display-only capture step projections and a strict session/step command
+for recovering disposable previews. Control/source runtime messages no longer
+carry retained rasters, pending upload bodies or unused target/Guide Me metadata.
+Previews are masked WebP blobs in a separate extension-origin IndexedDB cache
+(`stepdoc-capture-previews-v1`, version 1), bounded to 224×144 and 64 KiB each.
+Older retained captures recover previews on demand without changing their source
+images. No guide field, Storage API endpoint or serialized guide default changes;
+no guide migration or wire/package version bump is needed.
+
 M12 adds optional Storage API health projections (`maxJsonBytes` and
 `captureBlobUpload`) and strict multipart capture metadata on the existing blob
 route. Completed captures continue to use existing guide@1 UUID, step and

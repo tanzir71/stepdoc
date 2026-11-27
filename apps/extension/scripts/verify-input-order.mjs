@@ -93,8 +93,35 @@ try {
   const command = (type) =>
     panel.evaluate((type) => chrome.runtime.sendMessage({ type }), type)
   const hook = (name) => panel.locator(`[data-sd="${name}"]`)
+  const enabled = async (name) => {
+    try {
+      await expect(hook(name)).toBeEnabled({ timeout: 20_000 })
+    } catch (error) {
+      console.log('Input control failure metadata', {
+        control: name,
+        worker: await worker.evaluate(async () => {
+          const value = await chrome.storage.local.get([
+            'recording',
+            'captureReview',
+            'capturedSteps',
+            'captureError',
+          ])
+          return {
+            phase: value.captureReview?.phase,
+            recording: value.recording,
+            count: value.capturedSteps?.length,
+            hasError: !!value.captureError,
+          }
+        }),
+        panel: await panel.evaluate(() => ({
+          startedNotice: document.body.textContent.includes('Capture started.'),
+        })),
+      })
+      throw error
+    }
+  }
   const press = async (name) => {
-    await expect(hook(name)).toBeEnabled({ timeout: 20_000 })
+    await enabled(name)
     await hook(name).evaluate((el) => el.click())
   }
   const waitPhase = (phase) =>
@@ -132,6 +159,11 @@ try {
     await source.bringToFront()
     await press('capture-start')
     await waitPhase('recording')
+    // The background records before Start's response/refresh has settled in
+    // this separate controls tab. Complete that UI command before source input.
+    await panel.bringToFront()
+    await enabled('capture-review')
+    await source.bringToFront()
   }
   async function finish(title, expected, inspect) {
     await waitSteps(expected.length)

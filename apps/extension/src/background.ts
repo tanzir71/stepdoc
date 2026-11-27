@@ -1,13 +1,17 @@
 import { browser } from 'wxt/browser'
 import { makeStep } from './legacy-capture'
-import { compositeFrame } from './image'
+import { compositeFrame, previewImage } from './image'
+import { CapturePreviews } from './capture-previews'
+import { captureControls, captureSourceState } from './capture-controls'
+import { captureImageBlob } from '@stepdoc/storage/http'
+import { MAX_BLOB_BYTES } from '@stepdoc/storage'
 import { CaptureQueue } from '@stepdoc/core/capture-queue'
 import { stepSchema, expectationSchema, type Step } from '@stepdoc/schema'
 import {
   localCaptureSchema,
   redactionChangeSchema,
   capturePillControlSchema,
-  capturePillViewSchema,
+  capturePreviewCommandSchema,
   narrationCommandSchema,
   FRAME_PROBE,
 } from '@stepdoc/schema/capture'
@@ -103,17 +107,6 @@ const safeUrl = (raw: string) => {
   url.hash = ''
   return url.href
 }
-const pillView = (state: LegacyStorage, tabId?: number) => {
-  if (tabId !== state.captureTabId || !state.captureSessionId) return null
-  const view = capturePillViewSchema.safeParse({
-    sessionId: state.captureSessionId,
-    phase:
-      state.captureReview?.phase ?? (state.recording ? 'recording' : 'idle'),
-    count: state.steps?.length ?? 0,
-    clock: state.captureReview?.clock,
-  })
-  return view.success ? view.data : null
-}
 const openReview = (fullTab = false) =>
   browser.tabs.create({
     url:
@@ -173,6 +166,8 @@ export function startBackground() {
   let activeSave: { sessionId: string; controller: AbortController } | undefined
   const vault = new IndexedDbConnectionVault()
   const destinations = new CaptureDestinations(vault)
+  const previews = new CapturePreviews()
+  let previewJobs = Promise.resolve()
   const pairing = new PairingController({
     vault,
     extensionId: new URL(browser.runtime.getURL('/')).host,
@@ -480,8 +475,9 @@ export function startBackground() {
           step.lowConfidence = true
         }
         const capturedSteps = [...(state.capturedSteps ?? [])]
+        let navigation: typeof lastNavigation
         if (step.action === 'navigate') {
-          const navigation = {
+          navigation = {
             sessionId: pending.sessionId,
             documentId: pending.event.documentId,
             url: step.url!,
@@ -493,7 +489,6 @@ export function startBackground() {
             lastNavigation.url === navigation.url
           )
             return
-          lastNavigation = navigation
         }
         if (
           step.action === 'navigate' &&
@@ -506,6 +501,10 @@ export function startBackground() {
         }
         capturedSteps.push(step)
         const legacy = makeStep(legacyMeta(step, pending.event, frame.scene))
+        // Privacy may change while the storage snapshot is being read. This is
+        // the final synchronous fence before dispatching the source write.
+        if (frame.privacyEpoch !== privacyEpoch) return false
+        if (navigation) lastNavigation = navigation
         await browser.storage.local.set({
           capturedSteps,
           steps: [
@@ -519,20 +518,26 @@ export function startBackground() {
             },
           ],
         })
+        // The preview derives only from the now-committed masked source. A slow
+        // or failed disposable-cache write cannot widen the privacy fence.
+        if (frame.preview)
+          await previews
+            .put(pending.sessionId, step.id, frame.preview)
+            .catch(() => {})
         await broadcast()
       }),
   )
   async function updateBadge() {
     const state = await browser.storage.local.get<LegacyStorage>([
       'recording',
-      'steps',
+      'capturedSteps',
       'captureError',
     ])
     await browser.action.setBadgeText({
       text: state.captureError
         ? '!'
         : state.recording
-          ? String(state.steps?.length ?? 0)
+          ? String(state.capturedSteps?.length ?? 0)
           : '',
     })
     await browser.action.setBadgeBackgroundColor({
@@ -547,30 +552,26 @@ export function startBackground() {
       'captureBlurMode',
       'captureManualCount',
       'captureReview',
-      'steps',
+      'capturedSteps',
     ])
     await updateBadge()
     await Promise.allSettled(
       (await browser.tabs.query({}))
         .filter((tab) => tab.id)
-        .map((tab) =>
-          browser.tabs.sendMessage(tab.id!, {
+        .map((tab) => {
+          const source = captureSourceState(state, tab.id!)
+          return browser.tabs.sendMessage(tab.id!, {
             type: 'STATE',
-            recording: !!state.recording && tab.id === state.captureTabId,
-            paused:
-              ['pausing', 'paused', 'stopping'].includes(
-                state.captureReview?.phase ?? '',
-              ) && tab.id === state.captureTabId,
-            producerStopped: ['pausing', 'stopping'].includes(
-              state.captureReview?.phase ?? '',
-            ),
-            stepCount: state.steps?.length ?? 0,
-            sessionId: state.captureSessionId,
-            blurMode: !!state.captureBlurMode,
-            manualCount: state.captureManualCount ?? 0,
-            capturePill: pillView(state, tab.id!),
-          }),
-        ),
+            recording: source.recording,
+            paused: source.paused,
+            producerStopped: source.producerStopped,
+            stepCount: source.stepCount,
+            sessionId: source.captureSessionId,
+            blurMode: source.captureBlurMode,
+            manualCount: source.captureManualCount,
+            capturePill: source.capturePill,
+          })
+        }),
     )
   }
   async function abort(
@@ -626,6 +627,63 @@ export function startBackground() {
     const ownControls =
       sender.id === browser.runtime.id &&
       !!sender.url?.startsWith(browser.runtime.getURL(''))
+    if (message.type === 'CAPTURE_PREVIEW') {
+      const command = capturePreviewCommandSchema.safeParse(message)
+      if (!ownControls || !command.success) {
+        respond({ ok: false, error: 'forbidden' })
+        return
+      }
+      // Only old retained captures or a failed disposable-cache write need recovery.
+      // Serialize recovery so multiple visible rows never materialize the full
+      // retained image array concurrently; replies contain no image bytes.
+      const job = previewJobs.then(async () => {
+        await recovered
+        // A storage event can render a row before its preview write completes.
+        // Join that writer before attempting old-capture cache recovery.
+        await writes
+        const current = await browser.storage.local.get<LegacyStorage>([
+          'captureSessionId',
+          'capturedSteps',
+        ])
+        const { sessionId, stepId } = command.data
+        const index =
+          current.capturedSteps?.findIndex((step) => step.id === stepId) ?? -1
+        if (current.captureSessionId !== sessionId || index < 0)
+          throw new Error()
+        if (await previews.get(sessionId, stepId)) return
+        const retained = await browser.storage.local.get<LegacyStorage>([
+          'steps',
+          'capturedSteps',
+          'captureSessionId',
+        ])
+        const retainedIndex =
+          retained.capturedSteps?.findIndex((step) => step.id === stepId) ?? -1
+        if (retained.captureSessionId !== sessionId || retainedIndex < 0)
+          throw new Error()
+        const source = retained.steps?.[retainedIndex]?.screenshot
+        if (!source) throw new Error()
+        const file = await captureImageBlob(source, MAX_BLOB_BYTES, true)
+        const preview = await previewImage(file)
+        await mutate(async () => {
+          const latest = await browser.storage.local.get<LegacyStorage>([
+            'captureSessionId',
+            'capturedSteps',
+          ])
+          if (
+            latest.captureSessionId !== sessionId ||
+            !latest.capturedSteps?.some((step) => step.id === stepId)
+          )
+            throw new Error()
+          await previews.put(sessionId, stepId, preview)
+        })
+      })
+      previewJobs = job.catch(() => {})
+      void job.then(
+        () => respond({ ok: true }),
+        () => respond({ ok: false, error: 'Preview unavailable' }),
+      )
+      return true
+    }
     if (['CANCEL', 'STOP', 'RETRY'].includes(message.type) && !ownControls) {
       respond({ ok: false, error: 'Capture operation failed' })
       return
@@ -995,6 +1053,7 @@ export function startBackground() {
           privacyEpoch++
           lastNavigation = undefined
           expectationOwner = undefined
+          await previews.clear().catch(() => {})
           await browser.storage.local.set({
             recording: false,
             steps: [],
@@ -1082,6 +1141,7 @@ export function startBackground() {
           expectations.clear()
           manualCounts.clear()
           privacyEpoch++
+          await previews.clear().catch(() => {})
           await browser.storage.local.set({
             recording: false,
             steps: [],
@@ -1339,6 +1399,7 @@ export function startBackground() {
             }
             await mutate(async () => {
               await assertSaving()
+              await previews.clear().catch(() => {})
               await browser.storage.local.set({
                 recording: false,
                 steps: [],
@@ -1527,37 +1588,31 @@ export function startBackground() {
           'captureBlurMode',
           'captureManualCount',
           'captureReview',
-          'steps',
+          'capturedSteps',
         ])
-        respond({
-          ...state,
-          recording: !!state.recording && sender.tab?.id === state.captureTabId,
-          paused:
-            ['pausing', 'paused', 'stopping'].includes(
-              state.captureReview?.phase ?? '',
-            ) && sender.tab?.id === state.captureTabId,
-          producerStopped: ['pausing', 'stopping'].includes(
-            state.captureReview?.phase ?? '',
-          ),
-          stepCount: state.steps?.length ?? 0,
-          capturePill: pillView(state, sender.tab?.id),
-        })
-      } else if (message.type === 'GET_STATE')
+        respond(captureSourceState(state, sender.tab?.id))
+      } else if (message.type === 'GET_STATE') {
+        if (!ownControls) {
+          respond({ ok: false, error: 'forbidden' })
+          return
+        }
         respond(
-          await browser.storage.local.get<LegacyStorage>([
-            'recording',
-            'steps',
-            'capturedSteps',
-            'captureSessionId',
-            'captureError',
-            'pendingSession',
-            'captureBlurMode',
-            'captureManualCount',
-            'captureReview',
-            'guideMe',
-            'captureDestination',
-          ]),
+          captureControls(
+            await browser.storage.local.get<LegacyStorage>([
+              'recording',
+              'capturedSteps',
+              'captureSessionId',
+              'captureError',
+              'pendingSession',
+              'captureBlurMode',
+              'captureManualCount',
+              'captureReview',
+              'guideMe',
+              'captureDestination',
+            ]),
+          ),
         )
+      }
     }
     if (message.type === 'START') {
       if (!ownControls) {

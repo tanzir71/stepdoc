@@ -182,8 +182,13 @@ The extension prepares one redacted source/render pair at a time and uploads it
 with its private scoped bearer; it does not build a second large JSON image
 document. `unlimitedStorage` permits retained captures beyond Chrome's local
 10 MiB quota ([Chrome Storage API](https://developer.chrome.com/docs/extensions/reference/api/storage)). The bounded inline protocol remains supported for older servers.
-The controls still receive full retained images through their state RPC; Chrome's
-[64 MiB message limit](https://developer.chrome.com/docs/extensions/develop/concepts/messaging)
-is a separate remaining M11 projection/preview task for larger retained captures.
+Controls receive display metadata rather than retained rasters or pending upload
+bodies. Source pages receive only recorder status, count and pill state, and cannot
+request control state or previews. A separate extension-origin IndexedDB cache
+holds already-masked WebP previews (at most 224×144 pixels and 64 KiB each), read
+lazily by visible rows. Older retained captures recover previews on demand without
+changing their original bytes. This avoids Chrome's
+[64 MiB runtime-message limit](https://developer.chrome.com/docs/extensions/develop/concepts/messaging);
+control metadata itself is bounded below that limit before serialization.
 The PHP hosted SPA/editor, first-run screens and installer remain the next M12
 runtime/distribution unit; the returned editor route is not yet served here.

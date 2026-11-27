@@ -35,6 +35,47 @@ export const capturePillViewSchema = z.strictObject({
   clock: captureClockSchema.optional(),
 })
 export type CapturePillView = z.output<typeof capturePillViewSchema>
+export const captureSourceStateSchema = z.strictObject({
+  recording: z.boolean(),
+  paused: z.boolean(),
+  producerStopped: z.boolean(),
+  captureSessionId: z.string().uuid().optional(),
+  captureBlurMode: z.boolean(),
+  captureManualCount: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER),
+  stepCount: z.number().int().min(0).max(500),
+  capturePill: capturePillViewSchema.nullable(),
+})
+// Display-only projections: no image URLs, target locators or recorded values.
+export const captureControlStepSchema = z.strictObject({
+  id: z.string().min(1),
+  index: z.number().int().min(1).max(500),
+  type: stepSchema.shape.type,
+  action: stepSchema.shape.action,
+  title: z.string().min(1),
+  notes: z.string().optional(),
+  targetRole: z.string().optional(),
+  valueKind: z.enum(['none', 'literal', 'variable', 'secret']).optional(),
+  variable: z.string().optional(),
+  maskCount: z.number().int().nonnegative(),
+  lowConfidence: z.boolean(),
+})
+export type CaptureControlStep = z.output<typeof captureControlStepSchema>
+export const capturePreviewCommandSchema = z.strictObject({
+  type: z.literal('CAPTURE_PREVIEW'),
+  sessionId: z.string().uuid(),
+  stepId: z.string().min(1).max(200),
+})
+export const CAPTURE_PREVIEW = Object.freeze({
+  width: 224,
+  height: 144,
+  maxBytes: 64 * 1024,
+})
+// Leave headroom below Chrome's 64 MiB runtime-message ceiling.
+export const MAX_CAPTURE_CONTROL_BYTES = 48 * 1024 * 1024
 export const capturePreferencesSchema = z.strictObject({
   smartBlur: z.boolean().default(true),
   agentContext: z.boolean().default(true),

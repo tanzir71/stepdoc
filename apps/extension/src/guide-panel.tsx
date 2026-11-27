@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Badge, Button, Icon, Logo, StepPin } from '@stepdoc/ui'
 import { browser } from 'wxt/browser'
-import type { GuideRun } from './guide-run'
+import type { GuideRunView } from './capture-controls'
 import './guide-panel.css'
 
-export function GuidePanel({ run }: { run: GuideRun }) {
+export function GuidePanel({ run }: { run: GuideRunView }) {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState('')
   const [activity, setActivity] = useState<string[]>([])

@@ -30,7 +30,8 @@ import {
   capturePreferencesSchema,
   type ReviewEdit,
 } from '@stepdoc/schema/capture'
-import type { LegacyStorage } from './background'
+import type { CaptureControls } from './capture-controls'
+import { CaptureThumbnail } from './capture-thumbnail'
 import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
@@ -119,7 +120,7 @@ function CapturePanel() {
       media.removeEventListener('change', update)
     }
   }, [])
-  const [state, setState] = useState<LegacyStorage>({})
+  const [state, setState] = useState<CaptureControls>({})
   const latest = useRef(state)
   const refreshNumber = useRef(0)
   const [ready, setReady] = useState(false)
@@ -233,9 +234,11 @@ function CapturePanel() {
   }, [])
   async function refresh() {
     const n = ++refreshNumber.current
-    const next: LegacyStorage = await browser.runtime.sendMessage({
+    const next: CaptureControls = await browser.runtime.sendMessage({
       type: 'GET_STATE',
     })
+    if ('ok' in next && next.ok === false)
+      throw new Error('Controls unavailable')
     if (n !== refreshNumber.current) return
     latest.current = next
     setState(next)
@@ -941,19 +944,15 @@ function CapturePanel() {
                   <span className="capture-number">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  {state.steps?.[i]?.screenshot ? (
-                    <img
-                      src={state.steps[i]!.screenshot}
-                      alt=""
-                      width="56"
-                      height="36"
-                    />
-                  ) : null}
+                  <CaptureThumbnail
+                    sessionId={state.captureSessionId}
+                    stepId={step.id}
+                  />
                   <span>
                     {step.title}
                     <small>
                       {step.action ?? step.type}
-                      {step.target?.role ? ` · ${step.target.role}` : ''}
+                      {step.targetRole ? ` · ${step.targetRole}` : ''}
                     </small>
                     {step.notes ? (
                       <p
@@ -1029,8 +1028,8 @@ function CapturePanel() {
             <div className="capture-counts">
               <Badge dot={false}>{steps.length} steps</Badge>
               <Badge tone="success" dot={false}>
-                {steps.reduce((sum, step) => sum + step.redactions.length, 0)}{' '}
-                masks applied
+                {steps.reduce((sum, step) => sum + step.maskCount, 0)} masks
+                applied
               </Badge>
               <Badge tone="warning" dot={false}>
                 {steps.filter((step) => step.lowConfidence).length} unclear
@@ -1082,12 +1081,12 @@ function CapturePanel() {
                     {step.title}
                     <small>
                       {step.action ?? step.type}
-                      {step.value?.kind === 'secret'
+                      {step.valueKind === 'secret'
                         ? ' · secret'
-                        : step.value?.kind === 'variable'
-                          ? ` · {${step.value.variable}}`
-                          : step.target?.role
-                            ? ` · ${step.target.role}`
+                        : step.valueKind === 'variable'
+                          ? ` · {${step.variable}}`
+                          : step.targetRole
+                            ? ` · ${step.targetRole}`
                             : ''}
                     </small>
                     {step.notes ? (

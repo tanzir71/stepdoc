@@ -37,6 +37,7 @@ describe('PHP storage and host boundaries', () => {
     ).not.toContain(fixture.owner.token)
     expect(fixture.inspect('SELECT version FROM migrations')).toEqual([
       { version: 1 },
+      { version: 2 },
     ])
     expect(fixture.inspect('PRAGMA foreign_key_check')).toEqual([])
   })

@@ -11,7 +11,9 @@ import {
 } from '../../servers/php/scripts/php.mjs'
 
 const workspace = fileURLToPath(new URL('../../', import.meta.url))
-export async function phpFixture() {
+export async function phpFixture(
+  options: { hostname?: string; smtpPort?: number } = {},
+) {
   const runtime = phpRuntime()
   await dependencies(runtime)
   await mkdir(join(workspace, 'test-results'), { recursive: true })
@@ -22,6 +24,13 @@ export async function phpFixture() {
     STEPDOC_API_PATH: '/tools/api/v1',
     STEPDOC_PAGE_SIZE: '3',
     STEPDOC_MAX_UPLOAD_BYTES: '4096',
+    // Fixtures never inherit a developer's real mail configuration.
+    STEPDOC_MAIL_FROM: options.smtpPort ? 'stepdoc@fixture.test' : '',
+    STEPDOC_SMTP_HOST: '127.0.0.1',
+    STEPDOC_SMTP_PORT: String(options.smtpPort ?? 1),
+    STEPDOC_SMTP_SECURITY: 'none',
+    STEPDOC_SMTP_USERNAME: '',
+    STEPDOC_SMTP_PASSWORD: '',
   }
   const cli = (command: string, input: object): unknown =>
     JSON.parse(
@@ -73,7 +82,7 @@ export async function phpFixture() {
     await new Promise<void>((resolve, reject) =>
       listener.close((error) => (error ? reject(error) : resolve())),
     )
-    const origin = `http://127.0.0.1:${address.port}`
+    const origin = `http://${options.hostname ?? '127.0.0.1'}:${address.port}`
     const child = spawn(
       runtime.binary,
       [
@@ -140,6 +149,20 @@ export async function phpFixture() {
       maxUploadBytes: 4096,
       revoke: (id: string) => cli('token:revoke', { id }),
       issue: (scopes: string[]) => issue(first.id, scopes),
+      member: (
+        email: string,
+        role: 'owner' | 'editor' | 'viewer',
+        name = role,
+      ) => ({
+        ...(cli(role === 'owner' ? 'owner:create' : 'member:add', {
+          workspaceId: first.id,
+          email,
+          name,
+          role,
+        }) as { id: string }),
+        email,
+        role,
+      }),
       restart: async () => {
         await stop(server.child)
         Object.assign(server, await start())

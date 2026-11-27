@@ -41,6 +41,7 @@ paths:
   /auth/session:
     get:
       tags: [auth]
+      security: [{ sessionCookie: [] }]
       summary: Current member and workspace
       responses:
         '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
@@ -50,6 +51,12 @@ paths:
       tags: [auth]
       security: []
       summary: WebAuthn registration or authentication options
+      description: |
+        Returns {publicKey: ...} using standard base64url WebAuthn JSON options.
+        The one-use ceremony cookie expires in five minutes. User verification is required.
+        Register requires the same member's session; initial owner enrollment may instead use
+        a locally issued admin bearer before any workspace passkey exists. Anonymous registration
+        is denied. Authenticate uses discoverable credentials and does not reveal email existence.
       requestBody:
         content:
           application/json:
@@ -65,6 +72,17 @@ paths:
       tags: [auth]
       security: []
       summary: Verify attestation/assertion and set the session cookie
+      description: |
+        Accepts the standard PublicKeyCredential.toJSON() attestation/assertion object.
+        Checks exact canonical origin, RP hash, one-use challenge, user verification/presence,
+        credential/user binding, signature and counter. The same registration principal must
+        authenticate both ceremony requests. Success rotates the Secure, HttpOnly, SameSite=Lax
+        sd_session cookie scoped to the installation. First enrollment returns ten recovery
+        codes once; subsequent session reads/sign-ins never return them.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WebAuthnCredential' }
       responses:
         '200': { description: ok, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
         '400': { $ref: '#/components/responses/Error' }
@@ -91,6 +109,14 @@ paths:
       tags: [auth]
       security: []
       summary: Sign in with a one-time recovery code (then prompt to add a passkey)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                code: { type: string, description: One of the ten recovery codes shown after first enrollment. }
       responses:
         '200': { description: ok }
   /auth/logout:
@@ -287,6 +313,11 @@ paths:
       tags: [devices]
       security: []
       summary: Extension exchanges a code for a scoped token. CORS allows only registered extension IDs.
+      description: |
+        Only this anonymous exchange permits a new syntactically valid extension Origin for
+        CORS/preflight. The submitted extensionId must exactly match that Origin's host.
+        A valid one-use code registers the origin and returns only capture:write and guides:read.
+        Other credentialed operations allow only already registered extension origins.
       requestBody:
         content:
           application/json:
@@ -381,7 +412,14 @@ paths:
 components:
   securitySchemes:
     sessionCookie: { type: apiKey, in: cookie, name: sd_session }
-    bearerToken: { type: http, scheme: bearer, description: 'Tokens look like sd_<random>; stored as SHA-256 hashes.' }
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: |
+        Tokens look like sd_<random>; stored as SHA-256 hashes. Extension tokens check any
+        supplied Origin against their registered origin. Privileged extension GET fetch may
+        omit Origin; those reads still require the valid scoped bearer. Extension mutations
+        require the registered Origin. Cookie mutations require the exact canonical Origin.
   parameters:
     GuideId: { name: id, in: path, required: true, schema: { type: string } }
   responses:
@@ -432,6 +470,33 @@ components:
       properties:
         member: { type: object, properties: { id: { type: string }, name: { type: string }, email: { type: string }, role: { enum: [owner, editor, viewer] } } }
         workspace: { type: object, properties: { id: { type: string }, name: { type: string } } }
+        needsPasskey: { type: boolean, description: Prompt passkey enrollment after recovery or while no passkey is registered. }
+        recoveryCodes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          description: Shown only after the member's first successful passkey enrollment; never persisted as plaintext.
+          items: { type: string }
+    WebAuthnCredential:
+      type: object
+      description: Standard PublicKeyCredential JSON. Binary fields use unpadded base64url.
+      properties:
+        id: { type: string }
+        rawId: { type: string }
+        type: { const: public-key }
+        authenticatorAttachment: { type: [string, 'null'] }
+        clientExtensionResults: { type: object }
+        response:
+          type: object
+          properties:
+            clientDataJSON: { type: string }
+            attestationObject: { type: string }
+            authenticatorData: { type: string }
+            signature: { type: string }
+            userHandle: { type: [string, 'null'] }
+            transports: { type: array, items: { type: string } }
+            publicKey: { type: string }
+            publicKeyAlgorithm: { type: integer }
     GuideSummary:
       type: object
       properties:

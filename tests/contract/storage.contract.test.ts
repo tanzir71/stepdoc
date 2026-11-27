@@ -440,8 +440,18 @@ describe('Storage API v1 contract', () => {
       403,
       'forbidden',
     )
+    const privilegedRead = await call('guides', {}, fixture.extension.token)
+    expect(privilegedRead.status).toBe(200)
+    await privilegedRead.arrayBuffer()
     await error(
-      await call('guides', {}, fixture.extension.token),
+      await call(
+        'guides',
+        {
+          method: 'POST',
+          body: JSON.stringify(document('origin-required-write')),
+        },
+        fixture.extension.token,
+      ),
       403,
       'forbidden',
     )

@@ -1,0 +1,11 @@
+CREATE UNIQUE INDEX members_email ON members(email COLLATE NOCASE);
+CREATE TABLE passkeys (id TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, credential_id TEXT NOT NULL UNIQUE, public_key TEXT NOT NULL, sign_count INTEGER NOT NULL, transports TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE sessions (id_hash TEXT PRIMARY KEY, member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, user_agent TEXT NOT NULL, role TEXT NOT NULL, method TEXT NOT NULL);
+CREATE INDEX sessions_member ON sessions(member_id);
+CREATE TRIGGER members_rotate_sessions AFTER UPDATE OF role ON members WHEN OLD.role<>NEW.role BEGIN DELETE FROM sessions WHERE member_id=NEW.id; END;
+CREATE TABLE auth_challenges (id_hash TEXT PRIMARY KEY, challenge_hash TEXT NOT NULL, mode TEXT NOT NULL, email_hash TEXT, member_id TEXT REFERENCES members(id) ON DELETE CASCADE, actor TEXT, expires_at INTEGER NOT NULL, used_at INTEGER);
+CREATE TABLE login_codes (email_hash TEXT PRIMARY KEY, code_hash TEXT NOT NULL, expires_at INTEGER NOT NULL, attempts INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE recovery_codes (member_id TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE, code_hash TEXT NOT NULL UNIQUE, used_at INTEGER, PRIMARY KEY(member_id,code_hash));
+CREATE TABLE auth_rates (key_hash TEXT PRIMARY KEY, window_started INTEGER NOT NULL, attempts INTEGER NOT NULL);
+CREATE TABLE pairing_codes (code_hash TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id), created_by TEXT NOT NULL, member_id TEXT REFERENCES members(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, used_at INTEGER);
+ALTER TABLE tokens ADD COLUMN created_by TEXT REFERENCES members(id) ON DELETE CASCADE;

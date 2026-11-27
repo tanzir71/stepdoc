@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import sharp from 'sharp'
 import { flattenImage } from './render'
 
 describe('flattenImage', () => {
+  beforeAll(async () => {
+    // libvips/Pango initializes host fonts on the first SVG text render.
+    // Keep native setup outside the unchanged five-second layer behavior check.
+    await sharp(
+      Buffer.from('<svg width="16" height="16"><text x="0" y="12" font-size="12">A</text></svg>'),
+    ).png().toBuffer()
+  }, 30000)
+
   it('applies non-destructive crop, blur, annotation and marker layers', async () => {
     const original = await sharp({
       create: { width: 80, height: 60, channels: 3, background: '#ffffff' },

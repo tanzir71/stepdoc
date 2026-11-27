@@ -164,6 +164,19 @@ try {
     ],
   })
   context.setDefaultTimeout(15_000)
+  async function openedPage(action) {
+    const previous = new Set(context.pages())
+    await action()
+    // STOP acknowledges after upload/tab creation. Observe its resulting page
+    // without leaving an independently rejecting event promise during the action.
+    await expect
+      .poll(
+        () => context.pages().filter((page) => !previous.has(page)).length,
+        { timeout: 15_000 },
+      )
+      .toBe(1)
+    return context.pages().find((page) => !previous.has(page))
+  }
   const failures = []
   context.on('page', (page) =>
     page.on('pageerror', (error) => failures.push(error.message)),
@@ -189,9 +202,9 @@ try {
     panel.getByRole('heading', { name: 'StepDoc', exact: true }),
   ).toBeVisible()
   await expect(panel.getByRole('status')).toHaveText('Ready to capture')
-  const appOpened = context.waitForEvent('page')
-  await panel.getByRole('link', { name: 'Open library' }).click()
-  const app = await appOpened
+  const app = await openedPage(() =>
+    panel.getByRole('link', { name: 'Open library' }).click(),
+  )
   await app.waitForLoadState()
   assert.equal(app.url(), `${origin}/app.html`)
   app.on('request', (request) => {
@@ -367,12 +380,12 @@ try {
       /^data:image\/(?:png|webp);base64,/.test(step.screenshot),
     ),
   )
-  const opened = context.waitForEvent('page')
-  assert.deepEqual(
-    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })),
-    { ok: true },
-  )
-  const legacyGuide = await opened
+  const legacyGuide = await openedPage(async () => {
+    assert.deepEqual(
+      await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })),
+      { ok: true },
+    )
+  })
   await legacyGuide.waitForURL(`${base}/guides/legacy-capture/edit`)
   assert.equal(uploaded.sourceUrl, fixture.url())
   assert(
@@ -653,8 +666,8 @@ try {
   )
   // A metadata-limit failure must stop and block upload, preserving only prior
   // already-redacted steps and exposing a data-free status to the capture UI.
-  await fixture.goto(`${base}/failure`)
   await fixture.bringToFront()
+  await fixture.goto(`${base}/failure`)
   await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
   await fixture
     .locator('#fixture-save')

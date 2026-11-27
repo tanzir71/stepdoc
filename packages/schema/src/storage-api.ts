@@ -85,3 +85,33 @@ export const apiCaptureResultSchema = z.object({
   editUrl: z.string().min(1).max(4096),
 })
 export type ApiCaptureResult = z.output<typeof apiCaptureResultSchema>
+
+// Authentication/device projections of Storage API v1. These are not guide fields.
+export const apiSessionSchema = z.object({
+  member: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    email: z.email(),
+    role: z.enum(['owner', 'editor', 'viewer']),
+  }),
+  workspace: z.object({ id: z.string().min(1), name: z.string().min(1) }),
+  needsPasskey: z.boolean().optional(),
+  recoveryCodes: z
+    .array(z.string().regex(/^[A-F0-9]{6}(?:-[A-F0-9]{6}){3}$/))
+    .length(10)
+    .optional(),
+})
+export type ApiSession = z.output<typeof apiSessionSchema>
+export const apiPairingCodeSchema = z.object({
+  code: pairingClaimSchema.shape.code,
+  expiresAt: guideSchema.shape.updatedAt,
+})
+export const apiDevicesSchema = z.array(
+  z.object({
+    id: z.string().min(1),
+    kind: z.enum(['extension', 'mcp', 'ci', 'token']),
+    name: z.string().min(1),
+    scopes: z.array(apiScopeSchema),
+    lastSeenAt: guideSchema.shape.updatedAt.nullable(),
+  }),
+)

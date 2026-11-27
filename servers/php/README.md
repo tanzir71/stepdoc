@@ -1,15 +1,16 @@
 # PHP + SQLite server
 
-This is the first M12 server unit. It implements the existing Storage API v1
-health, guide CRUD/list, version history and private raster-blob paths. Passkey,
-email/recovery sign-in, pairing/devices, capture ingestion, public publishing,
-MCP, the SPA distribution and the shared-hosting installer are still unfinished.
-`/health` reports those capabilities as unavailable. This is not the deploy ZIP.
+This M12 server implements the existing Storage API v1
+health, guide CRUD/list, version history, private raster-blob paths, passkey and
+email/recovery sign-in, cookie sessions, pairing/devices and scoped API tokens.
+Capture ingestion, public publishing, MCP, the SPA setup/sign-in interface,
+distribution and the shared-hosting installer remain unfinished. `/health`
+reports current capabilities and configuration. This is not the deploy ZIP.
 
 The PHP runtime uses PDO SQLite and validates guide@1 against
 [`docs/v2/guide.schema.json`](../../docs/v2/guide.schema.json) through the locked
 [Opis JSON Schema validator](https://opis.io/json-schema/2.x/). No Node process,
-image decoder, image transformer or remote service is used by the server.
+image decoder or image transformer is used by the server.
 Blob checks cover MIME and the PNG/WebP byte signature; already-redacted client
 bytes are stored unchanged. The server never retains an upload filename.
 
@@ -62,6 +63,12 @@ Run with the same data configuration as the server. The supported commands are:
   → the token shown once, its ID and scopes. An optional `origin` binds an extension
   token to its exact `chrome-extension://…` or `moz-extension://…` origin.
 - `token:revoke`: `{ "id": "…" }` → `{ "revoked": true }`.
+- `owner:create`: `{ "workspaceId": "…", "name": "Owner", "email": "owner@example.com" }`
+  creates the first owner only when that workspace has no members.
+- `member:add`: `{ "workspaceId": "…", "name": "Editor", "email": "editor@example.com", "role": "editor" }`
+  provisions an editor or viewer through local administration. HTTP invitations
+  and member management remain M15. The current email-based auth contract selects
+  one membership per email address.
 
 Only token hashes are stored. Each authenticated request checks revocation and
 scope in SQLite; observational `last_seen_at` writes are limited to once per
@@ -69,6 +76,10 @@ minute. CORS permits the configured same origin and registered extension origins
 never a wildcard. A registered revoked origin may receive its 401 response, while
 its token remains unusable. Capture-only tokens cannot mutate general guides or
 upload through the editor blob path; capture ingestion remains a later M12 unit.
+Chrome's privileged extension GET requests omit Origin. These reads still require
+the valid scoped bearer; any supplied Origin must match the registered extension,
+and extension mutations require it. Cookie-authenticated mutations retain their
+separate exact canonical-Origin requirement.
 
 Guide writes use prepared SQL and transactions. `If-Match` compares the submitted
 revision with the current revision under the same write lock; successful writes
@@ -77,3 +88,65 @@ Trash preserves historical JSON and blob bytes while hiding all related HTTP
 reads. Private blob responses require guide access, verify stored length/hash,
 send the recorded raster MIME and disable caching/sniffing. General guide writes
 cannot enable public access or bypass the future publish/policy gate.
+
+## Authentication and devices
+
+The existing `/auth/passkey/options` and `/auth/passkey/verify` operations use the
+locked [lbuchs/WebAuthn](https://github.com/lbuchs/WebAuthn) library. Options return
+`{ "publicKey": … }` with standard base64url-encoded WebAuthn binary fields;
+verification accepts the standard `PublicKeyCredential.toJSON()` object. Require
+user presence and verification; the server checks the exact configured origin,
+RP hash, challenge, credential/user binding and signature counter. Challenges
+expire after five minutes and are consumed on the first submission, including a
+failure. IP rate limits apply. Registration is limited to the signed-in member;
+before the workspace has any passkeys, a CLI-issued admin token can enroll the
+locally provisioned owner. That bootstrap token must authenticate both ceremony
+requests. Anonymous owner registration is denied. A real DNS RP ID (including
+localhost for local checks) is required; IP-address installations report passkeys
+unavailable.
+
+The first successful enrollment returns ten high-entropy `recoveryCodes` once.
+They are never returned by session reads, later key registrations or sign-in.
+`POST /auth/recovery {email,code}` consumes one and sets `needsPasskey: true` so
+the later sign-in UI can prompt enrollment. All sign-in methods rotate the
+session. `sd_session` and the ceremony cookie are always Secure, HttpOnly,
+SameSite=Lax and scoped to the installation path. Sessions expire after seven
+days; logout deletes the server record. Cookie-authenticated mutations require
+the exact canonical Origin. An explicit invalid bearer cannot fall back to a
+more privileged cookie. Role changes invalidate old sessions; member-created
+tokens are checked against current role permissions on every request and are
+removed with the member. Tokens and paired devices created through those tokens
+inherit the same member link. Pending pairing also rechecks the issuer's current
+permissions and revocation before issuing credentials.
+
+Email codes use locked [PHPMailer](https://github.com/PHPMailer/PHPMailer) with
+SMTP or the host's `mail()` transport. Configure `STEPDOC_MAIL_FROM`. SMTP uses
+`STEPDOC_SMTP_HOST`, `STEPDOC_SMTP_PORT`, `STEPDOC_SMTP_USERNAME`,
+`STEPDOC_SMTP_PASSWORD` and `STEPDOC_SMTP_SECURITY=starttls|smtps|none` (default
+STARTTLS; `none` is accepted only for loopback SMTP). No TLS verification is
+disabled. Unconfigured email is reported unavailable. Requests return the same
+202 response for known/unknown addresses and delivery failures; failed delivery
+invalidates that code. Codes are six digits, valid for ten minutes, single-use,
+limited to five guesses, with additional email/IP request and verification
+limits. Short codes are HMACed with a private 32-byte `auth.key` outside the web
+root; sessions, challenges and API tokens also persist only hashes. Credentials
+and mail bodies are never written to application logs or audit metadata.
+
+Owner/editor sessions create five-minute `XXX-XXX` codes through
+`POST /pairing/codes`; `/pairing/claim` atomically exchanges one for only
+`capture:write` and `guides:read`. The claim's extension ID must match its exact
+Chrome/Firefox Origin. Only this anonymous exchange permits a syntactically valid
+new extension origin for CORS/preflight; no credentialed endpoint does. A valid
+claim registers that exact origin for subsequent requests. Revoked tokens stay
+revoked even though their registered origin can read a 401 response.
+
+`POST /tokens {name,scopes}` issues explicit API scopes once; callers cannot grant
+permissions they lack. `/devices` returns metadata only. Owners can revoke any
+workspace device; editors can list/revoke only their own, and viewers cannot
+manage credentials. The test suite uses real Chromium virtual WebAuthn and an
+in-memory loopback SMTP receiver, with no real email, hardware authenticator or
+HTTP authentication bypass.
+`pnpm --filter @stepdoc/contract test:extension` runs the real E05 panel against
+PHP after the Chrome build. The default loaded-extension gate invokes it after
+building the actual extension, proving pair/check/reopen/revoke with the real
+private bearer client and PHP API rather than a protocol stub.

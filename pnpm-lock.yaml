@@ -305,6 +305,9 @@ importers:
 
   tests/contract:
     devDependencies:
+      '@playwright/test':
+        specifier: 1.55.0
+        version: 1.55.0
       '@stepdoc/schema':
         specifier: workspace:*
         version: link:../../packages/schema

@@ -8,6 +8,7 @@ try {
     $input = json_decode(stream_get_contents(STDIN), true, 32, JSON_THROW_ON_ERROR);
     if (!is_array($input)) throw new \StepDoc\ApiError('invalid_options');
     $tokens = new \StepDoc\Tokens($db);
+    $sessions = new \StepDoc\Sessions($db, new \StepDoc\AuthState($db), $tokens);
     switch ($argv[1] ?? '') {
         case 'workspace:create':
             if (!is_string($input['name'] ?? null) || !trim($input['name']) || strlen($input['name']) > 200) throw new \StepDoc\ApiError('invalid_options');
@@ -20,6 +21,13 @@ try {
             break;
         case 'token:issue':
             $output = $tokens->issue($input['workspaceId'], $input['name'], $input['scopes'], $input['origin'] ?? null);
+            break;
+        case 'owner:create':
+            $output = $sessions->addMember($input['workspaceId'], $input['name'], $input['email'], 'owner', true);
+            break;
+        case 'member:add':
+            if (!is_string($input['role'] ?? null) || !in_array($input['role'], ['editor', 'viewer'], true)) throw new \StepDoc\ApiError('invalid_options');
+            $output = $sessions->addMember($input['workspaceId'], $input['name'], $input['email'], $input['role']);
             break;
         case 'token:revoke':
             $tokens->revoke($input['id']);

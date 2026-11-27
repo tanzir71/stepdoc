@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test:extension": "vitest run --config vitest.extension.config.ts",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.0",
     "@stepdoc/schema": "workspace:*",
     "@stepdoc/storage": "workspace:*",
     "@types/node": "24.3.0",

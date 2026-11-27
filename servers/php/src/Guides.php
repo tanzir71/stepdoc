@@ -70,8 +70,8 @@ final class Guides
     }
     private function version(array $token, object $guide, string $json, string $summary): void
     {
-        $this->db->execute('INSERT INTO guide_versions VALUES(?,?,?,?,?,?,?)', [$token['workspace_id'], $guide->id, $guide->version, $json, 'token:' . $token['id'], $summary, $guide->updatedAt]);
-        $this->db->audit($token['workspace_id'], 'token:' . $token['id'], 'guide.' . ($guide->version === 1 ? 'create' : 'save'), $guide->id);
+        $this->db->execute('INSERT INTO guide_versions VALUES(?,?,?,?,?,?,?)', [$token['workspace_id'], $guide->id, $guide->version, $json, Tokens::actor($token), $summary, $guide->updatedAt]);
+        $this->db->audit($token['workspace_id'], Tokens::actor($token), 'guide.' . ($guide->version === 1 ? 'create' : 'save'), $guide->id);
     }
     public function versions(string $workspace, string $id): array
     {
@@ -91,7 +91,7 @@ final class Guides
         $this->db->transaction(function () use ($token, $id): void {
             $this->row($token['workspace_id'], $id);
             $this->db->execute('UPDATE guides SET deleted_at=? WHERE workspace_id=? AND id=?', [Database::now(), $token['workspace_id'], $id]);
-            $this->db->audit($token['workspace_id'], 'token:' . $token['id'], 'guide.trash', $id);
+            $this->db->audit($token['workspace_id'], Tokens::actor($token), 'guide.trash', $id);
         });
     }
     public function list(string $workspace, array $query): array

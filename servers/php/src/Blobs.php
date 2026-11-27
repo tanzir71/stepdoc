@@ -32,7 +32,7 @@ final class Blobs
                 if (!move_uploaded_file($file['tmp_name'], $path)) throw new ApiError('storage_unavailable', 503);
                 @chmod($path, 0600);
                 $this->db->execute('INSERT INTO blobs VALUES(?,?,?,?,?,?,?,?,?)', [$key, $token['workspace_id'], $guideId, $fields['stepId'], $fields['kind'], $mime, $size, hash_file('sha256', $path), Database::now()]);
-                $this->db->audit($token['workspace_id'], 'token:' . $token['id'], 'blob.create', $key);
+                $this->db->audit($token['workspace_id'], Tokens::actor($token), 'blob.create', $key);
                 return ['key' => $key];
             });
         } catch (\Throwable $error) {

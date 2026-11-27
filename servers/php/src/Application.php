@@ -7,11 +7,23 @@ final class Application
     private readonly Tokens $tokens;
     private readonly Guides $guides;
     private readonly Blobs $blobs;
+    private readonly AuthState $authState;
+    private readonly Sessions $sessions;
+    private readonly Passkeys $passkeys;
+    private readonly SignInCodes $codes;
+    private readonly Mailer $mailer;
+    private readonly Devices $devices;
     public function __construct(private readonly Database $db)
     {
         $this->tokens = new Tokens($db);
         $this->guides = new Guides($db, new GuideValidator());
         $this->blobs = new Blobs($db, $this->guides);
+        $this->authState = new AuthState($db);
+        $this->sessions = new Sessions($db, $this->authState, $this->tokens);
+        $this->passkeys = new Passkeys($db, $this->authState, $this->sessions);
+        $this->mailer = new Mailer();
+        $this->codes = new SignInCodes($db, $this->authState, $this->sessions, $this->mailer);
+        $this->devices = new Devices($db, $this->authState, $this->tokens);
     }
     public static function headers(): void
     {
@@ -28,12 +40,14 @@ final class Application
         echo json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         exit;
     }
-    private function cors(): void
+    private function cors(string $relative): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? null;
         header('Vary: Origin');
         if ($origin !== null) {
-            if ($origin !== $this->db->config->origin && !$this->tokens->allowsOrigin($origin)) throw new ApiError('forbidden', 403);
+            // Only the anonymous enrollment exchange can introduce a new extension origin.
+            $enrollment = $relative === 'pairing/claim' && Tokens::extensionOrigin($origin);
+            if ($origin !== $this->db->config->origin && !$enrollment && !$this->tokens->allowsOrigin($origin)) throw new ApiError('forbidden', 403);
             header('Access-Control-Allow-Origin: ' . $origin);
             if ($origin === $this->db->config->origin) header('Access-Control-Allow-Credentials: true');
             header('Access-Control-Expose-Headers: ETag, Content-Type, Content-Length');
@@ -67,14 +81,45 @@ final class Application
         if (!is_string($path) || !str_starts_with($path, $base . '/') || preg_match('~%(?:2f|5c|00)~i', $path)) throw new ApiError('not_found', 404);
         $relative = rawurldecode(substr($path, strlen($base) + 1));
         if (str_contains($relative, '\\') || str_contains($relative, "\0")) throw new ApiError('not_found', 404);
-        $this->cors();
+        $this->cors($relative);
         $method = $_SERVER['REQUEST_METHOD'];
         if ($relative === 'health') {
             if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
-            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => ['members' => false, 'passkeys' => false, 'emailCodes' => false, 'publicLinks' => false, 'githubPages' => false, 'mcp' => false, 'maxUploadBytes' => $this->db->config->maxUploadBytes], 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'This development build supports CLI-issued tokens; browser sign-in and pairing are not implemented yet.']]]);
+            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => ['members' => false, 'passkeys' => $this->passkeys->available(), 'emailCodes' => $this->mailer->enabled(), 'publicLinks' => false, 'githubPages' => false, 'mcp' => false, 'maxUploadBytes' => $this->db->config->maxUploadBytes], 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'Passkey, recovery and configured email sign-in are available. Initial owner enrollment uses local administration; the setup UI and installer remain unfinished.']]]);
         }
-        $token = $this->tokens->authenticate($_SERVER['HTTP_AUTHORIZATION'] ?? null, $_SERVER['HTTP_ORIGIN'] ?? null);
+        if ($relative === 'auth/session') {
+            if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
+            self::json($this->sessions->current());
+        }
+        if (in_array($relative, ['auth/passkey/options', 'auth/passkey/verify', 'auth/code/request', 'auth/code/verify', 'auth/recovery', 'auth/logout', 'pairing/claim'], true)) {
+            if ($method !== 'POST') throw new ApiError('method_not_allowed', 405);
+            if ($relative === 'auth/logout') { $this->sessions->logout(); http_response_code(204); exit; }
+            $body = $this->body();
+            if ($relative === 'auth/passkey/options') self::json($this->passkeys->options($body));
+            if ($relative === 'auth/passkey/verify') self::json($this->passkeys->verify($body));
+            if ($relative === 'auth/code/request') { $this->codes->request($body); self::json(['accepted' => true], 202); }
+            if ($relative === 'auth/code/verify') self::json($this->codes->verify($body));
+            if ($relative === 'auth/recovery') self::json($this->codes->verify($body, true));
+            if ($relative === 'pairing/claim') self::json($this->devices->claim($body), 201);
+        }
+        $token = $this->sessions->authenticate();
         $workspace = $token['workspace_id'];
+        if ($relative === 'pairing/codes') {
+            if ($method !== 'POST') throw new ApiError('method_not_allowed', 405);
+            self::json($this->devices->code($token), 201);
+        }
+        if ($relative === 'tokens') {
+            if ($method !== 'POST') throw new ApiError('method_not_allowed', 405);
+            self::json($this->devices->issue($token, $this->body()), 201);
+        }
+        if ($relative === 'devices') {
+            if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
+            self::json($this->devices->list($token));
+        }
+        if (preg_match('~^devices/([^/]+)$~D', $relative, $match)) {
+            if ($method !== 'DELETE') throw new ApiError('method_not_allowed', 405);
+            $this->devices->revoke($token, $match[1]); http_response_code(204); exit;
+        }
         if ($relative === 'guides') {
             if ($method === 'GET') { Tokens::requireScope($token, 'guides:read'); self::json($this->guides->list($workspace, $_GET)); }
             if ($method === 'POST') { Tokens::requireScope($token, 'guides:write'); self::json($this->guides->create($token, $this->body()), 201); }

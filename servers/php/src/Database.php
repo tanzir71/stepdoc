@@ -5,6 +5,7 @@ namespace StepDoc;
 final class Database
 {
     public readonly \PDO $pdo;
+    private int $depth = 0;
     public function __construct(public readonly Config $config)
     {
         $this->pdo = new \PDO('sqlite:' . $config->dataDir . '/stepdoc.sqlite', null, null, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION, \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC]);
@@ -14,6 +15,10 @@ final class Database
             if (!$this->one('SELECT version FROM migrations WHERE version=1')) {
                 $this->pdo->exec(file_get_contents(__DIR__ . '/../migrations/001-storage.sql'));
                 $this->execute('INSERT INTO migrations VALUES(1,?)', [self::now()]);
+            }
+            if (!$this->one('SELECT version FROM migrations WHERE version=2')) {
+                $this->pdo->exec(file_get_contents(__DIR__ . '/../migrations/002-auth.sql'));
+                $this->execute('INSERT INTO migrations VALUES(2,?)', [self::now()]);
             }
         });
         @chmod($config->dataDir . '/stepdoc.sqlite', 0600);
@@ -33,9 +38,19 @@ final class Database
     public function one(string $sql, array $params = []): ?array { return $this->execute($sql, $params)->fetch() ?: null; }
     public function transaction(callable $work): mixed
     {
-        $this->pdo->exec('BEGIN IMMEDIATE');
-        try { $result = $work(); $this->pdo->exec('COMMIT'); return $result; }
-        catch (\Throwable $error) { $this->pdo->exec('ROLLBACK'); throw $error; }
+        $level = $this->depth;
+        $savepoint = 'stepdoc_' . $level;
+        $this->pdo->exec($level === 0 ? 'BEGIN IMMEDIATE' : 'SAVEPOINT ' . $savepoint);
+        $this->depth++;
+        try {
+            $result = $work();
+            $this->pdo->exec($level === 0 ? 'COMMIT' : 'RELEASE SAVEPOINT ' . $savepoint);
+            return $result;
+        } catch (\Throwable $error) {
+            $this->pdo->exec($level === 0 ? 'ROLLBACK' : 'ROLLBACK TO SAVEPOINT ' . $savepoint);
+            if ($level !== 0) $this->pdo->exec('RELEASE SAVEPOINT ' . $savepoint);
+            throw $error;
+        } finally { $this->depth--; }
     }
     public function audit(string $workspace, string $actor, string $action, string $subject): void
     {

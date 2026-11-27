@@ -1,9 +1,9 @@
-import { hostedConfig } from './hosted-config'
+import { clientBase } from './hosted-config'
 const routeBase = 'https://stepdoc.invalid'
 function appMount(): string {
   // Let the bootstrap render its configuration error before any app is mounted.
   try {
-    return hostedConfig()?.base ?? ''
+    return clientBase()
   } catch {
     return ''
   }

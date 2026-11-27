@@ -1,0 +1,21 @@
+- banner:
+  - navigation "StepDoc": stepdoc
+  - text: Step 2 of 3
+- main:
+  - heading "Create the owner passkey" [level=1]
+  - paragraph: Name your workspace and create a passkey for its first owner. Your server stores the public key only.
+  - text: Workspace name
+  - textbox "Workspace name"
+  - text: Owner name
+  - textbox "Owner name"
+  - text: Owner email
+  - textbox "Owner email"
+  - status: Host authorized. Create the owner passkey.
+- contentinfo:
+  - navigation "Setup steps":
+    - list:
+      - listitem: Storage
+      - listitem: Owner passkey
+      - listitem: Install extension
+  - button "Back"
+  - button "Create owner passkey"

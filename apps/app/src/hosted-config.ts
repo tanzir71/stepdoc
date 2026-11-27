@@ -28,3 +28,35 @@ export function hostedConfig(): HostedConfig | null {
       )
     : null
 }
+
+export function parseClientBase(value: string): string {
+  if (!/^(?:\/[a-zA-Z0-9_-]+)*$/.test(value) || value.length > 200)
+    throw new StorageError('invalid_options')
+  return value
+}
+export function clientBase(): string {
+  const hosted = hostedConfig()
+  if (hosted) return hosted.base
+  const meta =
+    typeof document === 'undefined'
+      ? null
+      : document.querySelector('meta[name="stepdoc-base"]')
+  return meta ? parseClientBase(meta.getAttribute('content') ?? '') : ''
+}
+export function setupEndpoint(): string | null {
+  if (typeof document === 'undefined') return null
+  const meta = document.querySelector('meta[name="stepdoc-install"]')
+  if (!meta) return null
+  const url = new URL(meta.getAttribute('content') ?? '', location.href)
+  if (
+    !['http:', 'https:'].includes(url.protocol) ||
+    url.origin !== location.origin ||
+    url.pathname !== clientBase() + '/install.php' ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  )
+    throw new StorageError('invalid_options')
+  return url.href
+}

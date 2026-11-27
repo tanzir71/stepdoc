@@ -89,7 +89,7 @@ final class Application
         if ($relative === 'health') {
             if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);
             $capabilities = ['members' => false, 'passkeys' => $this->passkeys->available(), 'emailCodes' => $this->mailer->enabled(), 'publicLinks' => false, 'githubPages' => false, 'mcp' => false, 'maxUploadBytes' => $this->db->config->maxUploadBytes, 'maxJsonBytes' => $this->db->config->maxJsonBytes, 'captureBlobUpload' => true];
-            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => $capabilities, 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'Passkey, recovery and configured email sign-in are available. Initial owner enrollment uses local administration; the setup UI and installer remain unfinished.']]]);
+            self::json(['target' => 'php-sqlite', 'version' => '2.0.0-dev', 'schema' => 'stepdoc/guide@1', 'capabilities' => $capabilities, 'checks' => [['id' => 'sqlite', 'status' => 'ok', 'message' => 'SQLite storage is available.'], ['id' => 'private-storage', 'status' => 'ok', 'message' => 'Data and blobs are outside the web root.'], ['id' => 'sign-in', 'status' => 'warn', 'message' => 'Passkey, recovery and configured email sign-in are available. Packaged installations enroll their first owner through setup; local administration remains available.']]]);
         }
         if ($relative === 'auth/session') {
             if ($method !== 'GET') throw new ApiError('method_not_allowed', 405);

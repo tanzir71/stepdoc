@@ -237,6 +237,10 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `guide-me` | Extension-origin W03 topbar; starts the native E03 walkthrough after saving edits |
 | `guide-me-overlay`, `guide-me-back`, `guide-me-skip`, `guide-me-confirm`, `guide-me-close`, `guide-me-retry`, `guide-me-editor` | E03 live page dialog and private panel; step navigation, manual confirmation, safe report retry and editor link |
 | `setup-continue` | W01 |
+| `setup-storage-browser`, `setup-storage-php`, `setup-storage-cloudflare`, `setup-storage-node`, `setup-host-retry`, `setup-static-exports` | W01 storage selection, live host checks and informational static exports; unfinished server targets disabled |
+| `setup-key`, `setup-unlock`, `setup-key-cancel`, `setup-workspace`, `setup-owner-name`, `setup-owner-email` | W01 installation authorization and first-owner details |
+| `setup-recovery-codes`, `setup-recovery-saved`, `setup-back`, `setup-cancel`, `setup-feedback` | W01 shown-once recovery acknowledgement, navigation and safe live status |
+| `setup-extension-install`, `setup-api-address`, `setup-pair-create`, `setup-pair-code`, `setup-signin` | W01 extension instructions and real server pairing |
 | `auth-method-passkey`, `auth-method-email`, `auth-method-recovery`, `auth-email`, `auth-code`, `auth-submit`, `auth-cancel`, `auth-retry` | Hosted app sign-in, cancellation and unavailable-session recovery; the requested library/editor URL is retained. |
 | `auth-enroll`, `auth-recovery-codes`, `auth-recovery-saved`, `auth-continue`, `auth-logout` | Native passkey enrollment, shown-once recovery acknowledgment, workspace entry and server-session sign-out. |
 | `redaction-continue` | W04 |

@@ -1,4 +1,9 @@
 Options -Indexes
+<IfModule mod_authz_core.c>
+Require all granted
+</IfModule>
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^ index.php [L]
+# Preserve the mount prefix for both a folder and an Alias, including the first run.
+RewriteCond %{REQUEST_URI}::$1 ^(.*)/([^?]*)::\2$
+RewriteRule ^(.*)$ %1/index.php [END]

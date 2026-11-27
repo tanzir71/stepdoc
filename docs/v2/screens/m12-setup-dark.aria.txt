@@ -1,0 +1,36 @@
+- banner:
+  - navigation "StepDoc": stepdoc
+  - text: Step 1 of 3
+- main:
+  - heading "Where should your guides live?" [level=1]
+  - paragraph: Same app in every mode. Export a .stepdoc bundle and move between targets any time — nothing is locked to one host.
+  - radiogroup "Guide storage":
+    - text: Where guides are stored
+    - radio "This browser"
+    - strong: This browser
+    - text: IndexedDB + OPFS. No server, no account, works offline. Share by exporting or pushing to a server later. Offline Zero setup
+    - radio "Shared hosting" [checked]
+    - strong: Shared hosting
+    - text: Upload one folder to any PHP 8.1+ host. SQLite file outside the webroot, passkey sign-in, no daemons or cron. cPanel PHP 8.1+
+    - radio "Cloudflare" [disabled]
+    - strong: Cloudflare
+    - text: Workers + D1 + R2. This target is not available in this build. Cloudflare Coming later
+    - radio "Node + Postgres" [disabled]
+    - strong: Node + Postgres
+    - text: A Node server with Postgres or Supabase. This target is not available in this build. Docker Coming later
+  - complementary "Static publishing":
+    - strong: Read-only static exports
+    - paragraph: Export HTML, guide.json and agent files. Direct GitHub publishing is planned.
+    - switch "Static guide exports are available" [checked] [disabled]
+  - region "Host check · localhost":
+    - heading "Host check · localhost" [level=2]
+    - button "Refresh"
+    - text: PHP 8.2 pdo_sqlite Localhost HTTP Storage outside webroot upload_max 64M mail() off → SMTP for codes
+- contentinfo:
+  - navigation "Setup steps":
+    - list:
+      - listitem: Storage
+      - listitem: Owner passkey
+      - listitem: Install extension
+  - button "Back" [disabled]
+  - button "Continue"

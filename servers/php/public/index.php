@@ -6,8 +6,9 @@ header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 try {
     require __DIR__ . '/../vendor/autoload.php';
-    $config = new \StepDoc\Config();
     \StepDoc\Application::headers();
+    \StepDoc\Installer::intercept();
+    $config = new \StepDoc\Config();
     (new \StepDoc\HostedApp($config))->serve();
     (new \StepDoc\Application(new \StepDoc\Database($config)))->run();
 } catch (Throwable $error) {

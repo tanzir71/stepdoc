@@ -4,22 +4,32 @@ import {
   useMemo,
   useRef,
   useState,
+  lazy,
+  Suspense,
   type FormEvent,
   type ReactNode,
 } from 'react'
 import { Button, Input, Logo } from '@stepdoc/ui'
 import type { ApiHealth, ApiSession } from '@stepdoc/schema/storage-api'
 import { App } from './App'
-import { hostedConfig } from './hosted-config'
+import { hostedConfig, clientBase, setupEndpoint } from './hosted-config'
+import { readAppRoute } from './app-url'
 import { HostedAuth, SignInError, signInMessages } from './hosted-auth'
 import { HostedSessionContext } from './hosted-session'
 import { resetStorage, renewStorageSession, changed } from './repository'
 import './hosted.css'
+const Setup = lazy(() =>
+  import('./Setup').then((module) => ({ default: module.Setup })),
+)
 
 export function HostedApp() {
   const [config] = useState(() => {
     try {
-      return hostedConfig()
+      return {
+        hosted: hostedConfig(),
+        base: clientBase(),
+        endpoint: setupEndpoint(),
+      }
     } catch {
       return 'invalid' as const
     }
@@ -27,12 +37,26 @@ export function HostedApp() {
   return config === 'invalid' ? (
     <AuthShell title="App configuration is unavailable">
       <p role="alert">
-        This installation could not be opened. Check its server configuration
-        and reload.
+        This installation could not be opened. Check its server
+        configuration and reload.
       </p>
     </AuthShell>
-  ) : config ? (
-    <HostedRuntime api={config.api} base={config.base} />
+  ) : config.endpoint || readAppRoute().split('?')[0] === '/setup' ? (
+    <Suspense
+      fallback={
+        <AuthShell title="Opening setup">
+          <p role="status">Loading setup…</p>
+        </AuthShell>
+      }
+    >
+      <Setup
+        endpoint={config.endpoint}
+        base={config.base}
+        hosted={config.hosted}
+      />
+    </Suspense>
+  ) : config.hosted ? (
+    <HostedRuntime api={config.hosted.api} base={config.hosted.base} />
   ) : (
     <App />
   )
@@ -134,7 +158,8 @@ function HostedRuntime({ api, base }: { api: string; base: string }) {
       void client
         .current(controller.signal)
         .then((next) => {
-          if (controller.signal.aborted || number !== generation.current) return
+          if (controller.signal.aborted || number !== generation.current)
+            return
           if (!next) unauthorized()
           else if (
             next.member.id !== current.current.session?.member.id ||
@@ -343,7 +368,8 @@ function SignIn({
       >
         {method === 'passkey' ? (
           <p>
-            Use the passkey saved on this device or another device you trust.
+            Use the passkey saved on this device or another device you
+            trust.
           </p>
         ) : (
           <>
@@ -360,7 +386,9 @@ function SignIn({
             />
             {sent || method === 'recovery' ? (
               <Input
-                label={method === 'recovery' ? 'Recovery code' : '6-digit code'}
+                label={
+                  method === 'recovery' ? 'Recovery code' : '6-digit code'
+                }
                 data-sd="auth-code"
                 type="password"
                 autoComplete="one-time-code"
@@ -380,7 +408,11 @@ function SignIn({
           </>
         )}
         <div className="hosted-actions">
-          <Button data-sd="auth-submit" type="submit" disabled={operation.busy}>
+          <Button
+            data-sd="auth-submit"
+            type="submit"
+            disabled={operation.busy}
+          >
             {operation.busy
               ? 'Signing in…'
               : method === 'email' && !sent
@@ -408,7 +440,8 @@ function SignIn({
         {operation.message}
       </p>
       <aside aria-label="Sign-in help">
-        Your saved guides stay on this server. A sign-in code can be used once.
+        Your saved guides stay on this server. A sign-in code can be used
+        once.
       </aside>
     </AuthShell>
   )
@@ -431,14 +464,16 @@ function Enrollment({
   return (
     <AuthShell
       title={
-        codes ? 'Keep your recovery codes safe' : 'Add a passkey to this device'
+        codes
+          ? 'Keep your recovery codes safe'
+          : 'Add a passkey to this device'
       }
     >
       {codes ? (
         <>
           <p>
-            These ten codes are shown once. Each code can be used once to regain
-            access.
+            These ten codes are shown once. Each code can be used once to
+            regain access.
           </p>
           <pre className="hosted-codes" data-sd="auth-recovery-codes">
             {codes.join('\n')}
@@ -452,13 +487,19 @@ function Enrollment({
             />
             I saved my recovery codes somewhere safe
           </label>
-          <Button data-sd="auth-continue" disabled={!saved} onClick={complete}>
+          <Button
+            data-sd="auth-continue"
+            disabled={!saved}
+            onClick={complete}
+          >
             Open workspace
           </Button>
         </>
       ) : (
         <>
-          <p>You signed in with a code. Add a passkey for your next sign-in.</p>
+          <p>
+            You signed in with a code. Add a passkey for your next sign-in.
+          </p>
           <div className="hosted-actions">
             <Button
               data-sd="auth-enroll"
@@ -483,7 +524,11 @@ function Enrollment({
         </>
       )}
       {operation.busy ? (
-        <Button data-sd="auth-cancel" kind="ghost" onClick={operation.cancel}>
+        <Button
+          data-sd="auth-cancel"
+          kind="ghost"
+          onClick={operation.cancel}
+        >
           Cancel
         </Button>
       ) : null}

@@ -14,25 +14,27 @@ final class Config
 
     public function __construct()
     {
+        $installed = self::installed();
         $public = realpath(__DIR__ . '/../public');
+        $documentRoot = PHP_SAPI !== 'cli' && !empty($_SERVER['DOCUMENT_ROOT']) ? realpath($_SERVER['DOCUMENT_ROOT']) : false;
         $directory = getenv('STEPDOC_DATA_DIR') ?: __DIR__ . '/../data';
         $parent = realpath(dirname($directory));
-        if ($public && $parent && self::inside($parent, $public)) throw new ApiError('invalid_options', 503);
+        if ($parent && (($public && self::inside($parent, $public)) || ($documentRoot && self::inside($parent, $documentRoot)))) throw new ApiError('invalid_options', 503);
         if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
             throw new ApiError('storage_unavailable', 503);
         }
         $resolved = realpath($directory);
-        if (!$resolved || !$public || self::inside($resolved, $public)) {
+        if (!$resolved || !$public || self::inside($resolved, $public) || ($documentRoot && self::inside($resolved, $documentRoot))) {
             throw new ApiError('invalid_options', 503);
         }
         $this->dataDir = $resolved;
-        $this->appDir = getenv('STEPDOC_APP_DIR') ?: dirname(__DIR__, 3) . '/apps/app/dist';
-        $path = getenv('STEPDOC_API_PATH') ?: '/api/v1';
+        $this->appDir = getenv('STEPDOC_APP_DIR') ?: (is_file(__DIR__ . '/../app/index.html') ? __DIR__ . '/../app' : dirname(__DIR__, 3) . '/apps/app/dist');
+        $path = getenv('STEPDOC_API_PATH') ?: ($installed['apiPath'] ?? '/api/v1');
         if (!preg_match('~^/(?:[a-zA-Z0-9_-]+/)*api/v1$~D', $path)) {
             throw new ApiError('invalid_options', 503);
         }
         $this->apiPath = $path;
-        $origin = getenv('STEPDOC_ORIGIN') ?: 'https://localhost';
+        $origin = getenv('STEPDOC_ORIGIN') ?: ($installed['origin'] ?? 'https://localhost');
         $parts = parse_url($origin);
         if (!$parts || array_diff(array_keys($parts), ['scheme', 'host', 'port']) || !isset($parts['scheme'], $parts['host']) ||
             !in_array($parts['scheme'], ['http', 'https'], true) ||
@@ -49,6 +51,17 @@ final class Config
         $this->pageSize = (int) $pageSize;
     }
 
+    public static function installed(): array
+    {
+        $path = __DIR__ . '/../stepdoc.config.json';
+        if (!is_file($path)) return [];
+        if (filesize($path) > 4096) throw new ApiError('invalid_options', 503);
+        try { $value = json_decode(file_get_contents($path), true, 8, JSON_THROW_ON_ERROR); }
+        catch (\JsonException) { throw new ApiError('invalid_options', 503); }
+        if (!is_array($value) || count($value) !== 2 || !is_string($value['origin'] ?? null) || !is_string($value['apiPath'] ?? null)) throw new ApiError('invalid_options', 503);
+        return ['origin' => $value['origin'], 'apiPath' => $value['apiPath']];
+    }
+
     public static function inside(string $path, string $directory): bool
     {
         $path = strtolower(str_replace('\\', '/', $path));
@@ -56,7 +69,7 @@ final class Config
         return $path === $directory || str_starts_with($path, $directory . '/');
     }
 
-    private static function iniBytes(string $name): int
+    public static function iniBytes(string $name): int
     {
         $raw = trim((string) ini_get($name));
         if ($raw === '0' || $raw === '-1') return PHP_INT_MAX;

@@ -13,3 +13,6 @@ playwright-report
 .vercel
 servers/php/vendor/
 servers/php/data/
+servers/php/stepdoc.config.json
+servers/php/setup-key.sha256
+servers/php/installation.lock

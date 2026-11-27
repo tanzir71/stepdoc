@@ -31,7 +31,7 @@ export const signInMessages = {
 
 export class HostedAuth {
   constructor(private readonly config: HostedConfig) {}
-  private async request(
+  async request(
     path: string,
     body?: object,
     signal?: AbortSignal,
@@ -66,7 +66,9 @@ export class HostedAuth {
       )
     }
     if (response.status === 204) return null
-    if (!response.headers.get('Content-Type')?.startsWith('application/json'))
+    if (
+      !response.headers.get('Content-Type')?.startsWith('application/json')
+    )
       throw new SignInError('unavailable')
     const reader = response.body?.getReader()
     if (!reader) throw new SignInError('unavailable')
@@ -143,22 +145,13 @@ export class HostedAuth {
         publicKey: PublicKeyCredentialCreationOptionsJSON &
           PublicKeyCredentialRequestOptionsJSON
       }
-      const publicKey = register
-        ? PublicKeyCredential.parseCreationOptionsFromJSON(options.publicKey)
-        : PublicKeyCredential.parseRequestOptionsFromJSON(options.publicKey)
-      const credential = register
-        ? await navigator.credentials.create({
-            publicKey: publicKey as PublicKeyCredentialCreationOptions,
-            signal,
-          })
-        : await navigator.credentials.get({
-            publicKey: publicKey as PublicKeyCredentialRequestOptions,
-            signal,
-          })
-      if (!(credential instanceof PublicKeyCredential))
-        throw new SignInError('cancelled')
+      const credential = await nativeCredential(
+        options.publicKey,
+        register,
+        signal,
+      )
       return apiSessionSchema.parse(
-        await this.request('auth/passkey/verify', credential.toJSON(), signal),
+        await this.request('auth/passkey/verify', credential, signal),
       )
     } catch (error) {
       if (
@@ -169,4 +162,29 @@ export class HostedAuth {
       throw error
     }
   }
+}
+
+export async function nativeCredential(
+  options: PublicKeyCredentialCreationOptionsJSON &
+    PublicKeyCredentialRequestOptionsJSON,
+  register: boolean,
+  signal: AbortSignal,
+) {
+  if (!globalThis.PublicKeyCredential || !navigator.credentials)
+    throw new SignInError('unsupported')
+  const publicKey = register
+    ? PublicKeyCredential.parseCreationOptionsFromJSON(options)
+    : PublicKeyCredential.parseRequestOptionsFromJSON(options)
+  const credential = register
+    ? await navigator.credentials.create({
+        publicKey: publicKey as PublicKeyCredentialCreationOptions,
+        signal,
+      })
+    : await navigator.credentials.get({
+        publicKey: publicKey as PublicKeyCredentialRequestOptions,
+        signal,
+      })
+  if (!(credential instanceof PublicKeyCredential))
+    throw new SignInError('cancelled')
+  return credential.toJSON()
 }

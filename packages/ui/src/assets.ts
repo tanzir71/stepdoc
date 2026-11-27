@@ -79,8 +79,22 @@ import guideTarget from '../assets/a323f.svg?url'
 import pillDot from '../assets/f9a9e.svg?url&no-inline'
 import pillPause from '../assets/36d61.svg?url&no-inline'
 import pillStop from '../assets/cf8f1.svg?url&no-inline'
+import setupMonitor from '../assets/7a656.svg?url'
+import setupServer from '../assets/d9260.svg?url'
+import setupCloud from '../assets/cf5db.svg?url'
+import setupDatabase from '../assets/b8b31.svg?url'
+import setupGithub from '../assets/04235.svg?url'
+import setupRadioOffAsset from '../assets/7373e.svg?url'
+import setupRadioOnAsset from '../assets/7b633.svg?url'
+import setupCurrentAsset from '../assets/6336e.svg?url'
+import setupPendingAsset from '../assets/88255.svg?url'
 
 export const icons = {
+  'setup-monitor': { url: setupMonitor, width: 20, height: 20 },
+  'setup-server': { url: setupServer, width: 20, height: 20 },
+  'setup-cloud': { url: setupCloud, width: 20, height: 20 },
+  'setup-database': { url: setupDatabase, width: 20, height: 20 },
+  'setup-github': { url: setupGithub, width: 20, height: 20 },
   'pair-link': { url: pairLink, width: 16, height: 16 },
   'pair-monitor': { url: pairMonitor, width: 18, height: 18 },
   'pair-local': { url: pairLocal, width: 14, height: 14 },
@@ -384,3 +398,7 @@ export const logoMarkDark = asset55
 export const defaultThumb = asset56
 export const toggleOn = asset57
 export const toggleOff = asset58
+export const setupRadioOff = setupRadioOffAsset
+export const setupRadioOn = setupRadioOnAsset
+export const setupCurrent = setupCurrentAsset
+export const setupPending = setupPendingAsset

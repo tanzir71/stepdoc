@@ -28,7 +28,7 @@ final class Tokens
     public function authenticate(?string $authorization, ?string $origin): array
     {
         if (!$authorization || !preg_match('~^Bearer (sd_[A-Za-z0-9_-]{43})$~D', $authorization, $match)) throw new ApiError('unauthorized', 401);
-        $row = $this->db->one('SELECT * FROM tokens WHERE token_hash=? AND revoked_at IS NULL', [hash('sha256', $match[1])]);
+        $row = $this->db->one('SELECT * FROM tokens WHERE token_hash=? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>?)', [hash('sha256', $match[1]), time()]);
         if (!$row) throw new ApiError('unauthorized', 401);
         if ($row['extension_id'] !== null) {
             // Chrome's privileged extension GET fetch omits Origin. The bearer

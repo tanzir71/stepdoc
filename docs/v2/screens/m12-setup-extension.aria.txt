@@ -1,0 +1,24 @@
+- banner:
+  - navigation "StepDoc": stepdoc
+  - text: Step 3 of 3
+- main:
+  - heading "Capture your first guide" [level=1]
+  - paragraph: Your workspace and owner passkey are ready. Install the extension and pair it with this server.
+  - complementary "Extension installation":
+    - paragraph: The Chrome/Edge and Firefox builds share the same guide format.
+    - link "Extension source and installation instructions":
+      - /url: https://github.com/tanzir71/stepdoc/tree/main/apps/extension
+  - region "Connect the extension":
+    - heading "Connect the extension" [level=2]
+    - paragraph: Open Pair server in the extension. Use this API address and a fresh pairing code.
+    - code: http://localhost/api/v1/
+    - button "Create pairing code"
+  - status: Recovery codes acknowledged.
+- contentinfo:
+  - navigation "Setup steps":
+    - list:
+      - listitem: Storage
+      - listitem: Owner passkey
+      - listitem: Install extension
+  - button "Back"
+  - button "Open workspace"

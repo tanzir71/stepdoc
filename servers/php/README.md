@@ -4,9 +4,12 @@ This M12 server implements the existing Storage API v1
 health, guide CRUD/list, version history, private raster-blob paths, passkey and
 email/recovery sign-in, cookie sessions, pairing/devices, scoped API tokens and
 capture ingestion with private large-image staging. It serves the shared SPA with
-cookie-session sign-in and HTTP-backed library/editor storage. Public publishing,
-MCP, first-owner setup, distribution and the shared-hosting installer remain unfinished. `/health`
-reports current capabilities and configuration. This is not the deploy ZIP.
+cookie-session sign-in and HTTP-backed library/editor storage. The W01 installer
+enrolls its first owner with a passkey, recovery codes and extension pairing.
+Build the self-contained archive with `pnpm build:php`; follow [INSTALL.md](INSTALL.md)
+for its public document root, private setup key and subdirectory configuration.
+Public publishing, MCP, remaining API operations and lazy backups remain unfinished.
+`/health` reports current capabilities and configuration.
 
 The PHP runtime uses PDO SQLite and validates guide@1 against
 [`docs/v2/guide.schema.json`](../../docs/v2/guide.schema.json) through the locked
@@ -46,7 +49,7 @@ implement them; they never claim contract coverage from this PHP run.
 | `STEPDOC_DATA_DIR` | SQLite, WAL and blobs; defaults to `servers/php/data/`, outside `public/`. A location inside the public root is rejected. |
 | `STEPDOC_ORIGIN` | Canonical frontend origin without a trailing slash; HTTPS, or loopback HTTP. Defaults to `https://localhost` for an unconfigured development install. |
 | `STEPDOC_API_PATH` | Defaults to `/api/v1`; a subdirectory installation can use `/tools/api/v1`. |
-| `STEPDOC_APP_DIR` | Compiled SPA directory; defaults to the repository's `apps/app/dist`. Build with `pnpm --filter @stepdoc/app build`. The distribution installer will provide its packaged path. |
+| `STEPDOC_APP_DIR` | Compiled SPA directory; defaults to the packaged `app/`, or the repository's `apps/app/dist`. Build with `pnpm --filter @stepdoc/app build`. |
 | `STEPDOC_MAX_UPLOAD_BYTES` | Defaults to 64 MiB; capped by `upload_max_filesize` and `post_max_size` with multipart overhead reserved. The effective cap is returned by `/health`. |
 | `STEPDOC_PAGE_SIZE` | 1–100, default 100; cursors bind to the active filter. |
 
@@ -70,8 +73,8 @@ codes as alternatives. Code sign-in prompts passkey enrollment; first enrollment
 shows recovery codes once in memory. A session expiry hides the existing editor
 while the same member signs in again, retaining its unsaved draft for explicit
 save retry. Sign-out clears that app instance; a different identity replaces it.
-Initial workspace/owner provisioning still uses local administration below;
-the W01 first-run flow and deploy ZIP are not complete.
+Packaged installations use W01 to provision their first workspace and owner;
+local administration remains available below.
 
 For this foundation, server operators can create workspaces and scoped tokens
 through `bin/stepdoc.php`. Commands read a JSON object from stdin and return JSON.
@@ -213,5 +216,25 @@ New frames create previews directly from their already-redacted canvas, avoiding
 a second decode of the full-size WebP before recording can start. Preview failure
 still preserves the full-resolution capture. Older-cache recovery remains lazy.
 The PHP editor route now opens this hosted client and requests user sign-in;
-extension credentials never enter the URL or the hosted page. First-run screens
-and the shared-hosting installer remain the next M12 distribution work.
+extension credentials never enter the URL or the hosted page. Packaged W01 setup
+uses this same authenticated workspace after first-owner registration.
+
+## Installation protocol
+
+The packaged `install.php?action=...` bootstrap is separate from Storage API v1.
+`GET status` returns a strict public installation status: phase (`storage`, `owner`,
+`complete`), mount `base`, `ready`, and bounded host checks. Pending owner details
+are returned only to the current installation cookie. `POST claim` accepts the
+build-specific key; `POST owner-options` accepts workspace/name/email; `POST
+owner-verify` accepts the native WebAuthn credential. The last two reuse the normal
+passkey implementation with a private temporary credential. They never expose
+that bearer to JavaScript or add an authentication bypass to the Storage API.
+
+Mutation bodies are bounded JSON, require the exact origin and a private global
+lock, and reject Authorization headers. The Secure/HttpOnly installation cookie
+and its hashed, revocable enrollment credential expire after ten minutes. Reclaim
+rotates them while preserving pending owner details. Verified registration
+permanently closes enrollment, revokes its token and establishes a normal cookie
+session. Recovery codes are returned once; they never enter a URL or stored screen.
+The explicit `/browser/` client has its own mount with no Storage API bootstrap;
+hosted errors never select browser storage automatically.

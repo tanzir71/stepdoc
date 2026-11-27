@@ -12,7 +12,8 @@ final class GuideValidator
         // Match the existing ajv-formats UUID vocabulary, including UUID URNs.
         // Keep the original value in guide JSON; this changes no guide fields.
         $this->validator->parser()->getFormatResolver()->registerCallable('string', 'uuid', static fn(string $value): bool => (bool) preg_match('~^(?:urn:uuid:)?[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$~iD', $value));
-        $this->schema = json_decode(file_get_contents(__DIR__ . '/../../../docs/v2/guide.schema.json'), false, 512, JSON_THROW_ON_ERROR);
+        $packaged = __DIR__ . '/../schema/guide.schema.json';
+        $this->schema = json_decode(file_get_contents(is_file($packaged) ? $packaged : __DIR__ . '/../../../docs/v2/guide.schema.json'), false, 512, JSON_THROW_ON_ERROR);
     }
     public function parse(mixed $guide): object
     {

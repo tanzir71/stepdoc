@@ -1,0 +1,18 @@
+- banner:
+  - navigation "StepDoc": stepdoc
+  - text: Step 2 of 3
+- main:
+  - heading "Keep your recovery codes safe" [level=1]
+  - paragraph: These ten codes are shown once. Each code can be used once to regain access.
+  - text: <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code> <recovery-code>
+  - checkbox "I saved my recovery codes somewhere safe"
+  - text: I saved my recovery codes somewhere safe
+  - status: Owner passkey created. Save the ten recovery codes shown once.
+- contentinfo:
+  - navigation "Setup steps":
+    - list:
+      - listitem: Storage
+      - listitem: Owner passkey
+      - listitem: Install extension
+  - button "Back" [disabled]
+  - button "Continue" [disabled]

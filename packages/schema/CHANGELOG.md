@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds a strict private `CAPTURE_CHANGED` invalidation with an optional bounded
+terminal Guide Me result. Extension pages no longer subscribe to full Chrome
+storage-change bodies containing old/new retained rasters. They request the
+existing validated metadata projection after a notification. No guide field,
+Storage API endpoint, persisted guide default or wire identifier changes; no
+guide-data migration or package/schema version bump is needed.
+
 M11 adds display-only capture step projections and a strict session/step command
 for recovering disposable previews. Control/source runtime messages no longer
 carry retained rasters, pending upload bodies or unused target/Guide Me metadata.

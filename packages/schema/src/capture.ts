@@ -1,8 +1,24 @@
 import { z } from 'zod'
-import { rectSchema, redactionSchema, stepSchema } from './guide'
+import {
+  guideSchema,
+  rectSchema,
+  redactionSchema,
+  stepSchema,
+} from './guide'
 
 // Ephemeral extension transport, not guide data or the public Storage API.
 export const CAPTURE_TRANSPORT = 'stepdoc/capture@1' as const
+// Private notification only. Receivers fetch their existing bounded projection.
+export const captureNoticeSchema = z.strictObject({
+  type: z.literal('CAPTURE_CHANGED'),
+  guideResult: z
+    .strictObject({
+      guideId: guideSchema.shape.id,
+      saved: z.boolean(),
+    })
+    .optional(),
+})
+export type CaptureNotice = z.output<typeof captureNoticeSchema>
 export const captureClockSchema = z.strictObject({
   elapsedMs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
   runningSince: z

@@ -87,21 +87,25 @@ async function attachPopup(session, targetId) {
       ...point,
     })
   }
+  const waitForClose = async () => {
+    await expect
+      .poll(async () =>
+        (await session.send('Target.getTargets')).targetInfos.some(
+          (target) => target.targetId === targetId,
+        ),
+      )
+      .toBe(false)
+    session.off('Target.receivedMessageFromTarget', receive)
+  }
   return {
     call,
     evaluate,
     click,
     targetId,
+    waitForClose,
     async close() {
       await evaluate('window.close(); true')
-      session.off('Target.receivedMessageFromTarget', receive)
-      await expect
-        .poll(async () =>
-          (await session.send('Target.getTargets')).targetInfos.some(
-            (target) => target.targetId === targetId,
-          ),
-        )
-        .toBe(false)
+      await waitForClose()
     },
   }
 }
@@ -618,10 +622,9 @@ try {
     pairingUrl.searchParams.get('browser-session'),
     /^[a-f0-9-]{36}$/,
   )
-  const popupStillOpen = (
-    await session.send('Target.getTargets')
-  ).targetInfos.some((target) => target.targetId === popup.targetId)
-  if (popupStillOpen) await popup.close()
+  // Opening the real pairing tab makes Chrome close its action popup. Observe
+  // that outcome directly; its session can detach before the target disappears.
+  await popup.waitForClose()
   await pairing.locator('[data-sd=pair-local]').click()
   await expect(pairing.locator('[data-sd=capture-source]')).toBeVisible()
   await expect(pairing.locator('[data-sd=capture-start]')).toBeEnabled()

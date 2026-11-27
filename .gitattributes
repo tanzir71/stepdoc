@@ -1,4 +1,5 @@
 # Preserve original Figma asset bytes and deterministic exporter output on Windows.
+LICENSE -text
 site/assets/*.svg -text
 packages/ui/assets/*.svg -text
 packages/ui/assets/fonts/OFL.txt -text

@@ -174,3 +174,19 @@ export function captureSourceState(state: LegacyStorage, tabId?: number) {
         capturePill: null,
       }
 }
+
+/** Identical metadata-only projection for broadcast and source readiness. */
+export function captureSourceMessage(state: LegacyStorage, tabId: number) {
+  const source = captureSourceState(state, tabId)
+  return {
+    type: 'STATE',
+    recording: source.recording,
+    paused: source.paused,
+    producerStopped: source.producerStopped,
+    stepCount: source.stepCount,
+    sessionId: source.captureSessionId,
+    blurMode: source.captureBlurMode,
+    manualCount: source.captureManualCount,
+    capturePill: source.capturePill,
+  }
+}

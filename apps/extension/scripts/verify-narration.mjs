@@ -233,6 +233,9 @@ try {
   )
   await source.locator('#first').click()
   await count(1)
+  // Recognition binds an utterance to the controls' current displayed step.
+  // A committed backend step can precede its preview-ready UI notification.
+  await expect(panel.locator('[data-sd-step="1"]')).toBeVisible()
   await speech('INTERIM_PRIVATE', 0, false)
   await speech('Send the invoice to private@example.test', 0)
   await expect
@@ -243,6 +246,7 @@ try {
   await panel.evaluate(() => testSpeech.instances.at(-1).onspeechstart())
   await source.locator('#second').click()
   await count(2)
+  await expect(panel.locator('[data-sd-step="2"]')).toBeVisible()
   await speech('Confirm the new plan', 1, true, false)
   await expect
     .poll(async () => (await state()).capturedSteps[0].notes)

@@ -102,6 +102,27 @@ try {
       document.getElementById('root').style.width = '400px'
     }),
   )
+  await panel.addInitScript(() => {
+    globalThis.sdRetainedImageEvents = 0
+    const callbacks = new Map()
+    const add = chrome.storage.onChanged.addListener.bind(chrome.storage.onChanged)
+    const remove = chrome.storage.onChanged.removeListener.bind(chrome.storage.onChanged)
+    chrome.storage.onChanged.addListener = (callback) => {
+      const wrapped = (changes, area) => {
+        if (area === 'local' && (
+          changes.steps?.newValue?.length || changes.steps?.oldValue?.length ||
+          changes.pendingSession?.newValue?.steps?.length || changes.pendingSession?.oldValue?.steps?.length
+        )) globalThis.sdRetainedImageEvents++
+        return callback(changes, area)
+      }
+      callbacks.set(callback, wrapped)
+      add(wrapped)
+    }
+    chrome.storage.onChanged.removeListener = (callback) => {
+      remove(callbacks.get(callback) ?? callback)
+      callbacks.delete(callback)
+    }
+  })
   await panel.goto(`${origin}/sidepanel.html`)
   const message = (type, extra = {}) =>
     panel.evaluate(
@@ -140,21 +161,33 @@ try {
   await press('capture-start')
   await expect.poll(phase, { timeout: 20000 }).toBe('recording')
   await source.locator('#private').fill('PRIVATE_LARGE_CAPTURE_VALUE')
+  await expect(panel.locator('[data-sd-step="1"]')).toBeVisible({ timeout: 20000 })
+  assert.equal(
+    await panel.evaluate(() => globalThis.sdRetainedImageEvents),
+    0,
+    'Controls must not receive retained-image storage change bodies',
+  )
   for (let index = 0; index < 23; index++) {
     await source.locator('#action').click()
-    await expect
-      .poll(
-        async () =>
-          worker.evaluate(async () => {
-            const state = await chrome.storage.local.get([
-              'capturedSteps',
-              'captureError',
-            ])
-            return state.captureError ?? state.capturedSteps?.length
-          }),
-        { timeout: 20000 },
-      )
-      .toBe(index + 2)
+    try {
+      await expect
+        .poll(async () => worker.evaluate(async () => {
+          const state = await chrome.storage.local.get(['capturedSteps', 'captureError'])
+          return state.captureError ?? state.capturedSteps?.length
+        }), { timeout: 20000 })
+        .toBe(index + 2)
+    } catch (error) {
+      const state = await message('GET_STATE').catch(() => null)
+      const visible = await source.evaluate(() => ({
+        focus: document.hasFocus(), visibility: document.visibilityState,
+      })).catch(() => null)
+      console.log('Large capture boundary', {
+        expected: index + 2, count: state?.capturedSteps?.length,
+        phase: state?.captureReview?.phase, recording: state?.recording,
+        failed: !!state?.captureError, visible,
+      })
+      throw error
+    }
     if ((index + 2) % 8 === 0)
       console.log(`Retained ${index + 2} real masked steps`)
   }
@@ -343,12 +376,22 @@ try {
   await expect.poll(phase, { timeout: 20000 }).toBe('paused')
   await press('capture-review')
   await expect.poll(phase, { timeout: 20000 }).toBe('review')
+  await expect(panel.locator('#status')).toHaveText(
+    'Capture stopped. Review before saving.',
+    { timeout: 20000 },
+  )
   const first = panel.locator('[data-sd-step="1"]')
   const selection = first.locator('[data-sd=capture-select-step]')
   await expect(selection).toBeEnabled()
   await selection.focus()
   await expect(selection).toBeFocused()
   await panel.keyboard.press('Alt+ArrowDown')
+  // This durable edit rewrites more than 71 MiB. Await the real UI command
+  // acknowledgement within the existing large-operation budget, then verify
+  // the committed order with the unchanged five-second metadata assertion.
+  await expect(panel.locator('#status')).toHaveText('Review updated.', {
+    timeout: 20000,
+  })
   await expect
     .poll(async () => (await message('GET_STATE')).capturedSteps[1]?.id)
     .toBe(retained.stepId)
@@ -537,6 +580,11 @@ try {
   )
   assert.equal((await cache('read')).length, 0)
   assert.deepEqual(failures, [])
+  assert.equal(
+    await panel.evaluate(() => globalThis.sdRetainedImageEvents),
+    0,
+    'Capture, reorder, save and recovery never deliver retained-image change bodies to controls',
+  )
   console.log(
     'Native capture controls verified: real >64 MiB retained capture, metadata-only controls/source state, private bounded previews, reopen and old-cache recovery, source isolation, stale/unknown rejection, pause/review/reorder, source hash preservation, full-resolution native editor save, storage-read privacy retry, disposable-cache failure, discard during recovery and axe; no upload.',
   )

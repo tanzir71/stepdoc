@@ -5,7 +5,11 @@ import {
   MAX_CAPTURE_CONTROL_BYTES,
 } from '@stepdoc/schema/capture'
 import type { LegacyStorage } from './background'
-import { captureControls, captureSourceState } from './capture-controls'
+import {
+  captureControls,
+  captureSourceState,
+  captureSourceMessage,
+} from './capture-controls'
 import { newGuideRun } from './guide-run'
 import { guideSchema } from '@stepdoc/schema'
 
@@ -197,6 +201,32 @@ describe('bounded private capture controls', () => {
   })
 })
 describe('source recorder projection', () => {
+  it('arms the selected producer without reading or serializing retained pixels or private step context', () => {
+    const raw = state()
+    Object.defineProperty(raw, 'steps', {
+      get: () => {
+        throw new Error('Retained image read')
+      },
+    })
+    Object.defineProperty(raw.capturedSteps![0]!, 'screenshot', {
+      get: () => {
+        throw new Error('Step image read')
+      },
+    })
+    const message = captureSourceMessage(raw, 10)
+    expect(message.recording).toBe(true)
+    expect(message.sessionId).toBe(sessionId)
+    expect(message.stepCount).toBe(1)
+    const wire = JSON.stringify(message)
+    expect(wire).not.toContain('PRIVATE_')
+    expect(wire).not.toContain('locators')
+    expect(wire).not.toContain('notes')
+    expect(wire.length).toBeLessThan(2000)
+    const other = captureSourceMessage(raw, 20)
+    expect(other.recording).toBe(false)
+    expect(other.sessionId).toBeUndefined()
+    expect(other.capturePill).toBeNull()
+  })
   it('returns inert bounded state for corrupt recorder identities or counts', () => {
     for (const invalid of [
       { captureSessionId: 'PRIVATE_INVALID' },

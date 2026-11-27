@@ -7,6 +7,7 @@ import { chromium, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 const output = new URL('../.output/', import.meta.url)
+const defaultGpu = process.argv.includes('--default-gpu')
 for (const target of ['chrome', 'edge', 'firefox']) {
   const dir = new URL(`${target}-mv3/`, output)
   const manifest = JSON.parse(
@@ -158,11 +159,23 @@ try {
     ),
     viewport: { width: 1440, height: 900 },
     args: [
-      '--disable-gpu',
+      ...(defaultGpu ? [] : ['--disable-gpu']),
       `--disable-extensions-except=${extensionDir}`,
       `--load-extension=${extensionDir}`,
     ],
   })
+  const browserSession = await context.browser().newBrowserCDPSession()
+  const { arguments: startupArguments } = await browserSession.send(
+    'Browser.getBrowserCommandLine',
+  )
+  assert.equal(startupArguments.includes('--disable-gpu'), !defaultGpu)
+  const { gpu } = await browserSession.send('SystemInfo.getInfo')
+  console.log('Capture rendering configuration', {
+    defaultGpu,
+    compositing: gpu.featureStatus?.gpu_compositing,
+    renderer: gpu.auxAttributes?.glRenderer,
+  })
+  await browserSession.detach()
   context.setDefaultTimeout(15_000)
   async function openedPage(action) {
     const previous = new Set(context.pages())
@@ -357,6 +370,79 @@ try {
     (url) => chrome.storage.local.set({ appUrl: url }),
     base,
   )
+  // The inverse ordering matters too: a ready top frame does not establish
+  // that its child producer has received the tab-wide recording state.
+  await worker.evaluate(async (url) => {
+    const tab = (await chrome.tabs.query({})).find((tab) => tab.url === url)
+    const frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id })
+    const child = frames.find((frame) => frame.parentFrameId === 0)
+    if (!child) throw new Error('Native child frame unavailable')
+    globalThis.sdHeldChild = { tabId: tab.id, childId: child.frameId, count: 0 }
+    globalThis.sdChildSend = chrome.tabs.sendMessage
+    const send = chrome.tabs.sendMessage.bind(chrome.tabs)
+    chrome.tabs.sendMessage = async (tabId, message, options) => {
+      if (
+        tabId === globalThis.sdHeldChild.tabId &&
+        message.type === 'STATE' && message.recording &&
+        options?.frameId === undefined
+      ) {
+        globalThis.sdHeldChild.count++
+        globalThis.sdHeldChild.message = message
+        return send(tabId, message, { frameId: 0 })
+      }
+      return send(tabId, message, options)
+    }
+  }, fixture.url())
+  await fixture.bringToFront()
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
+  await fixture.frameLocator('#capture-frame')
+    .getByRole('button', { name: 'Frame action' }).click()
+  await expect.poll(async () => worker.evaluate(async () =>
+    (await chrome.storage.local.get('capturedSteps')).capturedSteps?.length,
+  )).toBe(1)
+  const childStart = await worker.evaluate(async () => {
+    const held = globalThis.sdHeldChild
+    chrome.tabs.sendMessage = globalThis.sdChildSend
+    await chrome.tabs.sendMessage(held.tabId, held.message, { frameId: held.childId })
+    delete globalThis.sdChildSend
+    delete globalThis.sdHeldChild
+    const { capturedSteps } = await chrome.storage.local.get('capturedSteps')
+    return { delayed: held.count, frame: capturedSteps[0].target?.frame }
+  })
+  assert(childStart.delayed > 0)
+  assert.deepEqual(childStart.frame, ['#capture-frame'])
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' })),
+    { ok: true },
+  )
+  console.log('Start armed the child producer before acknowledging a top-first broadcast')
+  // A tab-wide send can acknowledge through a child before the top-frame
+  // producer receives STATE. Hold that delivery while keeping the real child
+  // response; a successful Start must explicitly arm the top frame first.
+  await worker.evaluate(async (url) => {
+    const tab = (await chrome.tabs.query({})).find((tab) => tab.url === url)
+    const frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id })
+    const child = frames.find((frame) => frame.parentFrameId === 0)
+    if (!child) throw new Error('Native child frame unavailable')
+    globalThis.sdHeldSource = { tabId: tab.id, count: 0 }
+    globalThis.sdSourceSend = chrome.tabs.sendMessage
+    const send = chrome.tabs.sendMessage.bind(chrome.tabs)
+    chrome.tabs.sendMessage = async (tabId, message, options) => {
+      if (
+        tabId === globalThis.sdHeldSource.tabId &&
+        message.type === 'STATE' && message.recording &&
+        options?.frameId === undefined
+      ) {
+        globalThis.sdHeldSource.count++
+        globalThis.sdHeldSource.message = message
+        return send(tabId, message, { frameId: child.frameId })
+      }
+      return send(tabId, message, options)
+    }
+  }, fixture.url())
   // START chooses the active source tab, not the URL in the legacy message.
   // Focus that source explicitly after the preceding editor/download checks.
   await fixture.bringToFront()
@@ -426,6 +512,17 @@ try {
     )
     throw error
   }
+  const heldDeliveries = await worker.evaluate(async () => {
+    const held = globalThis.sdHeldSource
+    chrome.tabs.sendMessage = globalThis.sdSourceSend
+    if (held.message)
+      await chrome.tabs.sendMessage(held.tabId, held.message, { frameId: 0 })
+    delete globalThis.sdSourceSend
+    delete globalThis.sdHeldSource
+    return held.count
+  })
+  assert(heldDeliveries > 0, 'Top-frame delivery ordering was not exercised')
+  console.log('Start armed the top-frame producer before acknowledging a child-first broadcast')
   const captured = await worker.evaluate(
     async () => (await chrome.storage.local.get('steps')).steps,
   )
@@ -460,7 +557,10 @@ try {
   // Cancel while the second capture is throttled, then immediately restart.
   // The old drain/error response must not own or stop the new session.
   await fixture.bringToFront()
-  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
   await fixture.getByRole('button', { name: 'Save fixture' }).click()
   await expect
     .poll(async () =>
@@ -477,7 +577,10 @@ try {
   )
   await fixture.getByRole('button', { name: 'Save fixture' }).click()
   await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' }))
-  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
   await fixture.getByRole('button', { name: 'Save fixture' }).click()
   await expect
     .poll(async () =>
@@ -667,34 +770,34 @@ try {
     )
   // The source fixture has one-pixel black/white stripes. Mandatory client
   // field masks remove them before even the queue's reusable image is stored.
-  const transitions = await fixture.evaluate(async (dataUrl) => {
-    const image = await createImageBitmap(await (await fetch(dataUrl)).blob())
-    const canvas = new OffscreenCanvas(image.width, image.height),
-      ctx = canvas.getContext('2d')
-    ctx.drawImage(image, 0, 0)
-    image.close()
-    const rect = document
-      .querySelector('#project-field')
-      .getBoundingClientRect()
-    const pixels = ctx.getImageData(
-      Math.ceil(rect.x) + 12,
-      Math.ceil(rect.y) + 5,
-      80,
-      1,
-    ).data
-    const red = Array.from(
-      { length: pixels.length / 4 },
-      (_, index) => pixels[index * 4],
-    )
-    return red
-      .slice(1)
-      .filter((value, index) => Math.abs(value - red[index]) > 60).length
-  }, contract.steps.at(-1).screenshot)
+  const fieldTransitions = (dataUrl) =>
+    fixture.evaluate(async (dataUrl) => {
+      const image = await createImageBitmap(await (await fetch(dataUrl)).blob())
+      const canvas = new OffscreenCanvas(image.width, image.height),
+        ctx = canvas.getContext('2d')
+      ctx.drawImage(image, 0, 0)
+      image.close()
+      const rect = document
+        .querySelector('#project-field')
+        .getBoundingClientRect()
+      const pixels = ctx.getImageData(
+        Math.ceil(rect.x) + 12,
+        Math.ceil(rect.y) + 5,
+        80,
+        1,
+      ).data
+      const red = Array.from(
+        { length: pixels.length / 4 },
+        (_, index) => pixels[index * 4],
+      )
+      return red
+        .slice(1)
+        .filter((value, index) => Math.abs(value - red[index]) > 60).length
+    }, dataUrl)
   assert(
-    transitions < 15,
+    (await fieldTransitions(contract.steps.at(-1).screenshot)) < 15,
     'Raw one-pixel field stripes reached stored capture image',
   )
-  await fixture.reload()
   const reloadState = () =>
     worker.evaluate(async (url) => {
       const state = await chrome.storage.local.get([
@@ -712,16 +815,48 @@ try {
         phase: state.captureReview?.phase,
       }
     }, `${base}/next`)
-  try {
-    await expect
-      .poll(async () => {
-        const state = await reloadState()
-        return state.error ?? state.count
+  const sourceDocument = () =>
+    worker.evaluate(async () => {
+      const { captureTabId } = await chrome.storage.local.get('captureTabId')
+      const frames = await chrome.webNavigation.getAllFrames({
+        tabId: captureTabId,
       })
-      .toBe(2)
-  } catch (error) {
-    console.log('Reload capture diagnostic', await reloadState())
-    throw error
+      return frames.find((frame) => frame.frameId === 0)?.documentId
+    })
+  let documentId = await sourceDocument()
+  assert(documentId, 'Source document identity missing before reload')
+  for (let reload = 1; reload <= 3; reload++) {
+    await fixture.bringToFront()
+    await fixture.reload()
+    try {
+      await expect.poll(reloadState).toEqual({
+        count: reload + 1,
+        error: null,
+        recording: true,
+        phase: 'recording',
+      })
+      await expect(
+        panel.locator('[data-sd="capture-review"]'),
+      ).toBeEnabled()
+    } catch (error) {
+      console.log('Reload capture diagnostic', {
+        reload,
+        ...(await reloadState()),
+      })
+      throw error
+    }
+    const nextDocument = await sourceDocument()
+    assert(nextDocument && nextDocument !== documentId)
+    documentId = nextDocument
+    const reloadImage = await worker.evaluate(
+      async () =>
+        (await chrome.storage.local.get('steps')).steps.at(-1).screenshot,
+    )
+    assert(
+      (await fieldTransitions(reloadImage)) < 15,
+      'Reloaded document reached storage without client field masks',
+    )
+    console.log(`Capture document replacement verified: reload ${reload}`)
   }
   const reloadedSteps = await worker.evaluate(
     async () => (await chrome.storage.local.get('capturedSteps')).capturedSteps,
@@ -753,7 +888,10 @@ try {
   // already-redacted steps and exposing a data-free status to the capture UI.
   await fixture.bringToFront()
   await fixture.goto(`${base}/failure`)
-  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
   await fixture
     .locator('#fixture-save')
     .evaluate((button) =>
@@ -795,7 +933,10 @@ try {
     async () =>
       (await chrome.tabs.query({ active: true, currentWindow: true }))[0].id,
   )
-  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
   await worker.evaluate(
     ({ otherId, fixtureId }) => {
       const original = chrome.tabs.captureVisibleTab.bind(chrome.tabs)
@@ -847,19 +988,51 @@ try {
   // are unavailable there. The recovery download contains already-redacted data.
   rejectUpload = true
   await fixture.bringToFront()
-  await panel.evaluate(
-    (url) => chrome.runtime.sendMessage({ type: 'START', url }),
-    fixture.url(),
+  assert.deepEqual(
+    await panel.evaluate(
+      (url) => chrome.runtime.sendMessage({ type: 'START', url }),
+      fixture.url(),
+    ),
+    { ok: true },
   )
   await fixture.getByRole('button', { name: 'Save fixture' }).click()
-  await expect
-    .poll(async () =>
-      worker.evaluate(
-        async () =>
-          (await chrome.storage.local.get('steps')).steps?.length ?? 0,
-      ),
+  try {
+    await expect
+      .poll(async () =>
+        worker.evaluate(
+          async () =>
+            (await chrome.storage.local.get('steps')).steps?.length ?? 0,
+        ),
+      )
+      .toBeGreaterThan(0)
+  } catch (error) {
+    console.log(
+      'Upload-recovery capture diagnostic',
+      await worker.evaluate(async () => {
+        const state = await chrome.storage.local.get([
+          'recording',
+          'captureError',
+          'captureReview',
+          'captureTabId',
+          'steps',
+          'capturedSteps',
+        ])
+        const [active] = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        })
+        return {
+          recording: state.recording,
+          error: state.captureError,
+          phase: state.captureReview?.phase,
+          count: state.steps?.length,
+          metadataCount: state.capturedSteps?.length,
+          activeSource: active?.id === state.captureTabId,
+        }
+      }),
     )
-    .toBeGreaterThan(0)
+    throw error
+  }
   assert.equal(
     (await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'STOP' })))
       .ok,
@@ -883,7 +1056,10 @@ try {
     ),
     undefined,
   )
-  await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' }))
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
   assert.deepEqual(
     await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' })),
     { ok: true },
@@ -896,9 +1072,93 @@ try {
     ).recording,
     false,
   )
+  // The producer can apply STATE but never reply (for example a torn-down
+  // response channel). Cancellation must settle after the bounded handshake,
+  // and a late acknowledgement must not resurrect the canceled session.
+  const beforeHandshakeFailure = JSON.stringify(uploaded)
+  await fixture.bringToFront()
+  await worker.evaluate(() => {
+    globalThis.sdAckSend = chrome.tabs.sendMessage
+    const send = chrome.tabs.sendMessage.bind(chrome.tabs)
+    chrome.tabs.sendMessage = async (tabId, message, options) => {
+      if (message.type === 'STATE' && message.recording && options?.frameId === 0) {
+        await send(tabId, message, options)
+        globalThis.sdAckHeld = true
+        return new Promise((resolve) => { globalThis.sdAckRelease = resolve })
+      }
+      return send(tabId, message, options)
+    }
+  })
+  const pendingStart = panel.evaluate(() =>
+    chrome.runtime.sendMessage({ type: 'START' }),
+  ).catch((error) => {
+    const message = error instanceof Error ? error.message : ''
+    console.log('Held-handshake Start transport failure', {
+      channelClosed: /message (?:port|channel).*closed|channel closed/i.test(message),
+      targetClosed: /target.*closed/i.test(message),
+      contextDestroyed: /context.*destroyed/i.test(message),
+      timeout: /timeout|timed out/i.test(message),
+    })
+    return null
+  })
+  await expect.poll(() => worker.evaluate(() => globalThis.sdAckHeld)).toBe(true)
+  const pendingCancel = panel.evaluate(() =>
+    chrome.runtime.sendMessage({ type: 'CANCEL' }),
+  ).catch(() => null)
+  const startReply = await pendingStart
+  if (!startReply)
+    console.log('Held-handshake state', await worker.evaluate(async () => {
+      const state = await chrome.storage.local.get([
+        'recording', 'captureError', 'captureReview', 'steps',
+      ])
+      return {
+        recording: state.recording, failed: !!state.captureError,
+        phase: state.captureReview?.phase, count: state.steps?.length,
+      }
+    }).catch(() => ({ workerUnavailable: true })))
+  assert.deepEqual(startReply, {
+    ok: false, error: 'Capture operation failed',
+  })
+  assert.deepEqual(await pendingCancel, { ok: true })
+  await worker.evaluate(() => {
+    chrome.tabs.sendMessage = globalThis.sdAckSend
+    globalThis.sdAckRelease({ ok: true })
+    delete globalThis.sdAckSend
+    delete globalThis.sdAckRelease
+    delete globalThis.sdAckHeld
+  })
+  const canceledState = await worker.evaluate(async () => {
+    const state = await chrome.storage.local.get([
+      'recording', 'captureError', 'captureReview', 'steps',
+    ])
+    return {
+      recording: state.recording, error: state.captureError,
+      phase: state.captureReview?.phase, count: state.steps?.length,
+    }
+  })
+  assert.deepEqual(canceledState, {
+    recording: false, error: null, phase: 'idle', count: 0,
+  })
+  assert.equal(JSON.stringify(uploaded), beforeHandshakeFailure)
+  await panel.bringToFront()
+  await expect(panel.locator('[data-sd="capture-start"]')).toBeEnabled()
+  await fixture.bringToFront()
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
+    { ok: true },
+  )
+  await fixture.getByRole('button', { name: 'Save fixture' }).click()
+  await expect.poll(async () => worker.evaluate(async () =>
+    (await chrome.storage.local.get('steps')).steps?.length,
+  )).toBe(1)
+  assert.deepEqual(
+    await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'CANCEL' })),
+    { ok: true },
+  )
+  console.log('Source handshake timeout, cancellation, late reply and new-session recovery verified')
   assert.deepEqual(failures, [], 'Extension runtime failed')
   console.log(
-    'Built-extension verification passed: three manifests/assets, native local library/editor/history/image/export workers, two-theme axe, trusted fill/select/key/frame/shadow/SPA metadata, reference-only storage, field pixels, fail-closed capture, legacy upload/recovery/retry/cancel.',
+    'Built-extension verification passed: three manifests/assets, native local library/editor/history/image/export workers, two-theme axe, trusted fill/select/key/frame/shadow/SPA metadata, reference-only storage, field pixels, acknowledged Starts and three distinct same-URL reloads with ready controls/masked pixels, fail-closed capture, legacy upload/recovery/retry/cancel.',
   )
 } finally {
   await context?.close()

@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser'
+import { notifyCaptureControls } from './control-notice'
 import { IndexedDbAdapter, StorageError } from '@stepdoc/storage'
 import { captureUrl } from '@stepdoc/core/capture'
 import {
@@ -29,6 +30,11 @@ export class GuideController {
   }
   private async store(run: GuideRun) {
     await browser.storage.local.set({ guideMe: run })
+    notifyCaptureControls(
+      ['complete', 'conflict', 'save-error'].includes(run.phase)
+        ? { guideId: run.guideId, saved: run.phase === 'complete' }
+        : undefined,
+    )
   }
   private async show(run: GuideRun) {
     const step = run.steps[Math.min(run.index, run.steps.length - 1)]!
@@ -240,6 +246,7 @@ export class GuideController {
       ) {
         await this.hide(run)
         await browser.storage.local.remove('guideMe')
+        notifyCaptureControls()
         return
       }
       if (
@@ -362,6 +369,7 @@ export class GuideController {
         throw new Error('Walkthrough active')
       await this.hide(run)
       await browser.storage.local.remove('guideMe')
+      notifyCaptureControls()
     })
   }
   private async hide(run: GuideRun) {

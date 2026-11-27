@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { chromium, expect } from '@playwright/test'
 import { extensionWorker } from './extension-worker.mjs'
 
+const defaultGpu = process.argv.includes('--default-gpu')
 // Trusted browser input into the production extension. Both HTTP origins are
 // local fixtures; no values or input files are read by the recorder or a server.
 let apiRequests = 0,
@@ -54,7 +55,7 @@ try {
     headless: true,
     viewport: { width: 1440, height: 1000 },
     args: [
-      '--disable-gpu',
+      ...(defaultGpu ? [] : ['--disable-gpu']),
       `--disable-extensions-except=${dir}`,
       `--load-extension=${dir}`,
     ],

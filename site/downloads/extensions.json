@@ -1,27 +1,27 @@
 {
   "format": "stepdoc/extension-distribution@1",
   "version": "0.2.0",
-  "sourceSha256": "ab3addfdedc1628f902317ed1eac355905636ce397c370607ff31e0ab5444543",
+  "sourceSha256": "a95f3b329275c73e198fffc42d681670c8c0689f707e1fd74b911fc94de57ff6",
   "browsers": {
     "chrome": {
       "file": "stepdoc-chrome.zip",
-      "sha256": "dc179925956bf7e77ccdcff2ac70b261fb6862c3223051575c9039593c4b221b",
-      "bytes": 1210959,
-      "files": 121,
+      "sha256": "d9fdffdb52a3958520c62564e4b8de3e6307053d7d707382c21fbe3fe2eee1e8",
+      "bytes": 1212134,
+      "files": 122,
       "signed": false
     },
     "edge": {
       "file": "stepdoc-edge.zip",
-      "sha256": "44c2f8438f92ec6ab1fb6050fddadbfc6d02607c7f34b5db449c1ca895b41038",
-      "bytes": 1210957,
-      "files": 121,
+      "sha256": "f0facfbf9e498b01484f269e0903b4bf76a3d72ae8ed27cf0553504a2a8b1d84",
+      "bytes": 1212131,
+      "files": 122,
       "signed": false
     },
     "firefox": {
       "file": "stepdoc-firefox.zip",
-      "sha256": "4b35ff8e95434e8d1a1261b129dbe7c3cd39a250b1e7917437d992d765f5b839",
-      "bytes": 1209953,
-      "files": 118,
+      "sha256": "937fd5f5c4fe18e171be7f2a25d709e8b86699b6fd1d6b6d123090da5d53a738",
+      "bytes": 1211074,
+      "files": 119,
       "signed": false
     }
   }

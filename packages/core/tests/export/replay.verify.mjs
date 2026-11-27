@@ -206,9 +206,11 @@ test.beforeEach(async ({ page }) => {
   assert.equal(typed.code, 0, typed.output)
   const results = join(temporary, 'results.json')
   await writeFile(join(temporary, 'fixture.txt'), 'Local upload fixture')
+  // Page creation shares the test budget; allow the normal browser startup budget
+  // while retaining the previous action/navigation ceiling and locator assertions.
   await writeFile(
     join(temporary, 'playwright.config.ts'),
-    `export default { testDir: '.', testMatch: '*.spec.ts', workers: 1, retries: 0, timeout: 15000, use: { trace: 'on', video: 'on', screenshot: 'on' }, outputDir: './results', reporter: [['json', { outputFile: ${JSON.stringify(results)} }]] };`,
+    `export default { testDir: '.', testMatch: '*.spec.ts', workers: 1, retries: 0, timeout: 30000, use: { actionTimeout: 15000, navigationTimeout: 15000, trace: 'on', video: 'on', screenshot: 'on' }, outputDir: './results', reporter: [['json', { outputFile: ${JSON.stringify(results)} }]] };`,
   )
   const replay = await run(
     [

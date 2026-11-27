@@ -3,7 +3,7 @@ import type {
   StepDocExtension,
   WalkthroughResult,
 } from '../../app/src/extension'
-import type { GuideRun } from './guide-run'
+import { receiveCaptureNotice } from './control-notice'
 
 const listeners = new Set<(result: WalkthroughResult) => void>()
 const bridge: StepDocExtension = {
@@ -22,11 +22,9 @@ const bridge: StepDocExtension = {
   },
 }
 window.stepdocExtension = bridge
-browser.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'local' || !changes.guideMe?.newValue) return
-  const run = changes.guideMe.newValue as GuideRun
-  if (!['complete', 'conflict', 'save-error'].includes(run.phase)) return
-  for (const listener of listeners)
-    listener({ guideId: run.guideId, saved: run.phase === 'complete' })
+browser.runtime.onMessage.addListener((message: unknown, sender) => {
+  const result = receiveCaptureNotice(message, sender)?.guideResult
+  if (!result) return
+  for (const listener of listeners) listener(result)
 })
 void import('../../app/src/main')

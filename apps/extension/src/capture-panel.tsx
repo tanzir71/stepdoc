@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { browser } from 'wxt/browser'
+import { receiveCaptureNotice } from './control-notice'
 import {
   Badge,
   Button,
@@ -315,12 +316,17 @@ function CapturePanel() {
       if (parsed.success) updatePair(parsed.data)
     }
     browser.runtime.onMessage.addListener(pairChanged)
-    const changed = (_changes: unknown, area: string) => {
-      if (area === 'local') void refresh()
+    const changed: Parameters<
+      typeof browser.runtime.onMessage.addListener
+    >[0] = (message: unknown, sender) => {
+      if (receiveCaptureNotice(message, sender))
+        void refresh().catch(() =>
+          announce('Capture controls are unavailable. Reopen this panel to retry.'),
+        )
     }
-    browser.storage.onChanged.addListener(changed)
+    browser.runtime.onMessage.addListener(changed)
     return () => {
-      browser.storage.onChanged.removeListener(changed)
+      browser.runtime.onMessage.removeListener(changed)
       browser.runtime.onMessage.removeListener(pairChanged)
     }
   }, [])

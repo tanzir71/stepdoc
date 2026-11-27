@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./describe-step": "./src/describe-step.ts",
     "./cleanup": "./src/cleanup.ts",
+    "./ai": "./src/ai/index.ts",
     "./locators": "./src/locators.ts",
     "./selector": "./src/selector.ts",
     "./capture-queue": "./src/capture-queue.ts",
@@ -24,7 +25,7 @@
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --maxWorkers=2 --minWorkers=1 && pnpm test:browser",
-    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs && node tests/capture-browser.verify.mjs && node tests/capture-redaction.verify.mjs"
+    "test:browser": "node tests/redaction-worker.verify.mjs && node tests/canvas-worker.verify.mjs && node tests/export/replay.verify.mjs && node tests/ai.verify.mjs && node tests/capture-browser.verify.mjs && node tests/capture-redaction.verify.mjs"
   },
   "dependencies": {
     "@stepdoc/schema": "workspace:*",

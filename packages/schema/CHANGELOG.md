@@ -5,6 +5,14 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11/M15 adds internal `stepdoc/ai-context@1` text projection, bounded proposal and
+private provider configuration schemas, structured-output JSON Schema, and
+validated provider-envelope projections. Source IDs remain private ordinal
+bindings; model proposals cannot add replay/image/value/verification fields.
+These are shared provider prerequisites, not a public `/ai/rewrite` endpoint
+change or guide data. No guide field/default, persisted layout, public API or
+guide wire identifier changes; no guide migration or package version bump is needed.
+
 M11 adds a private, bounded display-only local cleanup suggestion and an ID-only
 review command. Suggestions are recomputed against the retained session/revision
 before atomic application. Renames, explicit manual merges and additional checks

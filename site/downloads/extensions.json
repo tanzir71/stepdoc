@@ -1,7 +1,7 @@
 {
   "format": "stepdoc/extension-distribution@1",
   "version": "0.2.0",
-  "sourceSha256": "3f4a93eb02124ae85e8de8d73c89efa3a8db95f78366f7d27fa903cf861887c6",
+  "sourceSha256": "f009ec8c4371d87d200739523cac3b33ef50be8a904946845c98b0a6d12f41c6",
   "browsers": {
     "chrome": {
       "file": "stepdoc-chrome.zip",

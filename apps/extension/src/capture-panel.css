@@ -283,6 +283,58 @@ body {
   gap: var(--sd-space-2);
   flex-wrap: wrap;
 }
+.capture-cleanup-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-2);
+  padding: 14px;
+  background: var(--sd-agent-soft);
+  border-radius: var(--sd-radius-lg);
+}
+.capture-cleanup-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--sd-space-2);
+}
+.capture-cleanup-heading > .sd-icon {
+  color: var(--sd-agent-solid);
+}
+.capture-cleanup-heading h2 {
+  flex: 1;
+  min-width: 0;
+  font: var(--sd-type-label-m);
+  letter-spacing: -0.1px;
+}
+.capture-cleanup-card p,
+.capture-cleanup-list label > span > span {
+  color: var(--sd-text-secondary);
+  font: var(--sd-type-body-s);
+}
+.capture-cleanup-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-3);
+  padding: 0;
+  margin: var(--sd-space-4) 0;
+  list-style: none;
+  max-height: 45dvh;
+  overflow-y: auto;
+}
+.capture-cleanup-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sd-space-2);
+}
+.capture-cleanup-list label > span {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sd-space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.capture-cleanup-list strong {
+  font: var(--sd-type-label-m);
+}
 .capture-actions {
   display: flex;
   gap: var(--sd-space-2);

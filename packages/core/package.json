@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./describe-step": "./src/describe-step.ts",
+    "./cleanup": "./src/cleanup.ts",
     "./locators": "./src/locators.ts",
     "./selector": "./src/selector.ts",
     "./capture-queue": "./src/capture-queue.ts",

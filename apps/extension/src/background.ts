@@ -939,8 +939,7 @@ export function startBackground() {
               revision: (review.revision ?? 0) + 1,
             },
           })
-        else
-          await storeCaptureState({ captureDestination: destination })
+        else await storeCaptureState({ captureDestination: destination })
         respond({ ok: true })
       } else if (message.type === 'CAPTURE_FOCUS_TARGET') {
         const command = captureTargetCommandSchema.parse(message)
@@ -1299,23 +1298,46 @@ export function startBackground() {
         )
           throw new Error('Review changed')
         if (message.type === 'EDIT_REVIEW') {
-          if (review.savedId || review.remoteSaved || review.remoteAttempt)
-            throw new Error('Capture already committed')
           const edit = reviewEditSchema.parse(message.edit)
-          if (edit.operation === 'title') review.title = edit.title
-          else {
-            const result = editReview(
-              state.capturedSteps ?? [],
-              state.steps ?? [],
-              edit,
+          await mutate(async () => {
+            const current = await browser.storage.local.get<LegacyStorage>([
+              'captureSessionId',
+              'captureReview',
+              'capturedSteps',
+              'steps',
+            ])
+            const active = current.captureReview
+            if (
+              current.captureSessionId !== message.sessionId ||
+              active?.phase !== 'review' ||
+              active.revision !== message.revision ||
+              active.savedId ||
+              active.remoteSaved ||
+              active.remoteAttempt
             )
+              throw new Error('Review changed')
+            const result =
+              edit.operation === 'title'
+                ? undefined
+                : editReview(
+                    current.capturedSteps ?? [],
+                    current.steps ?? [],
+                    edit,
+                  )
+            // Commit the reviewed metadata, matching image order and revision
+            // together, fenced against cancellation and another controls page.
             await storeCaptureState({
-              capturedSteps: result.steps,
-              steps: result.images,
+              ...(result && {
+                capturedSteps: result.steps,
+                steps: result.images,
+              }),
+              captureReview: {
+                ...active,
+                ...(edit.operation === 'title' && { title: edit.title }),
+                revision: (active.revision ?? 0) + 1,
+              },
             })
-          }
-          await storeCaptureState({
-            captureReview: { ...review, revision: (review.revision ?? 0) + 1 },
+            if (result?.steps.length) notifyCaptureControls()
           })
           respond({ ok: true })
         } else {

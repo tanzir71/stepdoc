@@ -17,6 +17,7 @@ import {
 } from '@stepdoc/storage'
 import { flattenImage } from '@stepdoc/core/canvas'
 import { captureUrl } from '@stepdoc/core/capture'
+import { suggestCaptureCleanup } from '@stepdoc/core/cleanup'
 import type {
   CaptureDestination,
   CaptureReceipt,
@@ -76,7 +77,54 @@ export function editReview<T extends { screenshot: string }>(
     step: stepSchema.parse(step),
     image: images[index]!,
   }))
-  if (edit.operation === 'delete' || edit.operation === 'merge') {
+  if (edit.operation === 'cleanup') {
+    const proposals = suggestCaptureCleanup(rows.map(({ step }) => step))
+    const selected = new Set(edit.ids)
+    if (
+      selected.size !== edit.ids.length ||
+      edit.ids.some((id) => !proposals.some((proposal) => proposal.id === id))
+    )
+      throw new Error('Cleanup changed')
+    for (const proposal of proposals.filter((item) => selected.has(item.id))) {
+      const at = rows.findIndex(({ step }) => step.id === proposal.stepIds[0])
+      if (at < 0) throw new Error('Cleanup changed')
+      const row = rows[at]!
+      if (proposal.kind === 'merge') {
+        const merged = editReview(
+          rows.map(({ step }) => step),
+          rows.map(({ image }) => image),
+          { operation: 'merge', ids: proposal.stepIds },
+        )
+        rows.splice(
+          0,
+          rows.length,
+          ...merged.steps.map((step, index) => ({
+            step,
+            image: merged.images[index]!,
+          })),
+        )
+      } else if (proposal.kind === 'rename') {
+        row.step.title = proposal.title
+      } else {
+        if (!row.step.expect || rows.length >= 500)
+          throw new Error('Cleanup changed')
+        rows.splice(at + 1, 0, {
+          step: stepSchema.parse({
+            id: crypto.randomUUID(),
+            index: at + 2,
+            type: 'assert',
+            action: 'assert',
+            title: proposal.title,
+            expect: row.step.expect,
+            url: row.step.url,
+            screenshot: row.step.screenshot,
+            redactions: row.step.redactions,
+          }),
+          image: row.image,
+        })
+      }
+    }
+  } else if (edit.operation === 'delete' || edit.operation === 'merge') {
     const selected = new Set(edit.ids)
     if (
       selected.size !== edit.ids.length ||

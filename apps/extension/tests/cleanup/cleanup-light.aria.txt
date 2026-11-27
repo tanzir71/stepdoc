@@ -1,0 +1,39 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Stopped
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Guide title
+  - textbox "Guide title": Workflow on 127.0.0.1
+  - paragraph: Suggested from the page origin. Edit before saving.
+  - text: 3 steps 3 masks applied 0 unclear
+  - complementary "3 clean-up suggestions":
+    - heading "3 clean-up suggestions" [level=2]
+    - button "Apply"
+    - paragraph: "Merge repeated clicks on \"Plan\". Rename to Click \"Continue\". Add a check: Verify \"Ready to continue\" is visible."
+  - paragraph: Select adjacent steps to merge, or delete selected steps. Alt+Up/Down reorders the focused row.
+  - list:
+    - listitem:
+      - 'checkbox "Select step 1: Click \"Plan\""'
+      - text: 01 Click "Plan" click · button
+    - listitem:
+      - 'checkbox "Select step 2: Click \"Plan\""'
+      - text: 02 Click "Plan" click · button
+    - listitem:
+      - 'checkbox "Select step 3: Click here"'
+      - text: 03 Click here click · button
+      - paragraph: Keep the narrated note
+  - button "Merge selected" [disabled]
+  - button "Delete" [disabled]
+- contentinfo:
+  - text: Save to This browser
+  - button "Keep local"
+  - button "Save & open editor"
+  - status: Review 3 captured steps
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: app.html
+    - button "Discard capture"
+- complementary "Capture activity":
+  - group: Activity log

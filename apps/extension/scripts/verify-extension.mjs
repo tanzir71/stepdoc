@@ -1056,6 +1056,9 @@ try {
     ),
     undefined,
   )
+  // RETRY opens its server editor. Select the actual capture fixture before
+  // testing Start/Cancel; the newly created editor may still be loading.
+  await fixture.bringToFront()
   assert.deepEqual(
     await panel.evaluate(() => chrome.runtime.sendMessage({ type: 'START' })),
     { ok: true },

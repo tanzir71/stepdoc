@@ -5,6 +5,13 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M11 adds a private, bounded display-only local cleanup suggestion and an ID-only
+review command. Suggestions are recomputed against the retained session/revision
+before atomic application. Renames, explicit manual merges and additional checks
+use existing guide@1 fields and types; no guide field, default, wire identifier or
+public API changes. No guide-data migration or schema/package bump is needed.
+BYO-key AI rewriting remains the shared M15 feature, separate from offline rules.
+
 M11 adds a strict private `CAPTURE_CHANGED` invalidation with an optional bounded
 terminal Guide Me result. Extension pages no longer subscribe to full Chrome
 storage-change bodies containing old/new retained rasters. They request the

@@ -127,8 +127,9 @@ contrast; the Smart Blur notice keeps a green shield and a readable text token.
 Main lists scroll inside the panel while all rows remain in the accessibility
 tree. Footer status, activity log, native confirmations and discard are functional
 additions. Pairing, destinations and fallback evidence are documented below.
-The later narration unit adds the real opt-in voice switch; cleanup suggestions
-remain open in M11. The E02 pill/timer is documented below.
+The later narration unit adds the real opt-in voice switch; the offline cleanup
+follow-up is documented below. Shared BYO-key AI integration remains M15. The
+E02 pill/timer is documented below.
 
 After a Chrome build, regenerate the five evidence captures and aria snapshots:
 
@@ -292,8 +293,8 @@ earlier screen suites and built-extension byte checks.
 
 Compared with the reference: actual source steps replace fictional Ledgerly
 content; title provenance describes page origin; mask counts reflect applied
-privacy masks. Existing manual merge/delete controls remain until real cleanup
-suggestions ship. The paired E06 adds the functional destination row using E01's
+privacy masks. Existing manual merge/delete controls remain available alongside
+the offline cleanup review documented below. The paired E06 adds the functional destination row using E01's
 shared segments. Safe status/activity and navigation remain reachable below the
 save controls. Pending-write and saved-editor failures lock the capture and
 explain retry/local recovery. These additions preserve the original token/font
@@ -398,5 +399,43 @@ Regenerate this evidence after building Chrome:
 ```powershell
 $env:STEPDOC_UPDATE_SCREENS = '1'
 pnpm --filter @stepdoc/extension exec node scripts/verify-narration.mjs
+Remove-Item Env:STEPDOC_UPDATE_SCREENS
+```
+
+## M11 — offline E04 cleanup review (28 Nov 2026)
+
+Fresh E04 context and render (`27:6690`) supply the new cleanup card. The actual
+`m11-cleanup-light.png`, `m11-cleanup-dark.png`, `m11-cleanup-narrow.png` and three
+matching `m11-cleanup-dialog-*.png` files come from the loaded Chrome extension,
+not a static design fixture. The card retains the design's 16px page gutters,
+14px padding, 12px radius, agent surface, 28px Apply button and unchanged 16×16
+sparkle (`packages/ui/assets/8004d.svg`, node `27:6729`). Native checks assert its
+local file/callsite, intrinsic/effective dimensions and painted glyph pixels.
+The real three-suggestion summary wraps to three lines; its card is consequently
+124px high rather than the mock's two-line 104px example. Existing local title,
+destination, keyboard hint, status/activity and actual capture rows stay intact.
+
+Apply opens a native labelled dialog to review selected changes, with all rows
+in the accessibility tree, visible focus, Escape, cancel and stale-revision
+feedback. `?view=review&cleanup=review` reopens against the current capture after
+reload; no captured guide or image is modified until an explicit application.
+The shared components/tokens also supply the dark and 320px versions. Seven aria
+snapshots and axe cover these new states, including `m11-cleanup-dialog-failure.png`
+with retry feedback inside the modal; all older reference captures remain
+unchanged. Only the new original sparkle asset is added.
+
+Offline rules can improve vague titles, combine repeated clicks into an explicit
+manual instruction and add a check from a recorded expected result. The latter
+preserves its original action and reuses its already-masked image. The native
+regression proves revision guards, selective application, atomic failure/retry,
+source hashes, notes/masks, preview recovery and real editor save/reload with no
+AI/backend requests. Shared BYO-key AI rewriting remains M15, not an offline
+capability claim.
+
+Regenerate only this evidence after a Chrome build:
+
+```powershell
+$env:STEPDOC_UPDATE_SCREENS = '1'
+pnpm --filter @stepdoc/extension exec node scripts/verify-cleanup.mjs
 Remove-Item Env:STEPDOC_UPDATE_SCREENS
 ```

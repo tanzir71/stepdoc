@@ -1,16 +1,19 @@
 import type { LegacyStorage } from './background'
 import type { ReviewState } from './review'
 import type { GuideRun } from './guide-run'
+import { suggestCaptureCleanup } from '@stepdoc/core/cleanup'
 import type {
   CaptureDestination,
   ServerDestination,
 } from '@stepdoc/schema/capture-destination'
 import {
   captureControlStepSchema,
+  captureCleanupSuggestionSchema,
   capturePillViewSchema,
   captureSourceStateSchema,
   MAX_CAPTURE_CONTROL_BYTES,
   type CaptureControlStep,
+  type CaptureCleanupSuggestion,
 } from '@stepdoc/schema/capture'
 
 export type GuideRunView = Pick<
@@ -36,6 +39,7 @@ export interface CaptureControls {
   captureReview?: ReviewState
   captureDestination?: LegacyStorage['captureDestination']
   capturedSteps?: CaptureControlStep[]
+  cleanupSuggestions?: CaptureCleanupSuggestion[]
   pendingSession?: boolean
   guideMe?: GuideRunView
 }
@@ -89,6 +93,16 @@ export function captureControls(state: LegacyStorage): CaptureControls {
           }),
         ),
   }
+  if (
+    review?.phase === 'review' &&
+    !review.savedId &&
+    !review.remoteSaved &&
+    !review.remoteAttempt &&
+    !state.guideMe
+  )
+    result.cleanupSuggestions = suggestCaptureCleanup(
+      state.capturedSteps ?? [],
+    ).map((suggestion) => captureCleanupSuggestionSchema.parse(suggestion))
   if (review && result.captureReview) {
     if (review.preferences)
       result.captureReview.preferences = pick(review.preferences, [
@@ -167,7 +181,7 @@ export function captureSourceState(state: LegacyStorage, tabId?: number) {
         recording: false,
         paused: false,
         producerStopped: false,
-      captureSessionId: undefined,
+        captureSessionId: undefined,
         captureBlurMode: false,
         captureManualCount: 0,
         stepCount: 0,

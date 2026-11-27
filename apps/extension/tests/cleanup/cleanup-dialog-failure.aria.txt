@@ -1,0 +1,58 @@
+- banner:
+  - heading "StepDoc" [level=1]
+  - text: stepdoc Stopped
+  - link "Settings":
+    - /url: options.html
+- main:
+  - text: Guide title
+  - textbox "Guide title": Reviewed workflow
+  - paragraph: Suggested from the page origin. Edit before saving.
+  - text: 3 steps 3 masks applied 0 unclear
+  - complementary "3 clean-up suggestions":
+    - heading "3 clean-up suggestions" [level=2]
+    - button "Apply"
+    - paragraph: "Merge repeated clicks on \"Plan\". Rename to Click \"Continue\". Add a check: Verify \"Ready to continue\" is visible."
+  - dialog "Review clean-up suggestions":
+    - heading "Review clean-up suggestions" [level=2]
+    - paragraph: Choose the changes to apply. Suggestions run in this browser and do not contact an AI provider.
+    - status: Changes could not be applied. Your review is retained. Retry or cancel.
+    - list:
+      - listitem:
+        - 'checkbox "Merge repeated clicks on \"Plan\". Steps 1–2: combine both instructions into one manual step, retaining the first screenshot."'
+        - strong: Merge repeated clicks on "Plan"
+        - text: "Steps 1–2: combine both instructions into one manual step, retaining the first screenshot."
+      - listitem:
+        - 'checkbox "Click \"Continue\". Step 3: rename \"Click here\" to \"Click \"Continue\"\". The recorded action stays the same." [checked]'
+        - strong: Click "Continue"
+        - text: "Step 3: rename \"Click here\" to \"Click \"Continue\"\". The recorded action stays the same."
+      - listitem:
+        - 'checkbox "Verify \"Ready to continue\" is visible. After step 3: add \"Verify \"Ready to continue\" is visible\" using its recorded expected result. Keep the original action and reuse its masked screenshot."'
+        - strong: Verify "Ready to continue" is visible
+        - text: "After step 3: add \"Verify \"Ready to continue\" is visible\" using its recorded expected result. Keep the original action and reuse its masked screenshot."
+    - button "Cancel"
+    - button "Apply selected"
+  - paragraph: Select adjacent steps to merge, or delete selected steps. Alt+Up/Down reorders the focused row.
+  - list:
+    - listitem:
+      - 'checkbox "Select step 1: Click \"Plan\""'
+      - text: 01 Click "Plan" click · button
+    - listitem:
+      - 'checkbox "Select step 2: Click \"Plan\""'
+      - text: 02 Click "Plan" click · button
+    - listitem:
+      - 'checkbox "Select step 3: Click here"'
+      - text: 03 Click here click · button
+      - paragraph: Keep the narrated note
+  - button "Merge selected" [disabled]
+  - button "Delete" [disabled]
+- contentinfo:
+  - text: Save to This browser
+  - button "Keep local"
+  - button "Save & open editor"
+  - status: Operation could not finish. The capture is retained; refresh and retry.
+  - navigation "StepDoc":
+    - link "Open library":
+      - /url: app.html
+    - button "Discard capture"
+- complementary "Capture activity":
+  - group: Activity log

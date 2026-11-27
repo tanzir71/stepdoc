@@ -60,6 +60,41 @@ function state(): LegacyStorage {
   }
 }
 describe('bounded private capture controls', () => {
+  it('projects cleanup without reading retained image fields or exposing target selectors', () => {
+    const input = state()
+    input.recording = false
+    input.captureReview!.phase = 'review'
+    input.capturedSteps![0]!.title = 'Describe this step'
+    Object.defineProperty(input.capturedSteps![0]!, 'screenshot', {
+      get: () => {
+        throw new Error('Captured image metadata read')
+      },
+    })
+    Object.defineProperty(input, 'steps', {
+      get: () => {
+        throw new Error('Retained images read')
+      },
+    })
+    const suggestions = captureControls(input).cleanupSuggestions
+    expect(suggestions).toEqual([
+      expect.objectContaining({
+        kind: 'rename',
+        title: 'Fill in the "Email" field',
+      }),
+    ])
+    expect(JSON.stringify(suggestions)).not.toContain('PRIVATE_LOCATOR')
+    expect(JSON.stringify(suggestions)).not.toContain('invoice_email')
+  })
+  it('does not offer cleanup for live, saving or already committed captures', () => {
+    const input = state()
+    input.capturedSteps![0]!.title = 'Describe this step'
+    expect(captureControls(input).cleanupSuggestions).toBeUndefined()
+    input.captureReview!.phase = 'saving'
+    expect(captureControls(input).cleanupSuggestions).toBeUndefined()
+    input.captureReview!.phase = 'review'
+    input.captureReview!.savedId = 'saved-guide'
+    expect(captureControls(input).cleanupSuggestions).toBeUndefined()
+  })
   it('never reads retained images and exposes only display metadata and a retry flag', () => {
     const raw = state()
     Object.defineProperty(raw, 'steps', {

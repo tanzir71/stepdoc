@@ -1,10 +1,5 @@
 import { z } from 'zod'
-import {
-  guideSchema,
-  rectSchema,
-  redactionSchema,
-  stepSchema,
-} from './guide'
+import { guideSchema, rectSchema, redactionSchema, stepSchema } from './guide'
 
 // Ephemeral extension transport, not guide data or the public Storage API.
 export const CAPTURE_TRANSPORT = 'stepdoc/capture@1' as const
@@ -117,6 +112,17 @@ export const narrationCommandSchema = z.discriminatedUnion('type', [
     text: z.string().min(1).max(4000),
   }),
 ])
+// Display-only local suggestions. Apply sends IDs, never client-authored changes.
+export const captureCleanupSuggestionSchema = z.strictObject({
+  id: z.string().min(1).max(32),
+  kind: z.enum(['rename', 'merge', 'check']),
+  stepIds: z.array(z.string().min(1).max(200)).min(1).max(2),
+  title: z.string().min(1).max(200),
+  summary: z.string().min(1).max(500),
+})
+export type CaptureCleanupSuggestion = z.output<
+  typeof captureCleanupSuggestionSchema
+>
 export const reviewEditSchema = z.discriminatedUnion('operation', [
   z.strictObject({
     operation: z.literal('title'),
@@ -134,6 +140,10 @@ export const reviewEditSchema = z.discriminatedUnion('operation', [
     operation: z.literal('move'),
     id: z.string(),
     direction: z.enum(['up', 'down']),
+  }),
+  z.strictObject({
+    operation: z.literal('cleanup'),
+    ids: z.array(z.string().min(1).max(32)).min(1).max(500),
   }),
 ])
 export type CapturePreferences = z.output<typeof capturePreferencesSchema>

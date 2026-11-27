@@ -548,8 +548,25 @@ describe('extracted PHP distribution and first-owner setup', () => {
         scopes: string[]
       }
       expect(device.scopes).toEqual(['capture:write', 'guides:read'])
-      await hook(page, 'setup-continue').click()
+      // Open workspace performs a full navigation and an authenticated read.
+      // Observe that network boundary before the unchanged UI render assertion.
+      const [libraryResponse] = await Promise.all([
+        page.waitForResponse((response) => {
+          const expected = new URL(f.api + 'guides')
+          const actual = new URL(response.url())
+          return (
+            response.request().method() === 'GET' &&
+            actual.origin === expected.origin &&
+            actual.pathname === expected.pathname
+          )
+        }, installerNetwork),
+        hook(page, 'setup-continue').click(),
+      ])
+      expect(libraryResponse.status()).toBe(200)
       await browserExpect(hook(page, 'library-create-empty')).toBeVisible()
+      console.log('Installer workspace boundary', {
+        root: base === '', status: libraryResponse.status(), rendered: true,
+      })
       await hook(page, 'library-create-empty').click()
       await hook(page, 'guide-create-title').fill(
         'Guide from installed ZIP',

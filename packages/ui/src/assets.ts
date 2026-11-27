@@ -65,6 +65,7 @@ import capturePointer from '../assets/f9c8a.svg?url'
 import captureMerge from '../assets/9c01e.svg?url'
 import captureTrash from '../assets/5e2bf.svg?url'
 import captureNext from '../assets/d1faf.svg?url'
+import captureCleanup from '../assets/8004d.svg?url'
 import popupRecord from '../assets/3713a.svg?url'
 import popupFile from '../assets/f738b.svg?url'
 import popupLibrary from '../assets/679cd.svg?url'
@@ -112,6 +113,7 @@ export const icons = {
   'capture-merge': { url: captureMerge, width: 14, height: 14 },
   'capture-trash': { url: captureTrash, width: 14, height: 14 },
   'capture-next': { url: captureNext, width: 16, height: 16 },
+  'capture-cleanup': { url: captureCleanup, width: 16, height: 16 },
   'popup-record': { url: popupRecord, width: 20, height: 20 },
   'popup-file': { url: popupFile, width: 14, height: 14 },
   'popup-library': { url: popupLibrary, width: 14, height: 14 },

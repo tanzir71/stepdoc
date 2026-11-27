@@ -33,6 +33,7 @@ import {
 } from '@stepdoc/schema/capture'
 import type { CaptureControls } from './capture-controls'
 import { CaptureThumbnail } from './capture-thumbnail'
+import { CaptureCleanup } from './capture-cleanup'
 import '@stepdoc/ui/styles.css'
 import './capture-panel.css'
 import { GuidePanel } from './guide-panel'
@@ -321,7 +322,9 @@ function CapturePanel() {
     >[0] = (message: unknown, sender) => {
       if (receiveCaptureNotice(message, sender))
         void refresh().catch(() =>
-          announce('Capture controls are unavailable. Reopen this panel to retry.'),
+          announce(
+            'Capture controls are unavailable. Reopen this panel to retry.',
+          ),
         )
     }
     browser.runtime.onMessage.addListener(changed)
@@ -332,6 +335,7 @@ function CapturePanel() {
   }, [])
   useEffect(() => {
     const url = new URL(location.href)
+    if (ready && !reviewing) url.searchParams.delete('cleanup')
     if (fullTab) writeTargetChoice(url, targetChoice)
     if (destination.kind === 'server')
       url.searchParams.set('destination', 'server')
@@ -360,6 +364,7 @@ function CapturePanel() {
     }
     history.replaceState(null, '', url)
   }, [
+    ready,
     phase,
     pairView,
     state.guideMe?.index,
@@ -410,7 +415,7 @@ function CapturePanel() {
     message: string,
     extra: Record<string, unknown> = {},
   ) {
-    if (busy) return
+    if (busy) return false
     setBusy(true)
     try {
       await invoke(type, extra)
@@ -427,6 +432,7 @@ function CapturePanel() {
           )
         }
       }
+      return true
     } catch (error) {
       announce(
         error instanceof DestinationFailure
@@ -435,6 +441,7 @@ function CapturePanel() {
             ? targetMessages[error.code]
             : 'Operation could not finish. The capture is retained; refresh and retry.',
       )
+      return false
     } finally {
       setBusy(false)
     }
@@ -1041,6 +1048,23 @@ function CapturePanel() {
                 {steps.filter((step) => step.lowConfidence).length} unclear
               </Badge>
             </div>
+            <CaptureCleanup
+              sessionId={state.captureSessionId ?? ''}
+              revision={review?.revision ?? 0}
+              suggestions={state.cleanupSuggestions ?? []}
+              disabled={disabled || committed}
+              onApply={(ids, sessionId, revision) =>
+                command(
+                  'EDIT_REVIEW',
+                  'Selected clean-up suggestions applied.',
+                  {
+                    sessionId,
+                    revision,
+                    edit: { operation: 'cleanup', ids },
+                  },
+                )
+              }
+            />
             <p className="capture-hint">
               Select adjacent steps to merge, or delete selected steps.
               Alt+Up/Down reorders the focused row.

@@ -7,6 +7,7 @@ import {
   type CaptureDraft,
 } from './review'
 import { stepSchema } from '@stepdoc/schema'
+import { suggestCaptureCleanup } from '@stepdoc/core/cleanup'
 import {
   capturePreferencesSchema,
   reviewEditSchema,
@@ -46,6 +47,106 @@ const draft = (): CaptureDraft => ({
   images: [{ screenshot: 'a' }, { screenshot: 'b' }, { screenshot: 'c' }],
 })
 describe('capture review privacy and identity', () => {
+  it('applies selected cleanup with paired pixels, original actions, notes and mask provenance', () => {
+    const first = stepSchema.parse({
+      id: 'one',
+      index: 1,
+      type: 'action',
+      action: 'click',
+      title: 'Click Plan',
+      url: 'https://example.test/',
+      target: {
+        name: 'Plan',
+        role: 'button',
+        locators: [{ strategy: 'css', value: '#plan', unique: true }],
+      },
+      notes: 'First note',
+    })
+    const third = stepSchema.parse({
+      ...first,
+      id: 'three',
+      index: 3,
+      title: 'Click here',
+      expect: { visible: { name: 'Done' } },
+      notes: 'Keep this note',
+      redactions: [
+        {
+          kind: 'field',
+          source: 'auto',
+          status: 'applied',
+          rect: { x: 1, y: 2, width: 3, height: 4 },
+        },
+      ],
+    })
+    const steps = [first, { ...first, id: 'two', index: 2 }, third]
+    const images = [
+      { screenshot: 'first' },
+      { screenshot: 'second' },
+      { screenshot: 'third' },
+    ]
+    const result = editReview(steps, images, {
+      operation: 'cleanup',
+      ids: suggestCaptureCleanup(steps).map((item) => item.id),
+    })
+    expect(result.steps.map((step) => [step.type, step.index])).toEqual([
+      ['manual', 1],
+      ['action', 2],
+      ['assert', 3],
+    ])
+    expect(result.steps[0]).toMatchObject({
+      lowConfidence: true,
+      notes: 'First note\nFirst note',
+    })
+    expect(result.steps[1]).toMatchObject({
+      id: 'three',
+      title: 'Click "Plan"',
+      action: 'click',
+      notes: 'Keep this note',
+      expect: third.expect,
+      redactions: third.redactions,
+    })
+    expect(result.steps[2]).toMatchObject({
+      action: 'assert',
+      expect: third.expect,
+      redactions: third.redactions,
+    })
+    expect(result.images.map((image) => image.screenshot)).toEqual([
+      'first',
+      'third',
+      'third',
+    ])
+    expect(new Set(result.steps.map((step) => step.id)).size).toBe(3)
+    expect(suggestCaptureCleanup(result.steps)).toEqual([])
+    expect(steps).toHaveLength(3)
+    expect(third.title).toBe('Click here')
+  })
+  it('rejects a stale, repeated or forged cleanup selection without mutating its inputs', () => {
+    const input = draft(),
+      before = structuredClone(input)
+    for (const ids of [['missing'], ['rename-1', 'rename-1']])
+      expect(() =>
+        editReview(input.steps, [...input.images], {
+          operation: 'cleanup',
+          ids,
+        }),
+      ).toThrow()
+    expect(input).toEqual(before)
+  })
+  it('applies only selected proposals and keeps secret input references unchanged', () => {
+    const input = draft()
+    input.steps[1]!.title = 'Describe this step'
+    input.steps[1]!.target = { role: 'textbox', name: 'Email' }
+    const result = editReview(input.steps, [...input.images], {
+      operation: 'cleanup',
+      ids: ['rename-2'],
+    })
+    expect(result.steps[1]).toMatchObject({
+      action: 'fill',
+      title: 'Fill in the "Email" field',
+      value: { kind: 'secret', variable: 'field_2' },
+    })
+    expect(result.images).toEqual(input.images)
+  })
   it('rejects incomplete or invalid upload drafts before processing source pixels', async () => {
     await expect(
       captureUploadGuide({ ...draft(), images: [] }),

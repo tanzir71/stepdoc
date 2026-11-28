@@ -126,3 +126,19 @@ export const apiDevicesSchema = z.array(
     lastSeenAt: guideSchema.shape.updatedAt.nullable(),
   }),
 )
+export type ApiDevice = z.output<typeof apiDevicesSchema>[number]
+export type ApiPairingCode = z.output<typeof apiPairingCodeSchema>
+export const apiTokenInputSchema = z.strictObject({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(120)
+    .refine((value) => new TextEncoder().encode(value).length <= 120),
+  scopes: z
+    .array(apiScopeSchema)
+    .min(1)
+    .max(6)
+    .refine((scopes) => new Set(scopes).size === scopes.length),
+})
+export type ApiTokenInput = z.input<typeof apiTokenInputSchema>

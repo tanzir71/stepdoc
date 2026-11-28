@@ -1,4 +1,20 @@
 import asset0 from '../assets/418d0.svg?url&no-inline'
+import w08Asset0 from '../assets/d8b10.svg?url'
+import w08Asset2 from '../assets/62c4a.svg?url'
+import w08Asset3 from '../assets/2b373.svg?url'
+import w08Asset4 from '../assets/6ccc9.svg?url'
+import w08Asset5 from '../assets/f2eab.svg?url'
+import w08Asset6 from '../assets/a78fa.svg?url'
+import w08Asset7 from '../assets/7f19f.svg?url'
+import w08Asset8 from '../assets/e6f01.svg?url'
+import w08Asset9 from '../assets/bbb17.svg?url'
+import w08Asset10 from '../assets/d6255.svg?url'
+import w08Asset11 from '../assets/aafd4.svg?url'
+import w08Asset12 from '../assets/cf5ac.svg?url'
+import w08Asset13 from '../assets/1679c.svg?url'
+import w08Asset14 from '../assets/c9aa0.svg?url'
+import w08Asset15 from '../assets/9578e.svg?url'
+import w08Asset16 from '../assets/40c36.svg?url'
 import destinationChevron from '../assets/9e248.svg?url'
 import asset1 from '../assets/70a3e.svg?url'
 import asset2 from '../assets/8fef2.svg?url'
@@ -91,6 +107,23 @@ import setupCurrentAsset from '../assets/6336e.svg?url'
 import setupPendingAsset from '../assets/88255.svg?url'
 
 export const icons = {
+  'settings-main': { url: w08Asset0, width: 16, height: 16 },
+  'settings-general': { url: asset42, width: 16, height: 16 },
+  'settings-members': { url: w08Asset2, width: 16, height: 16 },
+  'settings-devices': { url: w08Asset3, width: 16, height: 16 },
+  'settings-storage': { url: w08Asset4, width: 16, height: 16 },
+  'settings-publishing': { url: w08Asset5, width: 16, height: 16 },
+  'settings-ai': { url: w08Asset6, width: 16, height: 16 },
+  'settings-redaction': { url: w08Asset7, width: 16, height: 16 },
+  'settings-branding': { url: w08Asset8, width: 16, height: 16 },
+  'settings-agent': { url: w08Asset9, width: 16, height: 16 },
+  'settings-audit': { url: w08Asset10, width: 16, height: 16 },
+  'devices-key': { url: w08Asset11, width: 16, height: 16 },
+  'devices-refresh': { url: w08Asset12, width: 14, height: 14 },
+  'devices-extension': { url: w08Asset13, width: 18, height: 18 },
+  'devices-bot': { url: w08Asset14, width: 18, height: 18 },
+  'devices-terminal': { url: w08Asset15, width: 18, height: 18 },
+  'devices-lock': { url: w08Asset16, width: 16, height: 16 },
   'setup-monitor': { url: setupMonitor, width: 20, height: 20 },
   'setup-server': { url: setupServer, width: 20, height: 20 },
   'setup-cloud': { url: setupCloud, width: 20, height: 20 },

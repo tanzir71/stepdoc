@@ -1,0 +1,67 @@
+- navigation "Settings":
+  - heading "Settings" [level=2]
+  - link "General":
+    - /url: /tools/settings/general
+  - link "Devices & tokens":
+    - /url: /tools/settings/devices
+- banner:
+  - heading "Devices & tokens" [level=1]
+  - paragraph: Extensions, MCP clients and CI jobs that can reach this workspace. Every token is scoped, revocable and stored as a hash.
+  - button "Create token"
+- main:
+  - region "Pair a browser extension":
+    - heading "Pair a browser extension" [level=2]
+    - paragraph: In the StepDoc extension open Settings → Pair with server and type this code. One use, expires in 5 minutes. The extension receives a capture:write token, never your passkey.
+    - text: capture:write guides:read default scopes
+    - button "Create pairing code"
+  - region "Connected":
+    - heading "Connected" [level=2]
+    - button "Refresh"
+    - list "Connected devices":
+      - listitem:
+        - strong: Contract device
+        - text: Paired extension guides:read guides:write Not used yet
+        - button "Revoke Contract device": Revoke
+      - listitem:
+        - strong: Contract device
+        - text: Scoped API token admin Not used yet
+        - button "Revoke Contract device": Revoke
+      - listitem:
+        - strong: Contract device
+        - text: Scoped API token capture:write guides:read Not used yet
+        - button "Revoke Contract device": Revoke
+      - listitem:
+        - strong: Contract device
+        - text: Scoped API token guides:read Not used yet
+        - button "Revoke Contract device": Revoke
+  - complementary "Token storage":
+    - paragraph: Tokens are shown once and stored as SHA-256 hashes. CORS only allows paired extension IDs.
+  - status: The request could not be confirmed. Refresh connected devices before retrying; the server may have completed it.
+- dialog "Create token":
+  - heading "Create token" [level=2]
+  - button "Close"
+  - text: Token name
+  - textbox "Token name": Retry client
+  - group "Allowed actions":
+    - text: Allowed actions
+    - checkbox "Save captures capture:write"
+    - text: Save captures
+    - code: capture:write
+    - checkbox "Read guides guides:read" [checked]
+    - text: Read guides
+    - code: guides:read
+    - checkbox "Create and edit guides guides:write"
+    - text: Create and edit guides
+    - code: guides:write
+    - checkbox "Publish guides publish:write"
+    - text: Publish guides
+    - code: publish:write
+    - checkbox "Write replay results replay:write"
+    - text: Write replay results
+    - code: replay:write
+    - checkbox "Manage workspace admin"
+    - text: Manage workspace
+    - code: admin
+  - paragraph: Choose only the actions this client needs. The token can be revoked from this screen.
+  - button "Create token"
+  - status: The request could not be confirmed. Refresh connected devices before retrying; the server may have completed it.

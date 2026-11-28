@@ -13,6 +13,10 @@ import {
   type PairingClaim,
   type IssuedToken,
   apiCaptureBlobSchema,
+  apiDevicesSchema,
+  apiPairingCodeSchema,
+  apiTokenInputSchema,
+  type ApiTokenInput,
 } from '@stepdoc/schema/storage-api'
 import {
   StorageError,
@@ -377,6 +381,54 @@ class HttpClient {
 
 export interface CaptureHttpOptions extends HttpRequestOptions {
   token: () => string | Promise<string>
+}
+
+/** Existing device routes; credentials are supplied per request, never persisted. */
+export class DevicesHttpClient {
+  #http: HttpClient
+  constructor(server: string, options: HttpOptions = {}) {
+    this.#http = new HttpClient(
+      server,
+      { maxJsonBytes: 128 * 1024, ...options },
+      options.auth ?? { kind: 'session' },
+    )
+  }
+  list() {
+    return this.#http.json('devices', apiDevicesSchema)
+  }
+  pairingCode() {
+    return this.#http.json('pairing/codes', apiPairingCodeSchema, {
+      method: 'POST',
+      body: '{}',
+      json: true,
+      expected: 201,
+    })
+  }
+  async create(input: ApiTokenInput) {
+    const parsed = apiTokenInputSchema.safeParse(input)
+    if (!parsed.success) throw new StorageError('invalid_options')
+    const value = parsed.data
+    const issued = await this.#http.json('tokens', issuedTokenSchema, {
+      method: 'POST',
+      body: this.#http.body(value),
+      json: true,
+      expected: 201,
+    })
+    if (
+      issued.scopes.length !== value.scopes.length ||
+      value.scopes.some((scope) => !issued.scopes.includes(scope))
+    )
+      throw new StorageError('corrupt_data')
+    return issued
+  }
+  revoke(id: string) {
+    if (typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,200}$/.test(id))
+      throw new StorageError('invalid_options')
+    return this.#http.empty('devices/' + encodeURIComponent(id), 'DELETE')
+  }
+  close() {
+    this.#http.close()
+  }
 }
 export interface CapturePreparedImage {
   original?: Blob | null

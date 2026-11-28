@@ -219,6 +219,10 @@ Port v1 editor behaviour into `apps/app` and restyle to Figma. Notable v2 additi
 | `library-guide-open`, `library-collection-open`, `library-import-file`, `library-import-copy`, `library-import-cancel`, `library-import-stop` | Library navigation, JSON/bundle import conflict handling and cancellation |
 | `nav-home`, `nav-collapse`, `nav-library`, `nav-collections`, `nav-drafts`, `nav-published`, `nav-archived`, `nav-collection` | Browser workspace navigation |
 | `settings-open`, `settings-storage-details`, `theme-light`, `theme-dark`, `theme-system`, `storage-info`, `storage-info-close` | Browser appearance and storage settings |
+| `nav-settings`, `settings-nav-general`, `settings-nav-devices`, `settings-devices` | W08 settings navigation and existing general preferences; unavailable workspace sections are disabled native buttons |
+| `devices-refresh`, `device-row`, `device-revoke`, `device-revoke-confirm`, `device-dialog-close`, `devices-feedback`, `device-dialog-feedback` | W08 real list/revoke, URL-backed dialogs, cancellation and accessible retry feedback |
+| `pairing-create`, `pairing-code`, `pairing-copy`, `pairing-new` | W08 explicit one-use five-minute pairing codes; no code in URLs or persistence |
+| `token-create`, `token-name`, `token-scope-<capture-write\|guides-read\|guides-write\|publish-write\|replay-write\|admin>`, `token-submit`, `token-value`, `token-copy`, `token-done` | W08 scoped token creation and shown-once in-memory result |
 | `guide-library`, `guide-download-json`, `not-found-home`, `activity-open`, `activity-close`, `activity-dismiss`, `activity-live` | Private saved-guide preview, navigation and accessible feedback |
 | `guide-edit`, `editor-library`, `editor-collection`, `editor-guide-details`, `editor-guide-details-close`, `editor-guide-title`, `editor-guide-description`, `editor-read-guide`, `editor-copy-link`, `editor-save-status` | Local editor navigation, metadata and save/history indicator |
 | `editor-mode-edit`, `editor-mode-preview`, `editor-mode-agent`, `inspector-step`, `inspector-target`, `inspector-redact`, `inspector-history` | Editor mode and inspector tabs (URL state) |

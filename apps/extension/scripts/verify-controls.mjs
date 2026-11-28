@@ -389,9 +389,21 @@ try {
   // This durable edit rewrites more than 71 MiB. Await the real UI command
   // acknowledgement within the existing large-operation budget, then verify
   // the committed order with the unchanged five-second metadata assertion.
-  await expect(panel.locator('#status')).toHaveText('Review updated.', {
-    timeout: 20000,
-  })
+  try {
+    await expect(panel.locator('#status')).toHaveText('Review updated.', {
+      timeout: 20000,
+    })
+  } catch (error) {
+    console.log('Large-review failure metadata', await worker.evaluate(async (id) => {
+      const state = await chrome.storage.local.get(['captureReview', 'capturedSteps', 'recording'])
+      return {
+        phase: state.captureReview?.phase, revision: state.captureReview?.revision,
+        recording: state.recording, count: state.capturedSteps?.length,
+        retainedStepIndex: state.capturedSteps?.findIndex((step) => step.id === id),
+      }
+    }, retained.stepId).catch(() => ({ workerUnavailable: true })))
+    throw error
+  }
   await expect
     .poll(async () => (await message('GET_STATE')).capturedSteps[1]?.id)
     .toBe(retained.stepId)

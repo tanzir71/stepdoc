@@ -38,6 +38,9 @@ import { useHostedSession } from './hosted-session'
 const Editor = lazy(() =>
   import('./editor/Editor').then((module) => ({ default: module.Editor })),
 )
+const DevicesSettings = lazy(() =>
+  import('./devices').then((module) => ({ default: module.DevicesSettings })),
+)
 
 export function App() {
   const hosted = useHostedSession()
@@ -116,7 +119,7 @@ export function App() {
     return () => media.removeEventListener('change', changed)
   }, [preferences])
   useEffect(() => {
-    document.title = `StepDoc · ${pathname === '/' ? (route.collections ? 'Collections' : 'Library') : pathname === '/settings/general' ? 'Settings' : 'Guide'}`
+    document.title = `StepDoc · ${pathname === '/' ? (route.collections ? 'Collections' : 'Library') : pathname?.startsWith('/settings/') ? 'Settings' : 'Guide'}`
   }, [pathname, route.collections])
   const preview = /^\/g\/([a-z0-9][a-z0-9-]{2,80})\/?$/.exec(pathname ?? '')
 
@@ -180,7 +183,7 @@ export function App() {
     )
   return (
     <div
-      className={`app-shell ${preferences.collapsed ? 'app-compact' : ''}`}
+      className={`app-shell ${preferences.collapsed ? 'app-compact' : ''} ${pathname === '/settings/devices' ? 'device-settings-shell' : ''}`}
       onClick={intercept}
     >
       <a className="skip-link" href="#main">
@@ -318,6 +321,16 @@ export function App() {
           )}
         </nav>
         <div className="sidebar-fill" />
+        {pathname === '/settings/devices' ? (
+          <NavItem
+            data-sd="nav-settings"
+            href={appHref('/settings/devices')}
+            active
+            icon="settings-main"
+          >
+            Settings
+          </NavItem>
+        ) : null}
         <aside className="agent-card" aria-label="Agent exports">
           <div>
             <Icon name="bot" />
@@ -343,8 +356,12 @@ export function App() {
           <IconButton
             data-sd="settings-open"
             icon="sliders"
-            aria-label="General settings"
-            onClick={() => navigate('/settings/general')}
+            aria-label={
+              hosted ? 'Devices and tokens settings' : 'General settings'
+            }
+            onClick={() =>
+              navigate(hosted ? '/settings/devices' : '/settings/general')
+            }
           />
         </div>
         {hosted ? (
@@ -382,6 +399,19 @@ export function App() {
           />
         ) : preview?.[1] ? (
           <Preview id={preview[1]} refresh={refresh} />
+        ) : pathname === '/settings/devices' ? (
+          <RouteBoundary>
+            <Suspense
+              fallback={
+                <main id="main" tabIndex={-1}>
+                  <h1>Devices &amp; tokens</h1>
+                  <p role="status">Loading settings…</p>
+                </main>
+              }
+            >
+              <DevicesSettings search={search} />
+            </Suspense>
+          </RouteBoundary>
         ) : pathname === '/settings/general' ? (
           <>
             <header className="settings-header">
@@ -391,6 +421,15 @@ export function App() {
             <main id="main" tabIndex={-1} className="settings-main">
               <section aria-labelledby="appearance-heading">
                 <h2 id="appearance-heading">Appearance</h2>
+                {hosted ? (
+                  <Button
+                    data-sd="settings-devices"
+                    kind="ghost"
+                    onClick={() => navigate('/settings/devices')}
+                  >
+                    Devices &amp; tokens
+                  </Button>
+                ) : null}
                 <p>Choose a theme for StepDoc.</p>
                 <SegmentGroup<Theme>
                   value={preferences.theme}

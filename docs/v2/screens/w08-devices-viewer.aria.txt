@@ -1,0 +1,21 @@
+- navigation "Settings":
+  - heading "Settings" [level=2]
+  - link "General":
+    - /url: /tools/settings/general
+  - button "Members & sign-in" [disabled]
+  - link "Devices & tokens":
+    - /url: /tools/settings/devices
+  - button "Storage & deploy" [disabled]
+  - button "Publishing" [disabled]
+  - button "AI providers" [disabled]
+  - button "Redaction policy" [disabled]
+  - button "Branding" [disabled]
+  - button "Agent access" [disabled]
+  - button "Audit log" [disabled]
+- banner:
+  - heading "Devices & tokens" [level=1]
+  - paragraph: Extensions, MCP clients and CI jobs that can reach this workspace. Every token is scoped, revocable and stored as a hash.
+- main:
+  - heading "Workspace access required" [level=2]
+  - paragraph: Your role can read guides. An owner or editor manages workspace devices and tokens.
+  - status

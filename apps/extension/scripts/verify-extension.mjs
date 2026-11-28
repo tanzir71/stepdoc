@@ -1082,14 +1082,26 @@ try {
   await fixture.bringToFront()
   await worker.evaluate(() => {
     globalThis.sdAckSend = chrome.tabs.sendMessage
+    globalThis.sdAckTrace = []
     const send = chrome.tabs.sendMessage.bind(chrome.tabs)
     chrome.tabs.sendMessage = async (tabId, message, options) => {
+      const trace = message.type === 'STATE' ? {
+        recording: !!message.recording, frame: options?.frameId ?? null,
+        settled: false, rejected: false, held: false,
+      } : undefined
+      if (trace && globalThis.sdAckTrace.length < 100) globalThis.sdAckTrace.push(trace)
+      const request = send(tabId, message, options)
+      if (trace) void request.then(
+        () => { trace.settled = true },
+        () => { trace.settled = true; trace.rejected = true },
+      )
       if (message.type === 'STATE' && message.recording && options?.frameId === 0) {
-        await send(tabId, message, options)
+        await request
+        trace.held = true
         globalThis.sdAckHeld = true
         return new Promise((resolve) => { globalThis.sdAckRelease = resolve })
       }
-      return send(tabId, message, options)
+      return request
     }
   })
   const pendingStart = panel.evaluate(() =>
@@ -1117,6 +1129,7 @@ try {
       return {
         recording: state.recording, failed: !!state.captureError,
         phase: state.captureReview?.phase, count: state.steps?.length,
+        stateReplies: globalThis.sdAckTrace,
       }
     }).catch(() => ({ workerUnavailable: true })))
   assert.deepEqual(startReply, {
@@ -1129,6 +1142,7 @@ try {
     delete globalThis.sdAckSend
     delete globalThis.sdAckRelease
     delete globalThis.sdAckHeld
+    delete globalThis.sdAckTrace
   })
   const canceledState = await worker.evaluate(async () => {
     const state = await chrome.storage.local.get([

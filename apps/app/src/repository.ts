@@ -12,6 +12,13 @@ let sessionEpoch = 0
 export function renewStorageSession() {
   sessionEpoch++
 }
+export const sessionFetch: typeof fetch = async (...args) => {
+  const epoch = sessionEpoch
+  const response = await fetch(...args)
+  if (response.status === 401 && epoch === sessionEpoch)
+    window.dispatchEvent(new Event('stepdoc:unauthorized'))
+  return response
+}
 export function getStorage() {
   if (!pending) {
     const config = hostedConfig()
@@ -19,13 +26,7 @@ export function getStorage() {
       config
         ? HttpAdapter.open(config.api, {
             auth: { kind: 'session' },
-            fetch: async (...args) => {
-              const epoch = sessionEpoch
-              const response = await fetch(...args)
-              if (response.status === 401 && epoch === sessionEpoch)
-                window.dispatchEvent(new Event('stepdoc:unauthorized'))
-              return response
-            },
+            fetch: sessionFetch,
           })
         : IndexedDbAdapter.open()
     ).catch((error) => {

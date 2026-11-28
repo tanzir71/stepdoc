@@ -5,6 +5,10 @@
 Wire identifier: `stepdoc/guide@1`. Guide `version` is its optimistic-concurrency
 revision, not the schema version.
 
+M12 adds a bounded private token-creation input and device/pairing response types
+for the existing Storage API routes. No guide fields, persisted defaults, wire
+identifier or endpoint contract changes; no migration/version bump is needed.
+
 M11/M15 adds internal `stepdoc/ai-context@1` text projection, bounded proposal and
 private provider configuration schemas, structured-output JSON Schema, and
 validated provider-envelope projections. Source IDs remain private ordinal

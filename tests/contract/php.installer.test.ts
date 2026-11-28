@@ -51,6 +51,24 @@ async function native(f: InstallerFixture) {
   page.on('pageerror', () => errors.push('Page runtime error'))
   page.on('response', (response) => {
     if (
+      response.status() === 503 &&
+      response.request().resourceType() === 'image'
+    ) {
+      void response.body().then((bytes) => {
+        console.log('Safe failed asset classification', {
+          path: new URL(response.url()).pathname,
+          mime: response.headers()['content-type'],
+          server: response.headers()['server'],
+          headerNames: Object.keys(response.headers()).sort(),
+          bytes: bytes.length,
+          svg: bytes.toString().includes('<svg'),
+          storageError: bytes.toString().includes('Storage operation failed.'),
+          serviceUnavailable: bytes.toString().includes('Service Unavailable'),
+          gateway: /proxy|upstream|gateway/i.test(bytes.toString()),
+        })
+      }).catch(() => console.log('Failed asset response body unavailable'))
+    }
+    if (
       ['script', 'stylesheet', 'image', 'font'].includes(
         response.request().resourceType(),
       ) &&

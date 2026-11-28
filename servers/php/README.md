@@ -115,6 +115,26 @@ cannot enable public access or bypass the future publish/policy gate.
 
 ## Authentication and devices
 
+The authenticated app exposes **Settings → Devices & tokens** at
+`/settings/devices` (under the installation prefix). Owners manage all workspace
+devices; editors see and revoke only devices they issued. Viewers see an access
+notice. Browser-only workspaces do not send management requests.
+
+Create pairing codes explicitly, then enter one in the extension's pairing
+screen within five minutes. Each code is single use; generating another code
+does not invalidate earlier unexpired codes. The page displays a live expiry
+countdown and offers Copy and New code.
+
+Create API tokens with a name and only the scopes the client needs. The raw token
+appears once in a dialog; copy it before closing. The management page keeps shown
+token/code values only in memory, never in URLs, browser storage or the activity
+log. The paired extension retains its restricted token in its private vault.
+Reload, navigation and session loss clear the management page's shown values.
+Revoke requires confirmation and denies subsequent
+requests immediately. If a mutation is cancelled or its result cannot be
+confirmed, refresh the device list before retrying: the server may have committed
+it. The app does not retry token creation automatically.
+
 The existing `/auth/passkey/options` and `/auth/passkey/verify` operations use the
 locked [lbuchs/WebAuthn](https://github.com/lbuchs/WebAuthn) library. Options return
 `{ "publicKey": … }` with standard base64url-encoded WebAuthn binary fields;

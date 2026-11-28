@@ -41,6 +41,11 @@ const Editor = lazy(() =>
 const DevicesSettings = lazy(() =>
   import('./devices').then((module) => ({ default: module.DevicesSettings })),
 )
+const StorageSettings = lazy(() =>
+  import('./storage-settings').then((module) => ({
+    default: module.StorageSettings,
+  })),
+)
 
 export function App() {
   const hosted = useHostedSession()
@@ -183,7 +188,7 @@ export function App() {
     )
   return (
     <div
-      className={`app-shell ${preferences.collapsed ? 'app-compact' : ''} ${pathname === '/settings/devices' ? 'device-settings-shell' : ''}`}
+      className={`app-shell ${preferences.collapsed ? 'app-compact' : ''} ${pathname === '/settings/devices' || pathname === '/settings/storage' ? 'device-settings-shell' : ''}`}
       onClick={intercept}
     >
       <a className="skip-link" href="#main">
@@ -321,10 +326,11 @@ export function App() {
           )}
         </nav>
         <div className="sidebar-fill" />
-        {pathname === '/settings/devices' ? (
+        {pathname === '/settings/devices' ||
+        pathname === '/settings/storage' ? (
           <NavItem
             data-sd="nav-settings"
-            href={appHref('/settings/devices')}
+            href={appHref(pathname)}
             active
             icon="settings-main"
           >
@@ -412,6 +418,19 @@ export function App() {
               <DevicesSettings search={search} />
             </Suspense>
           </RouteBoundary>
+        ) : pathname === '/settings/storage' ? (
+          <RouteBoundary>
+            <Suspense
+              fallback={
+                <main id="main" tabIndex={-1}>
+                  <h1>Storage &amp; deploy</h1>
+                  <p role="status">Loading settings…</p>
+                </main>
+              }
+            >
+              <StorageSettings search={search} />
+            </Suspense>
+          </RouteBoundary>
         ) : pathname === '/settings/general' ? (
           <>
             <header className="settings-header">
@@ -460,13 +479,14 @@ export function App() {
               <section aria-labelledby="storage-heading">
                 <h2 id="storage-heading">Storage</h2>
                 <p>
-                  Guides and images are stored on this device. Export important
-                  guides before clearing browser data.
+                  {hosted
+                    ? 'Guides and images are stored on your server. Export a workspace backup before moving to another target.'
+                    : 'Guides and images are stored on this device. Export important guides before clearing browser data.'}
                 </p>
                 <Button
                   data-sd="settings-storage-details"
                   kind="secondary"
-                  onClick={() => storageDialog.current?.showModal()}
+                  onClick={() => navigate('/settings/storage')}
                 >
                   Storage details
                 </Button>

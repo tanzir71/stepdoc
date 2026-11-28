@@ -5,7 +5,8 @@
   - button "Members & sign-in" [disabled]
   - link "Devices & tokens":
     - /url: /tools/browser/settings/devices
-  - button "Storage & deploy" [disabled]
+  - link "Storage & deploy":
+    - /url: /tools/browser/settings/storage
   - button "Publishing" [disabled]
   - button "AI providers" [disabled]
   - button "Redaction policy" [disabled]

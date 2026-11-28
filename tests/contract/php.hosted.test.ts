@@ -342,7 +342,18 @@ describe('PHP hosted production app', () => {
     await page.keyboard.press('Control+k')
     expect(await page.locator('dialog[open]').count()).toBe(0)
     expect(page.url()).toContain('/tools/g/hosted-native/edit?step=1')
-    await hook(page, 'auth-submit').click()
+    const [verified] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url() === fixture.server.api + 'auth/passkey/verify' &&
+          response.request().method() === 'POST',
+        { timeout: 25000 },
+      ),
+      hook(page, 'auth-submit').click(),
+    ])
+    // The native passkey ceremony and HTTP verification precede the UI budget.
+    // Retain the five-second editor assertion after a successful verification.
+    expect(verified.status()).toBe(200)
     await browserExpect(hook(page, 'step-title')).toBeVisible()
     await browserExpect(hook(page, 'step-title')).toHaveValue(
       'Retained after session expiry',

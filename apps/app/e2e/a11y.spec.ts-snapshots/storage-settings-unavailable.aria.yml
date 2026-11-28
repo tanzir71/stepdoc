@@ -1,0 +1,118 @@
+- link "Skip to content":
+  - /url: "#main"
+- complementary "Workspace navigation":
+  - link "StepDoc library":
+    - /url: /
+  - button "Collapse navigation" [expanded]
+  - button "Browser storage details":
+    - strong: This browser
+  - button "Search guides Ctrl K"
+  - navigation "Workspace":
+    - link "Library 0":
+      - /url: /
+    - link "Collections 0":
+      - /url: /?collections=1
+    - link "Drafts 0":
+      - /url: /?status=draft
+    - link "Published":
+      - /url: /?status=published
+    - link "Archived":
+      - /url: /?status=archived
+  - paragraph: Collections
+  - navigation "Collections": No collections yet
+  - link "Settings":
+    - /url: /settings/storage
+  - strong: You
+  - button "General settings"
+- navigation "Settings":
+  - heading "Settings" [level=2]
+  - link "General":
+    - /url: /settings/general
+  - button "Members & sign-in" [disabled]
+  - link "Devices & tokens":
+    - /url: /settings/devices
+  - link "Storage & deploy":
+    - /url: /settings/storage
+  - button "Publishing" [disabled]
+  - button "AI providers" [disabled]
+  - button "Redaction policy" [disabled]
+  - button "Branding" [disabled]
+  - button "Agent access" [disabled]
+  - button "Audit log" [disabled]
+- banner:
+  - heading "Storage & deploy" [level=1]
+  - paragraph: Where this workspace keeps guides and screenshots. The client does all image work, so every target stays small.
+  - button "Export everything (.stepdoc)"
+- main:
+  - region "This browser · IndexedDB":
+    - heading "This browser · IndexedDB" [level=2]
+    - paragraph: Private workspace · single user · offline
+    - button "Run checks"
+    - alert: Checks could not be refreshed. Previously reported results may be out of date. Retry when the workspace is available.
+    - list:
+      - listitem: Guides and redacted images stay in this browser.
+      - listitem: Export and import work without a backend.
+      - listitem: Clearing browser data removes this workspace. Keep an exported backup.
+      - listitem: Client-side image processing and redaction
+    - text: /Storage 0 KB of \d+\.\d+ MB · browser estimate/
+    - progressbar "Estimated browser storage used"
+  - region "Move to another target":
+    - heading "Move to another target" [level=2]
+    - article:
+      - heading "This browser" [level=3]
+      - paragraph: Keep a private copy in IndexedDB. Single user, offline.
+      - button "Migrate"
+    - article:
+      - heading "Cloudflare" [level=3]
+      - paragraph: Workers + D1 + R2. This server target is not available yet.
+      - button "Pending" [disabled]
+    - article:
+      - heading "Node + Postgres" [level=3]
+      - paragraph: This server target is not available yet.
+      - button "Pending" [disabled]
+  - region "Storage capabilities":
+    - heading "Storage capabilities" [level=2]
+    - region "Storage capability comparison":
+      - table:
+        - rowgroup:
+          - row "Capability Browser PHP Cloudflare Node":
+            - columnheader "Capability"
+            - columnheader "Browser"
+            - columnheader "PHP"
+            - columnheader "Cloudflare"
+            - columnheader "Node"
+        - rowgroup:
+          - row "Members / roles / passkeys Single user Connect to check Pending Pending":
+            - rowheader "Members / roles / passkeys"
+            - cell "Single user"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "Public links + embeds Unavailable Connect to check Pending Pending":
+            - rowheader "Public links + embeds"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "GitHub Pages publish Unavailable Connect to check Pending Pending":
+            - rowheader "GitHub Pages publish"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "MCP endpoint (HTTP) Unavailable Connect to check Pending Pending":
+            - rowheader "MCP endpoint (HTTP)"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row /Max screenshot upload \d+ MB Connect to check Pending Pending/:
+            - rowheader "Max screenshot upload"
+            - cell /\d+ MB/
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+  - text: Archives contain current visible guides and redacted images. Trash, version history, sign-in credentials and server configuration are excluded. Import a workspace archive from the library to restore copies.
+- status
+- contentinfo:
+  - button "Activity"

@@ -33,6 +33,7 @@ import tokens from '../../../docs/v2/design-tokens.json'
 import { startClock, stopClock } from './capture-clock'
 import { waitForCaptureSources } from './source-ready'
 import { notifyCaptureControls } from './control-notice'
+import { captureStateWriter } from './capture-state-writer'
 import { narrationText } from './narration-text'
 import { pairingCommandSchema } from '@stepdoc/schema/pairing'
 import { PairingController } from './pairing-controller'
@@ -73,6 +74,7 @@ type SessionBody = {
   steps: unknown[]
 }
 export interface LegacyStorage {
+  captureStateRevision?: number
   guideMe?: GuideRun
   captureReview?: ReviewState
   recording?: boolean
@@ -199,11 +201,18 @@ export function startBackground() {
       } catch {}
     },
   })
+  const persistCaptureState = captureStateWriter<Partial<LegacyStorage>>({
+    readRevision: async () =>
+      (await browser.storage.local.get<LegacyStorage>('captureStateRevision'))
+        .captureStateRevision,
+    write: (value) => browser.storage.local.set(value),
+  })
   async function storeCaptureState(values: Partial<LegacyStorage>) {
-    await browser.storage.local.set(values)
+    const revision = await persistCaptureState(values)
     // An appended image's preview must be ready before controls can request it.
     // Frame persistence publishes its hint through broadcast after preview.put.
     if (!values.steps?.length) notifyCaptureControls()
+    return revision
   }
   const recovered = browser.storage.local
     .get<LegacyStorage>([
@@ -558,6 +567,7 @@ export function startBackground() {
   }
   async function broadcast() {
     const state = await browser.storage.local.get<LegacyStorage>([
+      'captureStateRevision',
       'recording',
       'captureSessionId',
       'captureTabId',
@@ -567,16 +577,14 @@ export function startBackground() {
       'capturedSteps',
     ])
     await updateBadge()
-    await Promise.allSettled(
-      (await browser.tabs.query({}))
-        .filter((tab) => tab.id)
-        .map((tab) =>
-          browser.tabs.sendMessage(
-            tab.id!,
-            captureSourceMessage(state, tab.id!),
-          ),
-        ),
-    )
+    // Notifications must not hold the capture writer or a controls command open.
+    // Start/Resume separately acknowledge each validated producer. Revisions
+    // make any delayed notification harmless when its renderer finally runs.
+    for (const tab of await browser.tabs.query({}))
+      if (tab.id)
+        void browser.tabs
+          .sendMessage(tab.id, captureSourceMessage(state, tab.id))
+          .catch(() => {})
     notifyCaptureControls()
   }
   async function abort(
@@ -1131,7 +1139,7 @@ export function startBackground() {
                 clock: startClock(),
               },
             }
-            await storeCaptureState({
+            started.captureStateRevision = await storeCaptureState({
               recording: true,
               captureReview: started.captureReview,
             })
@@ -1233,47 +1241,105 @@ export function startBackground() {
             },
             true,
           )
-          queue.primeFrame(frame)
-          producerStopped = false
-          await storeCaptureState({
-            recording: true,
-            captureReview: {
-              ...review,
-              phase: 'recording',
-              clock: startClock(review.clock),
-            },
-          })
+          try {
+            await mutate(async () => {
+              const latest = await browser.storage.local.get<LegacyStorage>([
+                'captureSessionId',
+                'captureReview',
+                'captureError',
+                'captureBlurMode',
+                'captureManualCount',
+                'capturedSteps',
+              ])
+              if (
+                latest.captureSessionId !== message.sessionId ||
+                latest.captureReview?.phase !== 'paused' ||
+                latest.captureError
+              )
+                throw new Error('Capture cannot resume')
+              queue.primeFrame(frame)
+              producerStopped = false
+              const resumed: LegacyStorage = {
+                ...latest,
+                captureTabId: state.captureTabId,
+                recording: true,
+                captureReview: {
+                  ...latest.captureReview,
+                  phase: 'recording',
+                  clock: startClock(latest.captureReview.clock),
+                },
+              }
+              resumed.captureStateRevision = await storeCaptureState({
+                recording: true,
+                captureReview: resumed.captureReview,
+              })
+              await waitForCaptureSources(
+                [...new Set(frame.scene.frameIds.values())].map((frameId) =>
+                  browser.tabs.sendMessage(
+                    state.captureTabId!,
+                    captureSourceMessage(resumed, state.captureTabId!),
+                    { frameId },
+                  ),
+                ),
+              )
+            })
+          } catch {
+            await abort(state.captureSessionId!)
+            throw new Error('Capture could not resume')
+          }
         } else {
-          if (!state.recording && review.phase !== 'paused')
-            throw new Error('Capture inactive')
-          producerStopped = true
-          await storeCaptureState({
-            captureReview: {
-              ...review,
-              phase: message.type === 'PAUSE_CAPTURE' ? 'pausing' : 'stopping',
-              clock: stopClock(review.clock),
-            },
-            captureBlurMode: false,
+          const transition =
+            message.type === 'PAUSE_CAPTURE' ? 'pausing' : 'stopping'
+          await mutate(async () => {
+            const latest = await browser.storage.local.get<LegacyStorage>([
+              'recording',
+              'captureSessionId',
+              'captureReview',
+            ])
+            if (latest.captureSessionId !== message.sessionId)
+              throw new Error('Stale session')
+            if (!latest.recording && latest.captureReview?.phase !== 'paused')
+              throw new Error('Capture inactive')
+            producerStopped = true
+            await storeCaptureState({
+              captureReview: {
+                ...latest.captureReview,
+                phase: transition,
+                clock: stopClock(latest.captureReview?.clock),
+              },
+              captureBlurMode: false,
+            })
           })
           await broadcast()
           await queue.drain()
           await writes
-          const latest = await browser.storage.local.get<LegacyStorage>([
-            'captureError',
-            'captureReview',
-            'guideMe',
-          ])
-          await storeCaptureState({
-            recording: false,
-            captureReview: {
-              ...latest.captureReview,
-              phase:
-                message.type === 'PAUSE_CAPTURE' && !latest.captureError
-                  ? 'paused'
-                  : 'review',
-            },
+          await mutate(async () => {
+            const latest = await browser.storage.local.get<LegacyStorage>([
+              'captureSessionId',
+              'captureError',
+              'captureReview',
+            ])
+            if (
+              latest.captureSessionId !== message.sessionId ||
+              (latest.captureReview?.phase !== transition &&
+                !(
+                  latest.captureError &&
+                  latest.captureReview?.phase === 'review'
+                ))
+            )
+              throw new Error('Stale session')
+            await storeCaptureState({
+              recording: false,
+              captureReview: {
+                ...latest.captureReview,
+                phase:
+                  message.type === 'PAUSE_CAPTURE' && !latest.captureError
+                    ? 'paused'
+                    : 'review',
+              },
+            })
+            queue.clear()
           })
-          queue.clear()
         }
         await broadcast()
         if (fromPill && message.type === 'STOP_REVIEW') await openReview()
@@ -1510,19 +1576,35 @@ export function startBackground() {
           // The queue retries old in-flight work and preserves event order.
           privacyEpoch++
           queue.invalidateFrame()
-          manualCounts.set(change.documentId, change.count)
-          const total = [...manualCounts.values()].reduce(
-            (sum, value) => sum + value,
-            0,
-          )
+          const total = await mutate(async () => {
+            const current = await browser.storage.local.get<LegacyStorage>([
+              'recording',
+              'captureSessionId',
+            ])
+            if (
+              current.captureSessionId !== change.sessionId ||
+              !current.recording
+            )
+              throw new Error('Stale session')
+            manualCounts.set(change.documentId, change.count)
+            const count = [...manualCounts.values()].reduce(
+              (sum, value) => sum + value,
+              0,
+            )
+            if (count <= 500) {
+              // This display count does not change recorder lifecycle state.
+              // A held mode acknowledgement must not block a new privacy mask.
+              // Actual masks are collected afresh by the client compositor.
+              await browser.storage.local.set({ captureManualCount: count })
+              notifyCaptureControls()
+            }
+            return count
+          })
           if (total > 500) {
             await abort(change.sessionId)
             respond({ ok: false })
             return
           }
-          await mutate(async () => {
-            await storeCaptureState({ captureManualCount: total })
-          })
         }
         await broadcast()
         respond({ ok: true })
@@ -1635,6 +1717,7 @@ export function startBackground() {
       } else if (message.type === 'RETRY') respond(await retry())
       else if (message.type === 'CONTENT_STATE') {
         const state = await browser.storage.local.get<LegacyStorage>([
+          'captureStateRevision',
           'recording',
           'captureSessionId',
           'captureTabId',

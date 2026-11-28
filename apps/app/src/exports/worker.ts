@@ -13,11 +13,17 @@ import { exportMarkdown } from '@stepdoc/core/export/markdown'
 import { exportHtml } from '@stepdoc/core/export/html'
 import { exportPlaywright } from '@stepdoc/core/export/playwright'
 import { exportSkill } from '@stepdoc/core/export/skill'
+import {
+  exportWorkspace,
+  importWorkspace,
+} from '@stepdoc/core/export/workspace'
 import type { ExportFormat } from './model'
 
 declare const self: DedicatedWorkerGlobalScope
 export type ExportRequest =
   | { type: 'parse'; bytes: Uint8Array }
+  | { type: 'parse-portable'; bytes: Uint8Array }
+  | { type: 'workspace'; bundles: Uint8Array[] }
   | {
       type: 'build'
       guide: Guide
@@ -142,7 +148,34 @@ if (
   self.onmessage = (event: MessageEvent<ExportRequest>) => {
     void (async () => {
       try {
-        if (event.data.type === 'parse') {
+        if (event.data.type === 'workspace') {
+          const bytes = await exportWorkspace(event.data.bundles)
+          self.postMessage(
+            {
+              result: {
+                name: 'workspace.stepdoc',
+                mime: 'application/vnd.stepdoc+zip',
+                bytes,
+              },
+            },
+            [bytes.buffer],
+          )
+        } else if (event.data.type === 'parse-portable') {
+          let result: { bundle?: ParsedBundle; workspace?: ParsedBundle[] }
+          try {
+            result = { workspace: await importWorkspace(event.data.bytes) }
+          } catch {
+            result = { bundle: await importBundle(event.data.bytes) }
+          }
+          const transfer = (result.workspace ?? [result.bundle!]).flatMap(
+            (bundle) =>
+              Object.values(bundle.assets).flatMap((asset) => [
+                asset.rendered.data.buffer,
+                ...(asset.original ? [asset.original.data.buffer] : []),
+              ]),
+          ) as ArrayBuffer[]
+          self.postMessage({ result }, [...new Set(transfer)])
+        } else if (event.data.type === 'parse') {
           const result = await importBundle(event.data.bytes)
           const transfer = Object.values(result.assets).flatMap((asset) => [
             asset.rendered.data.buffer,

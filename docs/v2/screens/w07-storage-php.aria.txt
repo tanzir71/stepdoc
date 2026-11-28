@@ -1,0 +1,89 @@
+- navigation "Settings":
+  - heading "Settings" [level=2]
+  - link "General":
+    - /url: /tools/settings/general
+  - button "Members & sign-in" [disabled]
+  - link "Devices & tokens":
+    - /url: /tools/settings/devices
+  - link "Storage & deploy":
+    - /url: /tools/settings/storage
+  - button "Publishing" [disabled]
+  - button "AI providers" [disabled]
+  - button "Redaction policy" [disabled]
+  - button "Branding" [disabled]
+  - button "Agent access" [disabled]
+  - button "Audit log" [disabled]
+- banner:
+  - heading "Storage & deploy" [level=1]
+  - paragraph: Where this workspace keeps guides and screenshots. The client does all image work, so every target stays small.
+  - button "Export everything (.stepdoc)"
+- main:
+  - region "Shared hosting · PHP + SQLite":
+    - heading "Shared hosting · PHP + SQLite" [level=2]
+    - paragraph: localhost:FIXTURE · Storage API 2.0.0-dev
+    - text: Needs attention
+    - button "Run checks"
+    - list:
+      - listitem: Daily private backup completed.
+      - listitem: SQLite storage is available.
+      - listitem: Data and blobs are outside the web root.
+      - listitem: Passkey, recovery and configured email sign-in are available. Packaged installations enroll their first owner through setup; local administration remains available.
+      - listitem: "Screenshot upload limit: 4 KB"
+    - text: Storage Usage and quota not reported by this server
+  - region "Move to another target":
+    - heading "Move to another target" [level=2]
+    - article:
+      - heading "This browser" [level=3]
+      - paragraph: Keep a private copy in IndexedDB. Single user, offline.
+      - button "Migrate"
+    - article:
+      - heading "Cloudflare" [level=3]
+      - paragraph: Workers + D1 + R2. This server target is not available yet.
+      - button "Pending" [disabled]
+    - article:
+      - heading "Node + Postgres" [level=3]
+      - paragraph: This server target is not available yet.
+      - button "Pending" [disabled]
+  - region "Storage capabilities":
+    - heading "Storage capabilities" [level=2]
+    - region "Storage capability comparison":
+      - table:
+        - rowgroup:
+          - row "Capability Browser PHP Cloudflare Node":
+            - columnheader "Capability"
+            - columnheader "Browser"
+            - columnheader "PHP"
+            - columnheader "Cloudflare"
+            - columnheader "Node"
+        - rowgroup:
+          - row "Members / roles / passkeys Single user Passkeys Pending Pending":
+            - rowheader "Members / roles / passkeys"
+            - cell "Single user"
+            - cell "Passkeys"
+            - cell "Pending"
+            - cell "Pending"
+          - row "Public links + embeds Unavailable Unavailable Pending Pending":
+            - rowheader "Public links + embeds"
+            - cell "Unavailable"
+            - cell "Unavailable"
+            - cell "Pending"
+            - cell "Pending"
+          - row "GitHub Pages publish Unavailable Unavailable Pending Pending":
+            - rowheader "GitHub Pages publish"
+            - cell "Unavailable"
+            - cell "Unavailable"
+            - cell "Pending"
+            - cell "Pending"
+          - row "MCP endpoint (HTTP) Unavailable Unavailable Pending Pending":
+            - rowheader "MCP endpoint (HTTP)"
+            - cell "Unavailable"
+            - cell "Unavailable"
+            - cell "Pending"
+            - cell "Pending"
+          - row "Max screenshot upload 64 MB 4 KB Pending Pending":
+            - rowheader "Max screenshot upload"
+            - cell "64 MB"
+            - cell "4 KB"
+            - cell "Pending"
+            - cell "Pending"
+  - text: Archives contain current visible guides and redacted images. Trash, version history, sign-in credentials and server configuration are excluded. Import a workspace archive from the library to restore copies.

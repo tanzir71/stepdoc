@@ -26,33 +26,104 @@
       - /url: /?collection=support-macros
     - link "Engineering 7":
       - /url: /?collection=engineering
-  - complementary "Agent exports":
-    - strong: Agent exports
-    - paragraph: Guide data exports, ready for your local tools.
+  - link "Settings":
+    - /url: /settings/storage
   - strong: You
   - button "General settings"
+- navigation "Settings":
+  - heading "Settings" [level=2]
+  - link "General":
+    - /url: /settings/general
+  - button "Members & sign-in" [disabled]
+  - link "Devices & tokens":
+    - /url: /settings/devices
+  - link "Storage & deploy":
+    - /url: /settings/storage
+  - button "Publishing" [disabled]
+  - button "AI providers" [disabled]
+  - button "Redaction policy" [disabled]
+  - button "Branding" [disabled]
+  - button "Agent access" [disabled]
+  - button "Audit log" [disabled]
 - banner:
-  - heading "Settings" [level=1]
-  - paragraph: General · preferences for this browser
+  - heading "Storage & deploy" [level=1]
+  - paragraph: Where this workspace keeps guides and screenshots. The client does all image work, so every target stays small.
+  - button "Export everything (.stepdoc)"
 - main:
-  - region "Appearance":
-    - heading "Appearance" [level=2]
-    - paragraph: Choose a theme for StepDoc.
-    - tablist "Theme":
-      - tab "Light" [selected]
-      - tab "Dark"
-      - tab "System"
-    - tabpanel "Light":
-      - paragraph: Light theme selected.
-  - region "Storage":
-    - heading "Storage" [level=2]
-    - paragraph: Guides and images are stored on this device. Export important guides before clearing browser data.
-    - button "Storage details"
-- dialog "Stored in this browser":
-  - heading "Stored in this browser" [level=2]
-  - paragraph: /Your library contains \d+ guides on this device\. There is no cloud account connected\./
-  - paragraph: Export guides you want to keep before clearing browser data or moving to another device.
-  - button "Close"
+  - region "This browser · IndexedDB":
+    - heading "This browser · IndexedDB" [level=2]
+    - paragraph: Private workspace · single user · offline
+    - button "Run checks"
+    - list:
+      - listitem: Guides and redacted images stay in this browser.
+      - listitem: Export and import work without a backend.
+      - listitem: Clearing browser data removes this workspace. Keep an exported backup.
+      - listitem: Client-side image processing and redaction
+    - text: /Storage 1 MB of \d+ MB · browser estimate/
+    - progressbar "Estimated browser storage used"
+  - region "Move to another target":
+    - heading "Move to another target" [level=2]
+    - article:
+      - heading "This browser" [level=3]
+      - paragraph: Keep a private copy in IndexedDB. Single user, offline.
+      - button "Migrate"
+    - article:
+      - heading "Cloudflare" [level=3]
+      - paragraph: Workers + D1 + R2. This server target is not available yet.
+      - button "Pending" [disabled]
+    - article:
+      - heading "Node + Postgres" [level=3]
+      - paragraph: This server target is not available yet.
+      - button "Pending" [disabled]
+  - region "Storage capabilities":
+    - heading "Storage capabilities" [level=2]
+    - region "Storage capability comparison":
+      - table:
+        - rowgroup:
+          - row "Capability Browser PHP Cloudflare Node":
+            - columnheader "Capability"
+            - columnheader "Browser"
+            - columnheader "PHP"
+            - columnheader "Cloudflare"
+            - columnheader "Node"
+        - rowgroup:
+          - row "Members / roles / passkeys Single user Connect to check Pending Pending":
+            - rowheader "Members / roles / passkeys"
+            - cell "Single user"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "Public links + embeds Unavailable Connect to check Pending Pending":
+            - rowheader "Public links + embeds"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "GitHub Pages publish Unavailable Connect to check Pending Pending":
+            - rowheader "GitHub Pages publish"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row "MCP endpoint (HTTP) Unavailable Connect to check Pending Pending":
+            - rowheader "MCP endpoint (HTTP)"
+            - cell "Unavailable"
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+          - row /Max screenshot upload \d+ MB Connect to check Pending Pending/:
+            - rowheader "Max screenshot upload"
+            - cell /\d+ MB/
+            - cell "Connect to check"
+            - cell "Pending"
+            - cell "Pending"
+  - text: Archives contain current visible guides and redacted images. Trash, version history, sign-in credentials and server configuration are excluded. Import a workspace archive from the library to restore copies.
+- dialog "Export workspace archive":
+  - heading "Export workspace archive" [level=2]
+  - paragraph: /Export up to \d+ current guides and their redacted images in one \.stepdoc archive, up to \d+ MB\. Trash and version history are excluded\. Your source workspace stays in place\./
+  - paragraph: Restore with Import in the destination library. Existing guides are kept; workspace guides become separate copies.
+  - button "Cancel"
+  - button "Download workspace archive"
 - status
 - contentinfo:
-  - button "Activity"
+  - button "Activity (1)"

@@ -54,6 +54,18 @@ for (const theme of ['light', 'dark'] as const) {
     await hook(page, 'settings-open').click()
     await audit(page, `${theme}-settings`)
     await hook(page, 'settings-storage-details').click()
+    await expect(
+      page.getByRole('heading', { name: 'Storage & deploy', exact: true }),
+    ).toBeVisible()
+    await page.evaluate(() =>
+      Object.defineProperty(navigator.storage, 'estimate', {
+        value: async () => ({ usage: 1048576, quota: 1073741824 }),
+      }),
+    )
+    await hook(page, 'storage-check').click()
+    await expect(hook(page, 'storage-check')).toHaveText('Run checks')
+    await audit(page, `${theme}-storage`)
+    await hook(page, 'storage-export').click()
     await audit(page, `${theme}-storage-dialog`)
     await page.keyboard.press('Escape')
     await page.goto('/does-not-exist')
@@ -88,6 +100,12 @@ test('unavailable browser storage is accessible', async ({ page }) => {
   )
   await prepare(page, false)
   await audit(page, 'storage-error')
+  await page.goto('/settings/storage')
+  await hook(page, 'storage-check').click()
+  await expect(page.getByRole('alert')).toContainText(
+    'Checks could not be refreshed',
+  )
+  await audit(page, 'storage-settings-unavailable')
 })
 
 test('loading guides exposes an accessible busy state', async ({ page }) => {

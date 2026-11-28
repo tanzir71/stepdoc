@@ -13,17 +13,27 @@ const sections = [
   ['Agent access', 'agent'],
   ['Audit log', 'audit'],
 ] as const
-export function SettingsNav({ current }: { current: 'general' | 'devices' }) {
+export function SettingsNav({
+  current,
+}: {
+  current: 'general' | 'devices' | 'storage'
+}) {
   return (
     <nav className="settings-nav" aria-label="Settings">
       <h2>Settings</h2>
       {sections.map(([label, key]) =>
-        key === 'general' || key === 'devices' ? (
+        key === 'general' || key === 'devices' || key === 'storage' ? (
           <NavItem
             key={key}
             href={appHref('/settings/' + key)}
             active={current === key}
-            icon={`settings-${key}`}
+            icon={
+              key === 'storage' && current === key
+                ? 'storage-selected'
+                : key === 'devices' && current !== key
+                  ? 'storage-devices'
+                  : `settings-${key}`
+            }
             data-sd={`settings-nav-${key}`}
           >
             {label}

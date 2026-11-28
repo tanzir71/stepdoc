@@ -105,14 +105,22 @@ try {
   await panel.addInitScript(() => {
     globalThis.sdRetainedImageEvents = 0
     const callbacks = new Map()
-    const add = chrome.storage.onChanged.addListener.bind(chrome.storage.onChanged)
-    const remove = chrome.storage.onChanged.removeListener.bind(chrome.storage.onChanged)
+    const add = chrome.storage.onChanged.addListener.bind(
+      chrome.storage.onChanged,
+    )
+    const remove = chrome.storage.onChanged.removeListener.bind(
+      chrome.storage.onChanged,
+    )
     chrome.storage.onChanged.addListener = (callback) => {
       const wrapped = (changes, area) => {
-        if (area === 'local' && (
-          changes.steps?.newValue?.length || changes.steps?.oldValue?.length ||
-          changes.pendingSession?.newValue?.steps?.length || changes.pendingSession?.oldValue?.steps?.length
-        )) globalThis.sdRetainedImageEvents++
+        if (
+          area === 'local' &&
+          (changes.steps?.newValue?.length ||
+            changes.steps?.oldValue?.length ||
+            changes.pendingSession?.newValue?.steps?.length ||
+            changes.pendingSession?.oldValue?.steps?.length)
+        )
+          globalThis.sdRetainedImageEvents++
         return callback(changes, area)
       }
       callbacks.set(callback, wrapped)
@@ -155,13 +163,19 @@ try {
         throw error
       })
     await button.evaluate((element) => element.click())
+    if (hook === 'capture-start')
+      await expect(panel.locator('#status')).toHaveText('Capture started.', {
+        timeout: 20000,
+      })
   }
   await expect(panel.locator('[data-sd=capture-start]')).toBeEnabled()
   await source.bringToFront()
   await press('capture-start')
   await expect.poll(phase, { timeout: 20000 }).toBe('recording')
   await source.locator('#private').fill('PRIVATE_LARGE_CAPTURE_VALUE')
-  await expect(panel.locator('[data-sd-step="1"]')).toBeVisible({ timeout: 20000 })
+  await expect(panel.locator('[data-sd-step="1"]')).toBeVisible({
+    timeout: 20000,
+  })
   assert.equal(
     await panel.evaluate(() => globalThis.sdRetainedImageEvents),
     0,
@@ -171,20 +185,33 @@ try {
     await source.locator('#action').click()
     try {
       await expect
-        .poll(async () => worker.evaluate(async () => {
-          const state = await chrome.storage.local.get(['capturedSteps', 'captureError'])
-          return state.captureError ?? state.capturedSteps?.length
-        }), { timeout: 20000 })
+        .poll(
+          async () =>
+            worker.evaluate(async () => {
+              const state = await chrome.storage.local.get([
+                'capturedSteps',
+                'captureError',
+              ])
+              return state.captureError ?? state.capturedSteps?.length
+            }),
+          { timeout: 20000 },
+        )
         .toBe(index + 2)
     } catch (error) {
       const state = await message('GET_STATE').catch(() => null)
-      const visible = await source.evaluate(() => ({
-        focus: document.hasFocus(), visibility: document.visibilityState,
-      })).catch(() => null)
+      const visible = await source
+        .evaluate(() => ({
+          focus: document.hasFocus(),
+          visibility: document.visibilityState,
+        }))
+        .catch(() => null)
       console.log('Large capture boundary', {
-        expected: index + 2, count: state?.capturedSteps?.length,
-        phase: state?.captureReview?.phase, recording: state?.recording,
-        failed: !!state?.captureError, visible,
+        expected: index + 2,
+        count: state?.capturedSteps?.length,
+        phase: state?.captureReview?.phase,
+        recording: state?.recording,
+        failed: !!state?.captureError,
+        visible,
       })
       throw error
     }
@@ -394,14 +421,27 @@ try {
       timeout: 20000,
     })
   } catch (error) {
-    console.log('Large-review failure metadata', await worker.evaluate(async (id) => {
-      const state = await chrome.storage.local.get(['captureReview', 'capturedSteps', 'recording'])
-      return {
-        phase: state.captureReview?.phase, revision: state.captureReview?.revision,
-        recording: state.recording, count: state.capturedSteps?.length,
-        retainedStepIndex: state.capturedSteps?.findIndex((step) => step.id === id),
-      }
-    }, retained.stepId).catch(() => ({ workerUnavailable: true })))
+    console.log(
+      'Large-review failure metadata',
+      await worker
+        .evaluate(async (id) => {
+          const state = await chrome.storage.local.get([
+            'captureReview',
+            'capturedSteps',
+            'recording',
+          ])
+          return {
+            phase: state.captureReview?.phase,
+            revision: state.captureReview?.revision,
+            recording: state.recording,
+            count: state.capturedSteps?.length,
+            retainedStepIndex: state.capturedSteps?.findIndex(
+              (step) => step.id === id,
+            ),
+          }
+        }, retained.stepId)
+        .catch(() => ({ workerUnavailable: true })),
+    )
     throw error
   }
   await expect

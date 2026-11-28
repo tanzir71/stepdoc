@@ -1,4 +1,12 @@
 import asset0 from '../assets/418d0.svg?url&no-inline'
+import storageDevices from '../assets/13066.svg?url'
+import storageSelected from '../assets/54523.svg?url'
+import storageServer from '../assets/866cd.svg?url'
+import storageShield from '../assets/05518.svg?url'
+import storageBrowser from '../assets/fb12c.svg?url'
+import storageMigrate from '../assets/bbbab.svg?url'
+import storageCloud from '../assets/7156d.svg?url'
+import storageDatabase from '../assets/e13e3.svg?url'
 import w08Asset0 from '../assets/d8b10.svg?url'
 import w08Asset2 from '../assets/62c4a.svg?url'
 import w08Asset3 from '../assets/2b373.svg?url'
@@ -108,6 +116,14 @@ import setupPendingAsset from '../assets/88255.svg?url'
 
 export const icons = {
   'settings-main': { url: w08Asset0, width: 16, height: 16 },
+  'storage-devices': { url: storageDevices, width: 16, height: 16 },
+  'storage-selected': { url: storageSelected, width: 16, height: 16 },
+  'storage-server': { url: storageServer, width: 22, height: 22 },
+  'storage-shield': { url: storageShield, width: 16, height: 16 },
+  'storage-browser': { url: storageBrowser, width: 16, height: 16 },
+  'storage-migrate': { url: storageMigrate, width: 14, height: 14 },
+  'storage-cloud': { url: storageCloud, width: 16, height: 16 },
+  'storage-database': { url: storageDatabase, width: 16, height: 16 },
   'settings-general': { url: asset42, width: 16, height: 16 },
   'settings-members': { url: w08Asset2, width: 16, height: 16 },
   'settings-devices': { url: w08Asset3, width: 16, height: 16 },

@@ -9,6 +9,7 @@ import {
 import { ImageProcessor, imageOptions } from '../editor/images'
 import { newId } from '../model'
 import type { ExportFormat } from './model'
+import { WORKSPACE_GUIDE_LIMIT } from '@stepdoc/schema/workspace'
 import ExportWorker from './worker?worker'
 import sans from '../../../../packages/ui/assets/fonts/GeistSans.woff2?url'
 import mono from '../../../../packages/ui/assets/fonts/GeistMono.woff2?url'
@@ -76,12 +77,14 @@ function runWorker<T>(
       reject(new Error('export_failed'))
     }
     const transfer: ArrayBuffer[] =
-      request.type === 'parse'
+      request.type === 'parse' || request.type === 'parse-portable'
         ? [request.bytes.buffer as ArrayBuffer]
-        : (Object.values(request.assets).flatMap((asset) => [
-            asset.rendered.data.buffer,
-            ...(asset.original ? [asset.original.data.buffer] : []),
-          ]) as ArrayBuffer[])
+        : request.type === 'workspace'
+          ? request.bundles.map((bytes) => bytes.buffer as ArrayBuffer)
+          : (Object.values(request.assets).flatMap((asset) => [
+              asset.rendered.data.buffer,
+              ...(asset.original ? [asset.original.data.buffer] : []),
+            ]) as ArrayBuffer[])
     try {
       worker.postMessage(request, [...new Set(transfer)])
     } catch {
@@ -113,8 +116,9 @@ async function collectAssets(
   originals: boolean,
   signal?: AbortSignal,
 ) {
-  const guide = structuredClone(input),
-    processor = new ImageProcessor()
+  const guide = structuredClone(input)
+  if (!guide.steps.some((step) => step.screenshot)) return { guide, assets: {} }
+  const processor = new ImageProcessor()
   const assets: Record<string, StepAssets> = Object.create(null)
   let bytes = 0
   const abort = () => processor.close()
@@ -187,6 +191,65 @@ export async function parseBundle(
     signal,
   )
 }
+export async function parsePortable(file: Blob, signal?: AbortSignal) {
+  if (file.size > ARCHIVE_LIMITS.bytes) throw new ArchiveError('archive_limit')
+  return runWorker<{ bundle?: ParsedBundle; workspace?: ParsedBundle[] }>(
+    { type: 'parse-portable', bytes: new Uint8Array(await file.arrayBuffer()) },
+    signal,
+  )
+}
+
+/** Latest visible guides only; fail closed if the source changes during the read. */
+export async function prepareWorkspace(
+  adapter: StorageAdapter,
+  signal: AbortSignal,
+  progress: (count: number) => void,
+) {
+  const list = async () => {
+    const guides = []
+    const cursors = new Set<string>()
+    let cursor: string | undefined
+    let pages = 0
+    do {
+      signal.throwIfAborted()
+      if (++pages > WORKSPACE_GUIDE_LIMIT + 1)
+        throw new ArchiveError('archive_limit')
+      const page = await adapter.listGuides({ cursor })
+      guides.push(...page.items)
+      if (guides.length > WORKSPACE_GUIDE_LIMIT)
+        throw new ArchiveError('archive_limit')
+      cursor = page.nextCursor ?? undefined
+      if (cursor && cursors.has(cursor)) throw new Error('workspace_changed')
+      if (cursor) cursors.add(cursor)
+    } while (cursor)
+    if (new Set(guides.map((guide) => guide.id)).size !== guides.length)
+      throw new Error('workspace_changed')
+    return guides.sort((a, b) => a.id.localeCompare(b.id))
+  }
+  const before = await list()
+  const bundles: Uint8Array[] = []
+  const versions = new Map<string, number>()
+  let bytes = 0
+  for (const summary of before) {
+    signal.throwIfAborted()
+    const guide = await adapter.getGuide(summary.id)
+    const result = await prepareDownload(adapter, guide, ['bundle'], signal)
+    if (!result.file) throw new Error('export_failed')
+    bytes += result.file.bytes.length
+    if (bytes > ARCHIVE_LIMITS.bytes) throw new ArchiveError('archive_limit')
+    bundles.push(result.file.bytes)
+    versions.set(guide.id, guide.version)
+    progress(bundles.length)
+  }
+  if (JSON.stringify(before) !== JSON.stringify(await list()))
+    throw new Error('workspace_changed')
+  for (const [id, version] of versions) {
+    signal.throwIfAborted()
+    if ((await adapter.getGuide(id)).version !== version)
+      throw new Error('workspace_changed')
+  }
+  return runWorker<DownloadFile>({ type: 'workspace', bundles }, signal)
+}
 export async function saveBundle(
   adapter: StorageAdapter,
   bundle: ParsedBundle,
@@ -197,10 +260,13 @@ export async function saveBundle(
   if (copy) {
     guide.id = newId(guide.title)
     guide.uuid = crypto.randomUUID()
-    if (guide.publish) guide.publish = { isPublic: false, targets: [] }
+    if (guide.publish)
+      guide.publish = { publicId: null, isPublic: false, targets: [] }
   }
-  const processor = new ImageProcessor()
-  const abort = () => processor.close()
+  const processor = guide.steps.some((step) => step.screenshot)
+    ? new ImageProcessor()
+    : null
+  const abort = () => processor?.close()
   signal?.addEventListener('abort', abort, { once: true })
   const check = () => {
     if (signal?.aborted) throw new Error('import_cancelled')
@@ -218,7 +284,7 @@ export async function saveBundle(
           source = assets.original ?? assets.rendered
         prepared.set(
           step.id,
-          await processor.process(
+          await processor!.process(
             new Blob([new Uint8Array(source.data)], { type: source.mime }),
             assets.original ? imageOptions(step) : flattenedOptions(step),
           ),
@@ -268,7 +334,7 @@ export async function saveBundle(
     }
   } finally {
     signal?.removeEventListener('abort', abort)
-    processor.close()
+    processor?.close()
   }
 }
 export function download(file: DownloadFile) {

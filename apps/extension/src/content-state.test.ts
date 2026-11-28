@@ -174,4 +174,95 @@ describe('content recorder state and navigation ordering', () => {
       { action: 'navigate', url: 'https://example.test/new-session-next' },
     ])
   })
+
+  it.each([false, true])(
+    'ignores a delayed older state across a session boundary: %s',
+    async (oldActive) => {
+      listener(
+        {
+          type: 'STATE',
+          recording: true,
+          sessionId: otherSession,
+          stateRevision: 20,
+        },
+        {},
+        () => {},
+      )
+      listener(
+        {
+          type: 'STATE',
+          recording: oldActive,
+          sessionId: session,
+          stateRevision: 19,
+        },
+        {},
+        () => {},
+      )
+      navigate('/after-delayed-state')
+      await vi.advanceTimersByTimeAsync(250)
+      expect(captures()).toMatchObject([
+        { action: 'navigate', url: 'https://example.test/after-delayed-state' },
+      ])
+      expect(
+        runtime.sendMessage.mock.calls.find(
+          ([message]) => message.type === 'CAPTURE',
+        )?.[0].sessionId,
+      ).toBe(otherSession)
+    },
+  )
+
+  it('ignores a delayed pause after the same session resumes', async () => {
+    listener(
+      { type: 'STATE', recording: true, sessionId: session, stateRevision: 22 },
+      {},
+      () => {},
+    )
+    listener(
+      {
+        type: 'STATE',
+        recording: false,
+        paused: true,
+        sessionId: session,
+        stateRevision: 21,
+      },
+      {},
+      () => {},
+    )
+    navigate('/after-delayed-pause')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(captures()).toMatchObject([
+      { action: 'navigate', url: 'https://example.test/after-delayed-pause' },
+    ])
+  })
+
+  it('orders a versioned initial reply against a more recent broadcast', async () => {
+    listener(
+      {
+        type: 'STATE',
+        recording: true,
+        sessionId: otherSession,
+        stateRevision: 20,
+      },
+      {},
+      () => {},
+    )
+    resolveInitial({ ...state(false), stateRevision: 19 })
+    await vi.advanceTimersByTimeAsync(0)
+    navigate('/after-versioned-initial')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(captures()).toHaveLength(1)
+  })
+
+  it('accepts a genuinely newer initial reply instead of discarding a later pause', async () => {
+    listener(
+      { type: 'STATE', recording: true, sessionId: session, stateRevision: 20 },
+      {},
+      () => {},
+    )
+    resolveInitial({ ...state(false), stateRevision: 21 })
+    await vi.advanceTimersByTimeAsync(0)
+    navigate('/while-newer-paused')
+    await vi.advanceTimersByTimeAsync(250)
+    expect(captures()).toHaveLength(0)
+  })
 })

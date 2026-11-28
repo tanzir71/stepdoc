@@ -12,6 +12,7 @@ import type { ParsedBundle } from './exports/client'
 type PendingImport =
   | { kind: 'json'; guide: GuideInput }
   | { kind: 'bundle'; bundle: ParsedBundle }
+  | { kind: 'workspace'; bundles: ParsedBundle[] }
 
 export function CreateDialog({
   dialog,
@@ -116,10 +117,16 @@ export function ImportControl() {
   const [busy, setBusy] = useState(false)
   const announce = useActivity()
   const job = useRef<AbortController | null>(null)
+  const restored = useRef(0)
   useEffect(() => () => job.current?.abort(), [])
   const cancel = () => {
     job.current?.abort()
-    if (busy) announce('Import cancelled. Existing guides were kept.')
+    if (busy)
+      announce(
+        restored.current
+          ? `Import cancelled. ${restored.current} workspace copies completed. Existing guides were kept.`
+          : 'Import cancelled. Existing guides were kept.',
+      )
     dialog.current?.close()
     setPending(null)
   }
@@ -132,10 +139,18 @@ export function ImportControl() {
     const controller = current ?? new AbortController()
     job.current = controller
     setBusy(true)
+    restored.current = 0
     try {
       const adapter = await getStorage()
       if (controller.signal.aborted) return
-      if (input.kind === 'bundle') {
+      if (input.kind === 'workspace') {
+        const { saveBundle } = await import('./exports/client')
+        for (const bundle of input.bundles) {
+          controller.signal.throwIfAborted()
+          await saveBundle(adapter, bundle, true, controller.signal)
+          restored.current++
+        }
+      } else if (input.kind === 'bundle') {
         const { saveBundle } = await import('./exports/client')
         await saveBundle(adapter, input.bundle, copy, controller.signal)
       } else {
@@ -151,24 +166,35 @@ export function ImportControl() {
         }
       }
       if (controller.signal.aborted) return
-      changed()
+      if (input.kind !== 'workspace') changed()
       dialog.current?.close()
       setPending(null)
       announce(
-        input.kind === 'bundle'
-          ? 'Guide and redacted images imported on this device.'
-          : input.guide.steps.some((step) => step.screenshot)
-            ? 'Guide data imported. Image files were not included in this JSON file.'
-            : 'Guide imported on this device.',
+        input.kind === 'workspace'
+          ? `Workspace restored: ${restored.current} guide ${restored.current === 1 ? 'copy' : 'copies'}. Existing guides were kept.`
+          : input.kind === 'bundle'
+            ? 'Guide and redacted images imported on this device.'
+            : input.guide.steps.some((step) => step.screenshot)
+              ? 'Guide data imported. Image files were not included in this JSON file.'
+              : 'Guide imported on this device.',
       )
     } catch (error) {
       if (controller.signal.aborted) return
-      if (!copy && error instanceof StorageError && error.code === 'conflict') {
+      if (input.kind === 'workspace')
+        announce(
+          `Workspace restore stopped after ${restored.current} of ${input.bundles.length} copies. Completed copies remain in the library. Existing guides were kept.`,
+        )
+      else if (
+        !copy &&
+        error instanceof StorageError &&
+        error.code === 'conflict'
+      ) {
         setPending(input)
         dialog.current?.showModal()
       } else
         announce('The guide could not be imported. Existing guides were kept.')
     } finally {
+      if (input.kind === 'workspace' && restored.current) changed()
       if (job.current === controller) {
         job.current = null
         setBusy(false)
@@ -222,6 +248,7 @@ export function ImportControl() {
             return
           }
           setBusy(true)
+          restored.current = 0
           const controller = new AbortController()
           job.current = controller
           const finished = () => {
@@ -233,11 +260,17 @@ export function ImportControl() {
           if (bundle) {
             announce('Checking the local bundle and its image hashes…')
             void import('./exports/client')
-              .then(({ parseBundle }) =>
-                parseBundle(selected, controller.signal),
+              .then(({ parsePortable }) =>
+                parsePortable(selected, controller.signal),
               )
-              .then((bundle) =>
-                save({ kind: 'bundle', bundle }, false, controller),
+              .then(({ bundle, workspace }) =>
+                save(
+                  workspace
+                    ? { kind: 'workspace', bundles: workspace }
+                    : { kind: 'bundle', bundle: bundle! },
+                  false,
+                  controller,
+                ),
               )
               .catch(() => {
                 if (controller.signal.aborted) return

@@ -1126,6 +1126,86 @@
           "name": "E04 Save to destination chevron, 12x12"
         }
       ]
+    },
+    {
+      "file": "13066.svg",
+      "sha256": "720dec420683ee8389b050997a21b5a80c50a62475e9ad7f2e1731c1382aba59",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "54523.svg",
+      "sha256": "c12c88f35a4ba5b4111cc549095b95e7be448356553ce475d5a0f027dc8482a1",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "866cd.svg",
+      "sha256": "bbe01ab055b4a8075c465c5f8aef659c7ed9489a469d17397501216189929f24",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "05518.svg",
+      "sha256": "0883ec64d9117561b777de81d15eae27ca5573657d443a11b3c20ea9a4c9ca3c",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "fb12c.svg",
+      "sha256": "35ce5728ea0de3024b7db89353b172115039d0998b3a5a371745a655c647c18b",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "bbbab.svg",
+      "sha256": "90a346e16fc59c79719b6cf41cebf0295519262cb27695cb172f603e6981a093",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "7156d.svg",
+      "sha256": "2068eda83dd21e27402979c710cb0ee41562b9ed08347c8e8ba3c3f3bd37fbfc",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
+    },
+    {
+      "file": "e13e3.svg",
+      "sha256": "e0f64d221d58f9d5653dc1ee233d6c5d38537e32e98233d826e0fe4f81086569",
+      "slots": [
+        {
+          "node": "24:3930",
+          "name": "W07 original storage settings vector"
+        }
+      ]
     }
   ]
 }

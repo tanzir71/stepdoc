@@ -11,6 +11,7 @@ export default defineConfig({
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.capture.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.hosted.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.devices.test.ts`,
+      `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.storage-ui.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.installer.test.ts`,
       `${process.env.STEPDOC_CONTRACT_TARGET ?? 'php'}.backups.test.ts`,
     ],

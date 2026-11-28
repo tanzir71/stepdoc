@@ -179,7 +179,10 @@ export function zipFiles(files: Readonly<Record<string, Uint8Array>>) {
   return result
 }
 /** Validate all directory metadata before allocating/decompressing any payload. No ZIP64/encryption. */
-export function readZip(bytes: Uint8Array): Record<string, Uint8Array> {
+export function readZip(
+  bytes: Uint8Array,
+  kind: 'guide' | 'workspace' = 'guide',
+): Record<string, Uint8Array> {
   try {
     if (bytes.length < 22 || bytes.length > ARCHIVE_LIMITS.bytes)
       fail('archive_limit')
@@ -245,16 +248,20 @@ export function readZip(bytes: Uint8Array): Record<string, Uint8Array> {
       const nameBytes = bytes.subarray(at + 46, at + 46 + n),
         name = decoder.decode(nameBytes)
       if (
-        !/^(manifest\.json|guide\.json|img\/step-[1-9][0-9]{0,2}(?:-original)?\.(png|webp))$/.test(
-          name,
-        ) ||
+        !(
+          kind === 'workspace'
+            ? /^(manifest\.json|guides\/[1-9][0-9]{0,2}\.stepdoc)$/
+            : /^(manifest\.json|guide\.json|img\/step-[1-9][0-9]{0,2}(?:-original)?\.(png|webp))$/
+        ).test(name) ||
         names.has(name)
       )
         fail()
       names.add(name)
       const limit = name.endsWith('.json')
         ? ARCHIVE_LIMITS.metadata
-        : ARCHIVE_LIMITS.image
+        : kind === 'workspace'
+          ? ARCHIVE_LIMITS.bytes
+          : ARCHIVE_LIMITS.image
       total += size
       if (
         !size ||

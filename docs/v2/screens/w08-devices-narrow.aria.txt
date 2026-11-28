@@ -4,6 +4,8 @@
     - /url: /tools/settings/general
   - link "Devices & tokens":
     - /url: /tools/settings/devices
+  - link "Storage & deploy":
+    - /url: /tools/settings/storage
 - banner:
   - heading "Devices & tokens" [level=1]
   - paragraph: Extensions, MCP clients and CI jobs that can reach this workspace. Every token is scoped, revocable and stored as a hash.

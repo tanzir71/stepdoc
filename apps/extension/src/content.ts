@@ -98,6 +98,7 @@ export function startContent() {
   let pillView: unknown
   let previousUrl = ''
   let stateSequence = 0
+  let stateRevision = -1
   let editedInputs = new WeakSet<Element>()
   let observation:
     | { element: Element; kind: Step['action']; finish: () => void }
@@ -180,7 +181,15 @@ export function startContent() {
     count: number,
     paused = false,
     view?: unknown,
+    revision = 0,
   ) => {
+    if (
+      !Number.isSafeInteger(revision) ||
+      revision < 0 ||
+      revision < stateRevision
+    )
+      return false
+    stateRevision = revision
     // Same-session broadcasts can arrive between pushState and the URL poll.
     // Only starting/resuming establishes a baseline; refreshes cannot consume it.
     if (nonce !== sessionId || (active && !recording))
@@ -201,6 +210,7 @@ export function startContent() {
     manualCount = count
     pillView = view
     updateUi()
+    return true
   }
   const fail = (failedSession = sessionId) => {
     void browser.runtime
@@ -333,17 +343,18 @@ export function startContent() {
       return
     }
     if (message.type === 'STATE') {
-      stateSequence++
       installListeners()
-      stateChanged(
+      const accepted = stateChanged(
         !!message.recording && !message.producerStopped,
         message.sessionId ?? '',
         !!message.blurMode,
         message.manualCount ?? 0,
         !!message.paused,
         message.capturePill,
+        message.stateRevision,
       )
-      respond({ ok: true })
+      if (accepted) stateSequence++
+      respond({ ok: accepted })
     }
     if (message.type === 'CAPTURE_PAGE') {
       try {
@@ -358,7 +369,11 @@ export function startContent() {
     .sendMessage({ type: 'CONTENT_STATE' })
     .then((state) => {
       // A late initial read cannot undo a newer Start, Pause or Cancel broadcast.
-      if (initialStateSequence !== stateSequence) return
+      if (
+        state.stateRevision === undefined &&
+        initialStateSequence !== stateSequence
+      )
+        return
       stateChanged(
         !!state.recording && !state.producerStopped,
         state.captureSessionId ?? '',
@@ -366,6 +381,7 @@ export function startContent() {
         state.captureManualCount ?? 0,
         !!state.paused,
         state.capturePill,
+        state.stateRevision,
       )
     })
     .catch(() => {})

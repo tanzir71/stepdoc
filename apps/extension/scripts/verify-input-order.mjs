@@ -91,8 +91,22 @@ try {
   const panel = await context.newPage()
   await panel.goto(`${origin}/sidepanel.html`)
   const state = () => worker.evaluate(() => chrome.storage.local.get(null))
-  const command = (type) =>
-    panel.evaluate((type) => chrome.runtime.sendMessage({ type }), type)
+  const command = async (type) => {
+    let timer
+    try {
+      return await Promise.race([
+        panel.evaluate((type) => chrome.runtime.sendMessage({ type }), type),
+        new Promise((_resolve, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('Capture command did not settle')),
+            20000,
+          )
+        }),
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
+  }
   const hook = (name) => panel.locator(`[data-sd="${name}"]`)
   const enabled = async (name) => {
     try {
@@ -134,16 +148,56 @@ try {
         timeout: 20_000,
       })
       .toBe(phase)
-  const waitSteps = (count) =>
-    expect
-      .poll(
-        async () => {
-          const value = await state()
-          return value.captureError || value.capturedSteps?.length
-        },
-        { timeout: 20_000 },
-      )
-      .toBe(count)
+  let sequence = 0
+  const waitSteps = async (count) => {
+    try {
+      await expect
+        .poll(
+          async () => {
+            const value = await state()
+            return value.captureError || value.capturedSteps?.length
+          },
+          { timeout: 20_000 },
+        )
+        .toBe(count)
+    } catch (error) {
+      console.error('Input step failure metadata', {
+        sequence,
+        expected: count,
+        worker: await worker.evaluate(async () => {
+          const value = await chrome.storage.local.get([
+            'recording',
+            'captureReview',
+            'capturedSteps',
+            'captureError',
+          ])
+          return {
+            recording: value.recording,
+            phase: value.captureReview?.phase,
+            count: value.capturedSteps?.length,
+            hasError: !!value.captureError,
+            steps: value.capturedSteps?.slice(0, 20).map((step) => ({
+              action: step.action,
+              frameDepth: step.target?.frame?.length ?? 0,
+              shadowDepth: step.target?.shadowPath?.length ?? 0,
+              valueKind: step.value?.kind,
+              redactions: step.redactions?.length,
+            })),
+          }
+        }),
+        source: await source.evaluate(() => ({
+          focused: document.hasFocus(),
+          visibility: document.visibilityState,
+          activeTag: document.activeElement?.tagName,
+        })),
+        panel: await panel.evaluate(() => ({
+          phase: document.querySelector('[data-phase]')?.dataset.phase,
+          focused: document.hasFocus(),
+        })),
+      })
+      throw error
+    }
+  }
   const data = () => `PRIVATE_INPUT_${++serial}`
   const text = source.locator('#text'),
     next = source.locator('#next'),
@@ -158,6 +212,7 @@ try {
     checks++
   }
   async function start() {
+    sequence++
     assert.equal((await command('CANCEL')).ok, true)
     await waitPhase('idle')
     await source.bringToFront()
@@ -168,6 +223,53 @@ try {
     await panel.bringToFront()
     await enabled('capture-review')
     await source.bringToFront()
+    if ([1, 5, 8].includes(sequence)) {
+      const replay = await worker.evaluate(async () => {
+        const state = await chrome.storage.local.get([
+          'captureStateRevision',
+          'captureSessionId',
+          'captureTabId',
+        ])
+        const earlier = globalThis.sdInputStateHistory.filter(
+          (entry) =>
+            entry.tabId === state.captureTabId &&
+            entry.message.stateRevision < state.captureStateRevision,
+        )
+        const stopped = earlier.findLast((entry) => !entry.message.recording)
+        const retired = earlier.findLast(
+          (entry) =>
+            entry.message.recording &&
+            entry.message.sessionId !== state.captureSessionId,
+        )
+        if (!stopped)
+          throw new Error('No actual stopped recorder snapshot retained')
+        const frames = await chrome.webNavigation.getAllFrames({
+          tabId: state.captureTabId,
+        })
+        let rejected = 0,
+          sent = 0
+        for (const entry of [stopped, ...(retired ? [retired] : [])])
+          for (const frame of frames) {
+            const reply = await globalThis.sdInputStateSend(
+              state.captureTabId,
+              entry.message,
+              { frameId: frame.frameId },
+            )
+            sent++
+            if (reply?.ok === false) rejected++
+          }
+        return { sent, rejected, frames: frames.length, retired: !!retired }
+      })
+      check(
+        replay.frames >= 3 && replay.sent === replay.rejected,
+        'Every native producer rejects actual delayed recorder snapshots',
+      )
+      if (sequence > 1)
+        check(
+          replay.retired,
+          'An actual retired recording session was replayed',
+        )
+    }
   }
   async function finish(title, expected, inspect) {
     await waitSteps(expected.length)
@@ -263,6 +365,29 @@ try {
     throw new Error('Content execution world unavailable')
   }
 
+  await worker.evaluate(() => {
+    globalThis.sdInputStateHistory = []
+    globalThis.sdInputStateSend = chrome.tabs.sendMessage.bind(chrome.tabs)
+    chrome.tabs.sendMessage = (tabId, message, options) => {
+      if (message.type === 'STATE') {
+        globalThis.sdInputStateHistory.push({
+          tabId,
+          message: structuredClone(message),
+        })
+        if (globalThis.sdInputStateHistory.length > 64)
+          globalThis.sdInputStateHistory.shift()
+      }
+      const sent = globalThis.sdInputStateSend(tabId, message, options)
+      if (message.type === 'STATE' && options?.frameId === undefined) {
+        // Deliver the real state, but emulate a renderer whose response port
+        // never settles. Notifications must not block commands or persistence.
+        void sent.catch(() => {})
+        globalThis.sdInputHeldReplies = (globalThis.sdInputHeldReplies ?? 0) + 1
+        return new Promise(() => {})
+      }
+      return sent
+    }
+  })
   await start()
   await text.pressSequentially(data(), { delay: 1 })
   await next.click()
@@ -485,11 +610,134 @@ try {
   await text.fill(data())
   await press('capture-pause')
   await waitPhase('recording')
+  await enabled('capture-review')
+  const pausedReplay = await worker.evaluate(async () => {
+    const state = await chrome.storage.local.get([
+      'captureStateRevision',
+      'captureSessionId',
+      'captureTabId',
+    ])
+    const paused = globalThis.sdInputStateHistory.findLast(
+      (entry) =>
+        entry.tabId === state.captureTabId &&
+        entry.message.paused &&
+        entry.message.sessionId === state.captureSessionId &&
+        entry.message.stateRevision < state.captureStateRevision,
+    )
+    if (!paused) throw new Error('No actual paused snapshot retained')
+    return (
+      await globalThis.sdInputStateSend(state.captureTabId, paused.message, {
+        frameId: 0,
+      })
+    )?.ok
+  })
+  check(
+    pausedReplay === false,
+    'A delayed pause cannot undo an acknowledged native resume',
+  )
   await text.fill(data())
   await finish('pause/resume resets the focused input run', [
     ['fill', 'Root field'],
     ['fill', 'Root field'],
   ])
+
+  for (const type of ['PAUSE_CAPTURE', 'STOP_REVIEW']) {
+    await start()
+    const previous = await state()
+    await worker.evaluate(() => {
+      const get = chrome.storage.local.get.bind(chrome.storage.local)
+      globalThis.sdStaleControlRead = false
+      let armed = true
+      const held = new Promise((resolve) => {
+        globalThis.sdReleaseStaleControl = resolve
+      })
+      globalThis.sdRestoreControlGet = () => {
+        chrome.storage.local.get = get
+      }
+      chrome.storage.local.get = async (...args) => {
+        const value = await get(...args)
+        const keys = args[0]
+        if (
+          armed &&
+          Array.isArray(keys) &&
+          keys.length === 5 &&
+          [
+            'recording',
+            'captureSessionId',
+            'captureTabId',
+            'captureError',
+            'captureReview',
+          ].every((key) => keys.includes(key))
+        ) {
+          armed = false
+          globalThis.sdStaleControlRead = true
+          await held
+        }
+        return value
+      }
+    })
+    try {
+      await panel.evaluate(
+        ({ type, sessionId }) => {
+          globalThis.sdStaleControlReply = undefined
+          void chrome.runtime.sendMessage({ type, sessionId }).then(
+            (reply) => {
+              globalThis.sdStaleControlReply = reply
+            },
+            () => {
+              globalThis.sdStaleControlReply = { transportClosed: true }
+            },
+          )
+        },
+        { type, sessionId: previous.captureSessionId },
+      )
+      await expect
+        .poll(() => worker.evaluate(() => globalThis.sdStaleControlRead), {
+          timeout: 20000,
+        })
+        .toBe(true)
+      await worker.evaluate(() => globalThis.sdRestoreControlGet())
+      // v2 controls serialize with each other; the retained v1 Start/CANCEL
+      // path can supersede a pending v2 command and must be fenced as well.
+      assert.equal((await command('CANCEL')).ok, true)
+      await waitPhase('idle')
+      await source.bringToFront()
+      assert.equal((await command('START')).ok, true)
+      await waitPhase('recording')
+      const current = await state()
+      await worker.evaluate(() => globalThis.sdReleaseStaleControl())
+      await expect
+        .poll(
+          () =>
+            panel.evaluate(() => globalThis.sdStaleControlReply !== undefined),
+          { timeout: 20000 },
+        )
+        .toBe(true)
+      const reply = await panel.evaluate(() => globalThis.sdStaleControlReply)
+      check(
+        reply.ok === false && !reply.transportClosed,
+        'A superseded native control is rejected rather than resetting a new recording',
+      )
+      const after = await state()
+      check(
+        after.captureSessionId === current.captureSessionId &&
+          after.recording &&
+          after.captureReview.phase === 'recording',
+        'A new session survives an older in-flight Pause or Stop',
+      )
+      await next.click()
+      await finish(`superseded ${type} cannot stop a new session`, [
+        ['click', 'Next action'],
+      ])
+    } finally {
+      await worker
+        .evaluate(() => {
+          globalThis.sdRestoreControlGet?.()
+          globalThis.sdReleaseStaleControl?.()
+        })
+        .catch(() => {})
+    }
+  }
 
   await start()
   await text.fill(data())
@@ -555,6 +803,10 @@ try {
     check(reply.result.value === 0, 'No recorder value or edited-text reads')
   }
   check(apiRequests === 0, 'Local input capture made a server API request')
+  check(
+    await worker.evaluate(() => globalThis.sdInputHeldReplies > 0),
+    'Real tab-wide notification response ports were held throughout the native scenarios',
+  )
   assert.deepEqual(failures, [])
   checks++
   console.log(

@@ -8,6 +8,10 @@ Use the compiled extension: [Chrome ZIP](site/downloads/stepdoc-chrome.zip), [Ed
 
 The v2 extension includes the full local library and editor, capture, redaction and portable image bundles using IndexedDB/OPFS. Export **PDF** through native **Print / Save as PDF**, self-contained **HTML** with embedded fonts/images, Markdown, DOCX, `.stepdoc`, guide.json, Playwright and SKILL.md. These exports work on-device without a backend, including offline. [Version and SHA-256 metadata](site/downloads/extensions.json) accompanies each compiled ZIP.
 
+The **0.2.1 offline extension** update protects active recordings from delayed state updates and keeps controls responsive when a page does not reply. When updating an unpacked extension, reload it in the browser's extension manager and refresh the pages you want to capture.
+
+Back up a workspace from **Settings → Storage & deploy → Export everything (.stepdoc)**. Restore with **Import** in the destination library; guides become private copies and existing guides are kept. Workspace archives include up to 500 current guides and their redacted images, within 256 MB. Trash, version history and credentials are excluded. Export a backup before clearing browser data or removing an extension profile.
+
 Contributors can run `pnpm install --frozen-lockfile` and `pnpm build:extension` to compile all three browser packages. ZIPs are written to `dist/` and `site/downloads/`. The browser SPA also runs with `pnpm dev` at <http://127.0.0.1:3200>; see [apps/app/README.md](apps/app/README.md). Remaining v2 parity work is tracked in the handoff and progress log.
 
 ## Legacy v1 reference

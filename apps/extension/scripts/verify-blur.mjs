@@ -64,7 +64,27 @@ try {
     viewport: { width: 1440, height: 900 },
     args: [`--disable-extensions-except=${dir}`, `--load-extension=${dir}`],
   })
-  const worker = await extensionWorker(context)
+  // Exercise recovery from a missed initial worker event against the real
+  // installed extension. Only the first inventory read is hidden; private-page
+  // discovery/activation and every subsequent worker operation remain native.
+  let firstInventory = true
+  const worker = await extensionWorker(
+    new Proxy(context, {
+      get(target, key) {
+        if (key === 'serviceWorkers')
+          return () => {
+            if (firstInventory) {
+              firstInventory = false
+              return []
+            }
+            return target.serviceWorkers()
+          }
+        const value = Reflect.get(target, key)
+        return typeof value === 'function' ? value.bind(target) : value
+      },
+    }),
+  )
+  console.log('Native private-page activation without an initial worker event verified')
   const url = new URL(worker.url()),
     origin = `${url.protocol}//${url.host}`
   const panel = await context.newPage()

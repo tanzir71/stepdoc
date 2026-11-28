@@ -1,6 +1,9 @@
 # StepDoc extension
 
 WXT builds one MV3 codebase for Chrome/Edge (side panel) and Firefox (popup).
+The 0.2.1 offline package includes workspace archive backup/restore and recorder
+state ordering/reply isolation. See [the private protocol note](../../docs/v2/CAPTURE_STATE_ORDERING.md)
+for the durable counter, non-blocking notifications and per-frame readiness checks.
 The local E01/E02/E04 capture/review path and E03 Guide Me use shared React,
 tokens, original Figma vectors and bundled Geist. E02 includes its recording
 pill/timer, and E06 has its native popup flow. E05 pairing and paired capture

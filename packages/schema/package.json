@@ -14,6 +14,7 @@
     "./capture-destination": "./src/capture-destination.ts",
     "./guide-me": "./src/guide-me.ts",
     "./storage-api": "./src/storage-api.ts",
+    "./workspace": "./src/workspace.ts",
     "./installation": "./src/installation.ts",
     "./pairing": "./src/pairing.ts",
     "./migrations/v1-to-guide1": "./migrations/v1-to-guide1.ts"

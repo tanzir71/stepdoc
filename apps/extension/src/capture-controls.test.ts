@@ -278,6 +278,7 @@ describe('source recorder projection', () => {
     const raw = state()
     const view = captureSourceState(raw, 10)
     expect(view).toEqual({
+      stateRevision: 0,
       recording: true,
       paused: false,
       producerStopped: false,
@@ -300,6 +301,7 @@ describe('source recorder projection', () => {
     (tabId) => {
       const view = captureSourceState(state(), tabId)
       expect(view).toEqual({
+        stateRevision: 0,
         recording: false,
         paused: false,
         producerStopped: false,

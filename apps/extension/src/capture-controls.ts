@@ -166,6 +166,7 @@ export function captureSourceState(state: LegacyStorage, tabId?: number) {
       })
     : undefined
   const result = captureSourceStateSchema.safeParse({
+    stateRevision: state.captureStateRevision ?? 0,
     recording: selected && !!state.recording,
     paused: selected && ['pausing', 'paused', 'stopping'].includes(phase ?? ''),
     producerStopped: selected && ['pausing', 'stopping'].includes(phase ?? ''),
@@ -178,6 +179,11 @@ export function captureSourceState(state: LegacyStorage, tabId?: number) {
   return result.success
     ? result.data
     : {
+        stateRevision:
+          Number.isSafeInteger(state.captureStateRevision) &&
+          state.captureStateRevision! >= 0
+            ? state.captureStateRevision!
+            : 0,
         recording: false,
         paused: false,
         producerStopped: false,
@@ -194,6 +200,7 @@ export function captureSourceMessage(state: LegacyStorage, tabId: number) {
   const source = captureSourceState(state, tabId)
   return {
     type: 'STATE',
+    stateRevision: source.stateRevision,
     recording: source.recording,
     paused: source.paused,
     producerStopped: source.producerStopped,

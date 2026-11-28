@@ -640,6 +640,7 @@ try {
   await worker.evaluate(async () => {
     const state = await chrome.storage.local.get([
       'recording',
+      'captureStateRevision',
       'captureSessionId',
       'captureTabId',
       'captureBlurMode',
@@ -651,6 +652,7 @@ try {
       state.captureTabId,
       {
         type: 'STATE',
+        stateRevision: state.captureStateRevision,
         recording: state.recording,
         sessionId: state.captureSessionId,
         blurMode: state.captureBlurMode,

@@ -47,6 +47,13 @@ export const capturePillViewSchema = z.strictObject({
 })
 export type CapturePillView = z.output<typeof capturePillViewSchema>
 export const captureSourceStateSchema = z.strictObject({
+  // Private recorder-state ordering; old caches start at revision zero.
+  stateRevision: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER)
+    .default(0),
   recording: z.boolean(),
   paused: z.boolean(),
   producerStopped: z.boolean(),

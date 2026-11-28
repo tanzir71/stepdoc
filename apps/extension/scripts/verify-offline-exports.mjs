@@ -70,8 +70,7 @@ try {
   })
   context.setDefaultTimeout(15000)
   context.on('request', (request) => {
-    if (/^https?:/.test(request.url()))
-      external.push('Context HTTP request')
+    if (/^https?:/.test(request.url())) external.push('Context HTTP request')
   })
   await context.route(/^https?:\/\//, (route) => {
     external.push('HTTP request')
@@ -115,10 +114,7 @@ try {
     name: 'offline.png',
     mimeType: 'image/png',
     buffer: await readFile(
-      new URL(
-        '../../app/e2e/fixtures/editor-original.png',
-        import.meta.url,
-      ),
+      new URL('../../app/e2e/fixtures/editor-original.png', import.meta.url),
     ),
   })
   await expect(
@@ -159,9 +155,7 @@ try {
     await writeFile(
       join(
         artifacts,
-        name.replace(/[^a-z0-9]/gi, '-') +
-          '-' +
-          download.suggestedFilename(),
+        name.replace(/[^a-z0-9]/gi, '-') + '-' + download.suggestedFilename(),
       ),
       bytes,
     )
@@ -174,8 +168,7 @@ try {
       html.includes('Review the locally saved guide'),
   )
   assert(
-    html.includes('data:image/') &&
-      html.includes('data:font/woff2;base64,'),
+    html.includes('data:image/') && html.includes('data:font/woff2;base64,'),
     'HTML must embed images and fonts',
   )
   assert(
@@ -197,9 +190,7 @@ try {
   }
   const docx = unzipSync(downloaded.DOCX.bytes)
   assert(
-    strFromU8(docx['word/document.xml']).includes(
-      'Offline extension exports',
-    ),
+    strFromU8(docx['word/document.xml']).includes('Offline extension exports'),
   )
   assert(
     Object.keys(docx).some((path) => path.startsWith('word/media/')),
@@ -271,20 +262,57 @@ try {
     'Native browser PDF was not produced',
   )
   await writeFile(join(artifacts, 'guide.html'), html)
+  await page.goto(
+    extensionOrigin +
+      '/app.html?route=' +
+      encodeURIComponent('/settings/storage'),
+  )
+  await expect(
+    page.getByRole('heading', { name: 'This browser · IndexedDB' }),
+  ).toBeVisible()
+  await page.locator('[data-sd="storage-export"]').click()
+  const workspaceDownload = page.waitForEvent('download')
+  await page.locator('[data-sd="storage-export-confirm"]').click()
+  const workspaceBytes = await readFile(await (await workspaceDownload).path())
+  const workspaceFiles = unzipSync(workspaceBytes)
+  const manifest = JSON.parse(strFromU8(workspaceFiles['manifest.json']))
+  assert.equal(manifest.format, 'stepdoc/workspace@1')
+  assert.equal(manifest.files.length, 1)
+  const nested = unzipSync(workspaceFiles['guides/1.stepdoc'])
+  assert.equal(
+    JSON.parse(strFromU8(nested['guide.json'])).title,
+    'Offline extension exports',
+  )
+  assert(
+    Object.keys(nested).some((path) => /\.(png|webp)$/.test(path)),
+    'Workspace image missing',
+  )
+  await writeFile(join(artifacts, 'workspace.stepdoc'), workspaceBytes)
+  await page.goto(extensionOrigin + '/app.html')
+  await page
+    .locator('[data-sd="library-import-file"]')
+    .setInputFiles({
+      name: 'workspace.stepdoc',
+      mimeType: 'application/vnd.stepdoc+zip',
+      buffer: workspaceBytes,
+    })
+  await expect(
+    page
+      .getByRole('status')
+      .filter({ hasText: 'Workspace restored: 1 guide copy.' })
+      .first(),
+  ).toBeVisible()
+  await expect(page.locator('[data-sd="library-guide-open"]')).toHaveCount(2)
   assert.equal(
     await page.evaluate(() =>
       document.querySelector('meta[name="stepdoc-api"]'),
     ),
     null,
   )
-  assert.deepEqual(
-    external,
-    [],
-    'Offline export attempted a network request',
-  )
+  assert.deepEqual(external, [], 'Offline export attempted a network request')
   assert.deepEqual(failures, [], 'Offline export runtime failed')
   console.log(
-    `Compiled ZIP offline exports passed: PDF via native Print/Save as PDF, HTML, Markdown, DOCX, .stepdoc, guide.json, Playwright and SKILL.md; embedded fonts/images; zero backend/network requests. Artifacts: ${artifacts}`,
+    `Compiled ZIP offline exports passed: PDF via native Print/Save as PDF, HTML, Markdown, DOCX, .stepdoc, guide.json, Playwright and SKILL.md; workspace backup/restore; embedded fonts/images; zero backend/network requests. Artifacts: ${artifacts}`,
   )
 } finally {
   await context?.close()
